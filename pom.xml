@@ -27,7 +27,6 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
         <artifactId>spring-context</artifactId>
         <version>${spring.version}</version>
     </dependency>
-    <!-- Source: https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
     <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
@@ -56,6 +55,21 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
         <artifactId>lombok</artifactId>
         <version>${lombok.version}</version>
         <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.18.2</version>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+        <version>2.18.2</version>
+    </dependency>
+    <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>3.0.0</version>
     </dependency>
 </dependencies>
     <build>

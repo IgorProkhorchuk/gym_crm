@@ -8,32 +8,38 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 @Slf4j
 @Component
 public class StorageInitializer implements BeanPostProcessor {
 
-    @Value("${storage.file.path}")
-    private String filePath;
+    @Value("classpath:${storage.file.path}")
+    private Resource storageFile;
 
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         if (bean instanceof InMemoryStorage storage) {
-            try {
-                JsonNode root = mapper.readTree(new File(filePath));
+            if (!storageFile.exists()) {
+                log.warn("Storage file {} does not exist. Skipping pre-population.", storageFile.getFilename());
+                return bean;
+            }
+
+            try (InputStream inputStream = storageFile.getInputStream()) {
+                JsonNode root = mapper.readTree(inputStream);
 
                 loadEntities(root.get("trainers"), storage.getStorage(Trainer.class), Trainer.class);
                 loadEntities(root.get("trainees"), storage.getStorage(Trainee.class), Trainee.class);
                 loadEntities(root.get("trainings"), storage.getStorage(Training.class), Training.class);
 
-                log.info("Storage pre-populated from file: {}", filePath);
+                log.info("Storage pre-populated from file: {}", storageFile.getFilename());
             } catch (IOException e) {
                 log.error("Failed to initialize storage: {}", e.getMessage());
             }

@@ -1,5 +1,6 @@
 package com.epam.gymcrm.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,13 +13,15 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 public abstract class User {
+    @JsonAlias("id")
     private Long userId;
-    private String firstName;
-    private String lastName;
-    private String username;
+
     
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private String password;
     private Boolean isActive;
+    private String firstName;
+    private String lastName;
+    private String username;
 }

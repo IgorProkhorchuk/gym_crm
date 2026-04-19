@@ -5,6 +5,7 @@ import com.epam.gymcrm.storage.InMemoryStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -26,5 +27,9 @@ public class TrainerDao {
 
     public void delete(Long id) {
         storage.getStorage(Trainer.class).remove(id);
+    }
+
+    public List<Trainer> findAll() {
+        return List.copyOf(storage.getStorage(Trainer.class).values());
     }
 }

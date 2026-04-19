@@ -3,9 +3,11 @@ package com.epam.gymcrm.service;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.model.Training;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 public class TrainingService {
     private TrainingDao trainingDao;
 

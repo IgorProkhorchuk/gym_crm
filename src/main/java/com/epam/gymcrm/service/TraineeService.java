@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TraineeService {
@@ -30,20 +33,28 @@ public class TraineeService {
 
     private String generateUsername(String firstName, String lastName) {
         String baseUsername = firstName + "." + lastName;
-        List<Trainee> all = traineeDao.findAll();
+        Set<String> existingUsernames = traineeDao.findAll().stream()
+                .map(Trainee::getUsername)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        long count = all.stream()
-                .filter(t -> t.getUsername().startsWith(baseUsername))
-                .count();
+        if (!existingUsernames.contains(baseUsername)) {
+            return baseUsername;
+        }
 
-        return count > 0 ? baseUsername + count : baseUsername;
+        int suffix = 1;
+        while (existingUsernames.contains(baseUsername + suffix)) {
+            suffix++;
+        }
+
+        return baseUsername + suffix;
     }
 
     private String generateRandomPassword() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         SecureRandom random = new SecureRandom();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10; i ++) {
+        for (int i = 0; i < 10; i++) {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();

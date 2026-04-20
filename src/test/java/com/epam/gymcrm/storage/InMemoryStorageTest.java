@@ -1,20 +1,24 @@
 package com.epam.gymcrm.storage;
 
 import com.epam.gymcrm.model.Trainee;
+import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.Training;
+import com.epam.gymcrm.model.TrainingType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class InMemoryStorageTest {
+
     private InMemoryStorage storage;
 
     @BeforeEach
     void setUp() {
         storage = new InMemoryStorage();
-
         storage.setTrainees(new HashMap<>());
         storage.setTrainers(new HashMap<>());
         storage.setTrainings(new HashMap<>());
@@ -23,20 +27,34 @@ public class InMemoryStorageTest {
 
     @Test
     void testGetStorageForTrainee() {
-        Map<Long, Trainee> map = storage.getStorage(Trainee.class);
-        assertNotNull(map, "Shouldn't be null");
+        Map<Long, Trainee> traineeMap = storage.getStorage(Trainee.class);
+        assertNotNull(traineeMap);
     }
 
     @Test
-    void testSaveAndGetTrainee() {
-        Trainee trainee = Trainee.builder()
-                .userId(1L)
-                .firstName("Ivan")
-                .build();
+    void testGetStorageForTrainer() {
+        Map<Long, Trainer> trainerMap = storage.getStorage(Trainer.class);
+        assertNotNull(trainerMap);
+    }
 
-        storage.getStorage(Trainee.class).put(trainee.getUserId(), trainee);
+    @Test
+    void testGetStorageForTraining() {
+        Map<Long, Training> trainingMap = storage.getStorage(Training.class);
+        assertNotNull(trainingMap);
+    }
 
-        Trainee saved = storage.getStorage(Trainee.class).get(1L);
-        assertEquals("Ivan", saved.getFirstName());
+    @Test
+    void testGetStorageForUnknownClassThrowsException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            storage.getStorage(String.class);
+        });
+
+        assertNotNull(exception.getMessage());
+    }
+
+    @Test
+    void testGetStorageForTrainingType() {
+        Map<Long, TrainingType> trainingTypeMap = storage.getStorage(TrainingType.class);
+        assertNotNull(trainingTypeMap);
     }
 }

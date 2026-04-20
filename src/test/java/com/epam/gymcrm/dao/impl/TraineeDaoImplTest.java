@@ -1,6 +1,6 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.dao.impl;
 
-import com.epam.gymcrm.dao.impl.TraineeDaoImpl;
+import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.storage.InMemoryStorage;
 import org.junit.jupiter.api.BeforeEach;

@@ -85,5 +85,42 @@ public class TrainerServiceImplTest {
         Optional<Trainer> result = trainerService.findById(99L);
 
         assertFalse(result.isPresent());
+        verify(trainerDao, times(1)).findById(99L);
     }
+
+    @Test
+    void testCreateTrainerSkipsTakenSequentialSuffixes() {
+        Trainer newTrainer = Trainer.builder()
+                .firstName("Severus")
+                .lastName("Snape")
+                .build();
+
+        Trainer existingBase = Trainer.builder().username("Severus.Snape").build();
+        Trainer existing1 = Trainer.builder().username("Severus.Snape1").build();
+
+        when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing1));
+
+        trainerService.create(newTrainer);
+
+        assertEquals("Severus.Snape2", newTrainer.getUsername());
+        assertNotNull(newTrainer.getPassword());
+        assertEquals(10, newTrainer.getPassword().length());
+        verify(trainerDao, times(1)).save(newTrainer);
+    }
+
+    @Test
+    void testUpdateTrainerDelegatesToDao() {
+        Trainer trainer = Trainer.builder()
+                .userId(22L)
+                .firstName("Minerva")
+                .lastName("McGonagall")
+                .username("Minerva.McGonagall")
+                .build();
+
+        trainerService.update(trainer);
+
+        verify(trainerDao, times(1)).save(trainer);
+        verifyNoMoreInteractions(trainerDao);
+    }
+
 }

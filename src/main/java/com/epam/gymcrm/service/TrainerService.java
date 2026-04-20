@@ -5,5 +5,6 @@ import java.util.Optional;
 
 public interface TrainerService {
     void create(Trainer trainer);
+    void update(Trainer trainer);
     Optional<Trainer> findById(Long id);
 }

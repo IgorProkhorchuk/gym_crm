@@ -28,10 +28,7 @@ public class GymFacadeTest {
         trainerService = mock(TrainerService.class);
         trainingService = mock(TrainingService.class);
 
-        gymFacade = new GymFacade();
-        gymFacade.setTraineeService(traineeService);
-        gymFacade.setTrainerService(trainerService);
-        gymFacade.setTrainingService(trainingService);
+        gymFacade = new GymFacade(traineeService, trainerService, trainingService);
     }
 
     @Test
@@ -52,6 +49,19 @@ public class GymFacadeTest {
     }
 
     @Test
+    void testUpdateTrainee() {
+        Trainee trainee = Trainee.builder().userId(1L).firstName("John").build();
+        gymFacade.updateTrainee(trainee);
+        verify(traineeService, times(1)).update(trainee);
+    }
+
+    @Test
+    void testDeleteTrainee() {
+        gymFacade.deleteTrainee(7L);
+        verify(traineeService, times(1)).delete(7L);
+    }
+
+    @Test
     void testCreateTrainer() {
         Trainer trainer = Trainer.builder().firstName("Mike").build();
         gymFacade.createTrainer(trainer);
@@ -66,6 +76,13 @@ public class GymFacadeTest {
         Optional<Trainer> result = gymFacade.findTrainerById(2L);
         assertTrue(result.isPresent());
         verify(trainerService, times(1)).findById(2L);
+    }
+
+    @Test
+    void testUpdateTrainer() {
+        Trainer trainer = Trainer.builder().userId(2L).firstName("Mike").build();
+        gymFacade.updateTrainer(trainer);
+        verify(trainerService, times(1)).update(trainer);
     }
 
     @Test

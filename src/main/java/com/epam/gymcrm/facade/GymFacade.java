@@ -6,7 +6,6 @@ import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -18,18 +17,9 @@ public class GymFacade {
     private TrainerService trainerService;
     private TrainingService trainingService;
 
-    @Autowired
-    public void setTraineeService(TraineeService traineeService) {
+    public GymFacade(TraineeService traineeService, TrainerService trainerService, TrainingService trainingService) {
         this.traineeService = traineeService;
-    }
-
-    @Autowired
-    public void setTrainerService(TrainerService trainerService) {
         this.trainerService = trainerService;
-    }
-
-    @Autowired
-    public void setTrainingService(TrainingService trainingService) {
         this.trainingService = trainingService;
     }
 
@@ -41,12 +31,24 @@ public class GymFacade {
         return traineeService.findById(id);
     }
 
+    public void updateTrainee(Trainee trainee) {
+        traineeService.update(trainee);
+    }
+
+    public void deleteTrainee(Long id) {
+        traineeService.delete(id);
+    }
+
     public void createTrainer(Trainer trainer) {
         trainerService.create(trainer);
     }
 
     public Optional<Trainer> findTrainerById(Long id) {
         return trainerService.findById(id);
+    }
+
+    public void updateTrainer(Trainer trainer) {
+        trainerService.update(trainer);
     }
 
     public void createTraining(Training training) {

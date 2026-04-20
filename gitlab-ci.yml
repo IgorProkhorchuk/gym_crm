@@ -1,0 +1,29 @@
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+    - if: $CI_COMMIT_BRANCH == "main"
+
+services:
+  - name: docker:dind
+    command: ["--tls=false"]
+
+stages:
+  - verify
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  DOCKER_HOST: "tcp://docker:2375"
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+
+image: maven:3.9.14-amazoncorretto-25
+
+cache:
+  key: "$CI_PROJECT_NAME-$CI_COMMIT_REF_SLUG"
+  paths:
+    - .m2/repository/
+
+verify:
+  stage: verify
+  script:
+    - mvn $MAVEN_CLI_OPTS verify

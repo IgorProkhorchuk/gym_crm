@@ -93,25 +93,6 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
             <artifactId>maven-surefire-plugin</artifactId>
             <version>3.5.4</version>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.jacoco</groupId>-->
-<!--                <artifactId>jacoco-maven-plugin</artifactId>-->
-<!--                <version>${jacoco.version}</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>prepare-agent</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                    <execution>-->
-<!--                        <id>report</id>-->
-<!--                        <phase>verify</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>report</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -147,6 +128,11 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
                                     </limits>
                                 </rule>
                             </rules>
+                            <excludes>
+                                <exclude>com/epam/gymcrm/Main.class</exclude>
+                                <exclude>com/epam/gymcrm/config/**</exclude>
+                                <exclude>com/epam/gymcrm/model/**</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

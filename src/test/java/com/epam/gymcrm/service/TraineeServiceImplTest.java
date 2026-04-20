@@ -85,5 +85,50 @@ public class TraineeServiceImplTest {
         Optional<Trainee> result = traineeService.findById(999L);
 
         assertFalse(result.isPresent());
+        verify(traineeDao, times(1)).findById(999L);
     }
+
+    @Test
+    void testCreateTraineeSkipsTakenSequentialSuffixes() {
+        Trainee newTrainee = Trainee.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .build();
+
+        Trainee existingBase = Trainee.builder().username("John.Doe").build();
+        Trainee existing1 = Trainee.builder().username("John.Doe1").build();
+
+        when(traineeDao.findAll()).thenReturn(List.of(existingBase, existing1));
+
+        traineeService.create(newTrainee);
+
+        assertEquals("John.Doe2", newTrainee.getUsername());
+        assertNotNull(newTrainee.getPassword());
+        assertEquals(10, newTrainee.getPassword().length());
+        verify(traineeDao, times(1)).save(newTrainee);
+    }
+
+    @Test
+    void testUpdateTraineeDelegatesToDao() {
+        Trainee trainee = Trainee.builder()
+                .userId(10L)
+                .firstName("Hermione")
+                .lastName("Granger")
+                .username("Hermione.Granger")
+                .build();
+
+        traineeService.update(trainee);
+
+        verify(traineeDao, times(1)).save(trainee);
+        verifyNoMoreInteractions(traineeDao);
+    }
+
+    @Test
+    void testDeleteTraineeDelegatesToDao() {
+        traineeService.delete(15L);
+
+        verify(traineeDao, times(1)).delete(15L);
+        verifyNoMoreInteractions(traineeDao);
+    }
+
 }

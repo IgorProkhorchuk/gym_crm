@@ -3,6 +3,7 @@ package com.epam.gymcrm.service.impl;
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.service.TraineeService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class TraineeServiceImpl implements TraineeService {
 
@@ -24,14 +26,33 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public void create(Trainee trainee) {
+        log.info("Creating trainee profile for {} {}", trainee.getFirstName(), trainee.getLastName());
         trainee.setUsername(generateUsername(trainee.getFirstName(), trainee.getLastName()));
         trainee.setPassword(generateRandomPassword());
         traineeDao.save(trainee);
+        log.info("Created trainee profile with username {}", trainee.getUsername());
+    }
+
+    @Override
+    public void update(Trainee trainee) {
+        log.info("Updating trainee profile with id {}", trainee.getUserId());
+        traineeDao.save(trainee);
+        log.info("Updated trainee profile with id {}", trainee.getUserId());
+    }
+
+    @Override
+    public void delete(Long id) {
+        log.info("Deleting trainee profile with id {}", id);
+        traineeDao.delete(id);
+        log.info("Deleted trainee profile with id {}", id);
     }
 
     @Override
     public Optional<Trainee> findById(Long id) {
-        return traineeDao.findById(id);
+        log.debug("Searching trainee profile by id {}", id);
+        Optional<Trainee> trainee = traineeDao.findById(id);
+        log.debug("Trainee profile lookup for id {} returned {}", id, trainee.isPresent() ? "a result" : "no result");
+        return trainee;
     }
 
 

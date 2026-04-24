@@ -51,8 +51,10 @@ public class StorageInitializer implements BeanPostProcessor {
         if (node != null && node.isArray()) {
             for (JsonNode n : node) {
                 T entity = mapper.treeToValue(n, type);
-                if (entity instanceof User u) targetMap.put(u.getUserId(), entity);
-                else if (entity instanceof Training t) targetMap.put(t.getTrainingId(), entity);
+                Long id = type == Training.class
+                        ? ((Training) entity).getTrainingId()
+                        : ((User) entity).getUserId();
+                targetMap.put(id, entity);
             }
         }
     }

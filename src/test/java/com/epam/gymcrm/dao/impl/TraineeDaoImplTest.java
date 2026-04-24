@@ -1,29 +1,36 @@
 package com.epam.gymcrm.dao.impl;
 
-import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.storage.InMemoryStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class TraineeDaoImplTest {
 
-    private TraineeDao traineeDao;
+    @InjectMocks
+    private TraineeDaoImpl traineeDao;
+
+    @Mock
     private InMemoryStorage storage;
+
+    private Map<Long, Trainee> traineeMap;
 
     @BeforeEach
     void setUp() {
-        storage = new InMemoryStorage();
-        storage.setTrainees(new HashMap<>());
-
-        traineeDao = new TraineeDaoImpl();
-        traineeDao.setStorage(storage);
+        MockitoAnnotations.openMocks(this);
+        traineeMap = new HashMap<>();
+        when(storage.getStorage(Trainee.class)).thenReturn(traineeMap);
     }
 
     @Test
@@ -33,8 +40,11 @@ public class TraineeDaoImplTest {
         traineeDao.save(trainee);
 
         Optional<Trainee> found = traineeDao.findById(1L);
-        assertTrue(found.isPresent());
-        assertEquals("Oleg", found.get().getFirstName());
+        assertAll(
+                () -> assertTrue(found.isPresent()),
+                () -> assertEquals("Oleg", found.get().getFirstName()),
+                () -> verify(storage, atLeastOnce()).getStorage(Trainee.class)
+        );
     }
 
     @Test
@@ -64,8 +74,10 @@ public class TraineeDaoImplTest {
 
         List<Trainee> all = traineeDao.findAll();
 
-        assertEquals(2, all.size());
-        assertTrue(all.contains(trainee1));
-        assertTrue(all.contains(trainee2));
+        assertAll(
+                () -> assertEquals(2, all.size()),
+                () -> assertTrue(all.contains(trainee1)),
+                () -> assertTrue(all.contains(trainee2))
+        );
     }
 }

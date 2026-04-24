@@ -1,28 +1,35 @@
 package com.epam.gymcrm.dao.impl;
 
-import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.storage.InMemoryStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class TrainingDaoImplTest {
 
-    private TrainingDao trainingDao;
+    @InjectMocks
+    private TrainingDaoImpl trainingDao;
+
+    @Mock
     private InMemoryStorage storage;
+
+    private Map<Long, Training> trainingMap;
 
     @BeforeEach
     void setUp() {
-        storage = new InMemoryStorage();
-        storage.setTrainings(new HashMap<>());
-
-        trainingDao = new TrainingDaoImpl();
-        trainingDao.setStorage(storage);
+        MockitoAnnotations.openMocks(this);
+        trainingMap = new HashMap<>();
+        when(storage.getStorage(Training.class)).thenReturn(trainingMap);
     }
 
     @Test
@@ -35,8 +42,10 @@ public class TrainingDaoImplTest {
         trainingDao.save(training);
 
         Optional<Training> found = trainingDao.findById(1L);
-        assertTrue(found.isPresent());
-        assertEquals("Yoga Basics", found.get().getTrainingName());
+        assertAll(
+                () -> assertTrue(found.isPresent()),
+                () -> assertEquals("Yoga Basics", found.get().getTrainingName())
+        );
     }
 
     @Test

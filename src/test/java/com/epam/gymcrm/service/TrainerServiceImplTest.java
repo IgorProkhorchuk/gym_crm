@@ -5,6 +5,9 @@ import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.impl.TrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,33 +18,34 @@ import static org.mockito.Mockito.*;
 
 public class TrainerServiceImplTest {
 
-    private TrainerService trainerService;
+    @InjectMocks
+    private TrainerServiceImpl trainerService;
+
+    @Mock
     private TrainerDao trainerDao;
+
+    @Mock
     private PasswordGenerator passwordGenerator;
 
     @BeforeEach
     void setUp() {
-        trainerDao = mock(TrainerDao.class);
-        passwordGenerator = mock(PasswordGenerator.class);
-        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-
-        TrainerServiceImpl serviceImpl = new TrainerServiceImpl();
-        serviceImpl.setTrainerDao(trainerDao);
-        serviceImpl.setPasswordGenerator(passwordGenerator);
-        trainerService = serviceImpl;
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
     void testCreateTrainerGeneratesUsernameAndPassword() {
         Trainer trainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
 
         trainerService.create(trainer);
 
-        assertEquals("Severus.Snape", trainer.getUsername());
-        assertEquals("Passw0rd12", trainer.getPassword());
-        verify(passwordGenerator, times(1)).generate();
-        verify(trainerDao, times(1)).save(trainer);
+        assertAll(
+                () -> assertEquals("Severus.Snape", trainer.getUsername()),
+                () -> assertEquals("Passw0rd12", trainer.getPassword()),
+                () -> verify(passwordGenerator, times(1)).generate(),
+                () -> verify(trainerDao, times(1)).save(trainer)
+        );
     }
 
     @Test
@@ -49,6 +53,7 @@ public class TrainerServiceImplTest {
         Trainer newTrainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
         Trainer existingTrainer = Trainer.builder().username("Severus.Snape").build();
 
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(existingTrainer));
 
         trainerService.create(newTrainer);
@@ -64,6 +69,7 @@ public class TrainerServiceImplTest {
         Trainer existing2 = Trainer.builder().username("Severus.Snape2").build();
         Trainer similarName = Trainer.builder().username("Severus.Snapely").build();
 
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing2, similarName));
 
         trainerService.create(newTrainer);
@@ -78,8 +84,11 @@ public class TrainerServiceImplTest {
 
         Optional<Trainer> result = trainerService.findById(50L);
 
-        assertTrue(result.isPresent());
-        assertEquals("Minerva", result.get().getFirstName());
+        assertAll(
+                () -> assertTrue(result.isPresent()),
+                () -> assertEquals("Minerva", result.get().getFirstName()),
+                () -> verify(trainerDao, times(1)).findById(50L)
+        );
     }
 
     @Test
@@ -88,8 +97,10 @@ public class TrainerServiceImplTest {
 
         Optional<Trainer> result = trainerService.findById(99L);
 
-        assertFalse(result.isPresent());
-        verify(trainerDao, times(1)).findById(99L);
+        assertAll(
+                () -> assertFalse(result.isPresent()),
+                () -> verify(trainerDao, times(1)).findById(99L)
+        );
     }
 
     @Test
@@ -102,14 +113,17 @@ public class TrainerServiceImplTest {
         Trainer existingBase = Trainer.builder().username("Severus.Snape").build();
         Trainer existing1 = Trainer.builder().username("Severus.Snape1").build();
 
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing1));
 
         trainerService.create(newTrainer);
 
-        assertEquals("Severus.Snape2", newTrainer.getUsername());
-        assertEquals("Passw0rd12", newTrainer.getPassword());
-        verify(passwordGenerator, times(1)).generate();
-        verify(trainerDao, times(1)).save(newTrainer);
+        assertAll(
+                () -> assertEquals("Severus.Snape2", newTrainer.getUsername()),
+                () -> assertEquals("Passw0rd12", newTrainer.getPassword()),
+                () -> verify(passwordGenerator, times(1)).generate(),
+                () -> verify(trainerDao, times(1)).save(newTrainer)
+        );
     }
 
     @Test
@@ -123,8 +137,10 @@ public class TrainerServiceImplTest {
 
         trainerService.update(trainer);
 
-        verify(trainerDao, times(1)).save(trainer);
-        verifyNoMoreInteractions(trainerDao);
+        assertAll(
+                () -> verify(trainerDao, times(1)).save(trainer),
+                () -> verifyNoMoreInteractions(trainerDao)
+        );
     }
 
 }

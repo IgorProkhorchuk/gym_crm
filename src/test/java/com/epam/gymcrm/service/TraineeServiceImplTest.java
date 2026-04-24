@@ -5,6 +5,9 @@ import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,33 +18,34 @@ import static org.mockito.Mockito.*;
 
 public class TraineeServiceImplTest {
 
-    private TraineeService traineeService;
+    @InjectMocks
+    private TraineeServiceImpl traineeService;
+
+    @Mock
     private TraineeDao traineeDao;
+
+    @Mock
     private PasswordGenerator passwordGenerator;
 
     @BeforeEach
     void setUp() {
-        traineeDao = mock(TraineeDao.class);
-        passwordGenerator = mock(PasswordGenerator.class);
-        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-
-        TraineeServiceImpl serviceImpl = new TraineeServiceImpl();
-        serviceImpl.setTraineeDao(traineeDao);
-        serviceImpl.setPasswordGenerator(passwordGenerator);
-        traineeService = serviceImpl;
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
     void testCreateTraineeGeneratesUsernameAndPassword() {
         Trainee trainee = Trainee.builder().firstName("John").lastName("Doe").build();
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(Collections.emptyList());
 
         traineeService.create(trainee);
 
-        assertEquals("John.Doe", trainee.getUsername());
-        assertEquals("Passw0rd12", trainee.getPassword());
-        verify(passwordGenerator, times(1)).generate();
-        verify(traineeDao, times(1)).save(trainee);
+        assertAll(
+                () -> assertEquals("John.Doe", trainee.getUsername()),
+                () -> assertEquals("Passw0rd12", trainee.getPassword()),
+                () -> verify(passwordGenerator, times(1)).generate(),
+                () -> verify(traineeDao, times(1)).save(trainee)
+        );
     }
 
     @Test
@@ -49,6 +53,7 @@ public class TraineeServiceImplTest {
         Trainee newTrainee = Trainee.builder().firstName("John").lastName("Doe").build();
         Trainee existingTrainee = Trainee.builder().username("John.Doe").build();
 
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(List.of(existingTrainee));
 
         traineeService.create(newTrainee);
@@ -64,6 +69,7 @@ public class TraineeServiceImplTest {
         Trainee existing2 = Trainee.builder().username("John.Doe2").build();
         Trainee similarName = Trainee.builder().username("John.Doering").build();
 
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(List.of(existingBase, existing2, similarName));
 
         traineeService.create(newTrainee);
@@ -78,8 +84,11 @@ public class TraineeServiceImplTest {
 
         Optional<Trainee> result = traineeService.findById(100L);
 
-        assertTrue(result.isPresent());
-        assertEquals("Ron", result.get().getFirstName());
+        assertAll(
+                () -> assertTrue(result.isPresent()),
+                () -> assertEquals("Ron", result.get().getFirstName()),
+                () -> verify(traineeDao, times(1)).findById(100L)
+        );
     }
 
     @Test
@@ -88,8 +97,10 @@ public class TraineeServiceImplTest {
 
         Optional<Trainee> result = traineeService.findById(999L);
 
-        assertFalse(result.isPresent());
-        verify(traineeDao, times(1)).findById(999L);
+        assertAll(
+                () -> assertFalse(result.isPresent()),
+                () -> verify(traineeDao, times(1)).findById(999L)
+        );
     }
 
     @Test
@@ -102,14 +113,17 @@ public class TraineeServiceImplTest {
         Trainee existingBase = Trainee.builder().username("John.Doe").build();
         Trainee existing1 = Trainee.builder().username("John.Doe1").build();
 
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(List.of(existingBase, existing1));
 
         traineeService.create(newTrainee);
 
-        assertEquals("John.Doe2", newTrainee.getUsername());
-        assertEquals("Passw0rd12", newTrainee.getPassword());
-        verify(passwordGenerator, times(1)).generate();
-        verify(traineeDao, times(1)).save(newTrainee);
+        assertAll(
+                () -> assertEquals("John.Doe2", newTrainee.getUsername()),
+                () -> assertEquals("Passw0rd12", newTrainee.getPassword()),
+                () -> verify(passwordGenerator, times(1)).generate(),
+                () -> verify(traineeDao, times(1)).save(newTrainee)
+        );
     }
 
     @Test

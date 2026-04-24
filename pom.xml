@@ -75,6 +75,12 @@
             <artifactId>jakarta.annotation-api</artifactId>
             <version>${jakarta.annotation.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -127,6 +133,11 @@
                                     <limits>
                                         <limit>
                                             <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>1.00</minimum>
                                         </limit>

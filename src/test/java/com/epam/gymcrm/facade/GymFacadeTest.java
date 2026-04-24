@@ -8,27 +8,33 @@ import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class GymFacadeTest {
 
+    @InjectMocks
     private GymFacade gymFacade;
+
+    @Mock
     private TraineeService traineeService;
+
+    @Mock
     private TrainerService trainerService;
+
+    @Mock
     private TrainingService trainingService;
 
     @BeforeEach
     void setUp() {
-        // Мокаємо наші нові інтерфейси
-        traineeService = mock(TraineeService.class);
-        trainerService = mock(TrainerService.class);
-        trainingService = mock(TrainingService.class);
-
-        gymFacade = new GymFacade(traineeService, trainerService, trainingService);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
@@ -44,8 +50,11 @@ public class GymFacadeTest {
         when(traineeService.findById(1L)).thenReturn(Optional.of(trainee));
 
         Optional<Trainee> result = gymFacade.findTraineeById(1L);
-        assertTrue(result.isPresent());
-        verify(traineeService, times(1)).findById(1L);
+
+        assertAll(
+                () -> assertTrue(result.isPresent()),
+                () -> verify(traineeService, times(1)).findById(1L)
+        );
     }
 
     @Test
@@ -74,8 +83,11 @@ public class GymFacadeTest {
         when(trainerService.findById(2L)).thenReturn(Optional.of(trainer));
 
         Optional<Trainer> result = gymFacade.findTrainerById(2L);
-        assertTrue(result.isPresent());
-        verify(trainerService, times(1)).findById(2L);
+
+        assertAll(
+                () -> assertTrue(result.isPresent()),
+                () -> verify(trainerService, times(1)).findById(2L)
+        );
     }
 
     @Test
@@ -98,7 +110,10 @@ public class GymFacadeTest {
         when(trainingService.findById(3L)).thenReturn(Optional.of(training));
 
         Optional<Training> result = gymFacade.findTrainingById(3L);
-        assertTrue(result.isPresent());
-        verify(trainingService, times(1)).findById(3L);
+
+        assertAll(
+                () -> assertTrue(result.isPresent()),
+                () -> verify(trainingService, times(1)).findById(3L)
+        );
     }
 }

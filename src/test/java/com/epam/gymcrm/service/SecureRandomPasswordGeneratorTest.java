@@ -13,8 +13,10 @@ class SecureRandomPasswordGeneratorTest {
 
         String password = passwordGenerator.generate();
 
-        assertEquals(12, password.length());
-        assertTrue(password.chars().allMatch(character -> character == 'A' || character == 'B'));
+        assertAll(
+                () -> assertEquals(12, password.length()),
+                () -> assertTrue(password.chars().allMatch(character -> character == 'A' || character == 'B'))
+        );
     }
 
     @Test
@@ -32,6 +34,16 @@ class SecureRandomPasswordGeneratorTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> new SecureRandomPasswordGenerator(10, "")
+        );
+
+        assertEquals("Password alphabet must not be empty", exception.getMessage());
+    }
+
+    @Test
+    void constructorRejectsNullAlphabet() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new SecureRandomPasswordGenerator(10, null)
         );
 
         assertEquals("Password alphabet must not be empty", exception.getMessage());

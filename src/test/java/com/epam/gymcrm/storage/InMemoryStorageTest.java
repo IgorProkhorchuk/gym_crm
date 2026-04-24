@@ -45,11 +45,11 @@ public class InMemoryStorageTest {
 
     @Test
     void testGetStorageForUnknownClassThrowsException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            storage.getStorage(String.class);
-        });
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+            storage.getStorage(String.class)
+        );
 
-        assertNotNull(exception.getMessage());
+        assertTrue(exception.getMessage().contains("Unknown entity type"));
     }
 
     @Test

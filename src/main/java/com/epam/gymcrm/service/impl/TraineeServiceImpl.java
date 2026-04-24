@@ -2,12 +2,12 @@ package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
+import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TraineeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -18,17 +18,23 @@ import java.util.stream.Collectors;
 public class TraineeServiceImpl implements TraineeService {
 
     private TraineeDao traineeDao;
+    private PasswordGenerator passwordGenerator;
 
     @Autowired
     public void setTraineeDao(TraineeDao traineeDao) {
         this.traineeDao = traineeDao;
     }
 
+    @Autowired
+    public void setPasswordGenerator(PasswordGenerator passwordGenerator) {
+        this.passwordGenerator = passwordGenerator;
+    }
+
     @Override
     public void create(Trainee trainee) {
         log.info("Creating trainee profile for {} {}", trainee.getFirstName(), trainee.getLastName());
         trainee.setUsername(generateUsername(trainee.getFirstName(), trainee.getLastName()));
-        trainee.setPassword(generateRandomPassword());
+        trainee.setPassword(passwordGenerator.generate());
         traineeDao.save(trainee);
         log.info("Created trainee profile with username {}", trainee.getUsername());
     }
@@ -74,15 +80,5 @@ public class TraineeServiceImpl implements TraineeService {
         }
 
         return baseUsername + suffix;
-    }
-
-    private String generateRandomPassword() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10; i++) {
-            sb.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        return sb.toString();
     }
 }

@@ -17,13 +17,17 @@ public class TraineeServiceImplTest {
 
     private TraineeService traineeService;
     private TraineeDao traineeDao;
+    private PasswordGenerator passwordGenerator;
 
     @BeforeEach
     void setUp() {
         traineeDao = mock(TraineeDao.class);
+        passwordGenerator = mock(PasswordGenerator.class);
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
 
         TraineeServiceImpl serviceImpl = new TraineeServiceImpl();
         serviceImpl.setTraineeDao(traineeDao);
+        serviceImpl.setPasswordGenerator(passwordGenerator);
         traineeService = serviceImpl;
     }
 
@@ -35,8 +39,8 @@ public class TraineeServiceImplTest {
         traineeService.create(trainee);
 
         assertEquals("John.Doe", trainee.getUsername());
-        assertNotNull(trainee.getPassword());
-        assertEquals(10, trainee.getPassword().length());
+        assertEquals("Passw0rd12", trainee.getPassword());
+        verify(passwordGenerator, times(1)).generate();
         verify(traineeDao, times(1)).save(trainee);
     }
 
@@ -103,8 +107,8 @@ public class TraineeServiceImplTest {
         traineeService.create(newTrainee);
 
         assertEquals("John.Doe2", newTrainee.getUsername());
-        assertNotNull(newTrainee.getPassword());
-        assertEquals(10, newTrainee.getPassword().length());
+        assertEquals("Passw0rd12", newTrainee.getPassword());
+        verify(passwordGenerator, times(1)).generate();
         verify(traineeDao, times(1)).save(newTrainee);
     }
 

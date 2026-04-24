@@ -17,13 +17,17 @@ public class TrainerServiceImplTest {
 
     private TrainerService trainerService;
     private TrainerDao trainerDao;
+    private PasswordGenerator passwordGenerator;
 
     @BeforeEach
     void setUp() {
         trainerDao = mock(TrainerDao.class);
+        passwordGenerator = mock(PasswordGenerator.class);
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
 
         TrainerServiceImpl serviceImpl = new TrainerServiceImpl();
         serviceImpl.setTrainerDao(trainerDao);
+        serviceImpl.setPasswordGenerator(passwordGenerator);
         trainerService = serviceImpl;
     }
 
@@ -35,8 +39,8 @@ public class TrainerServiceImplTest {
         trainerService.create(trainer);
 
         assertEquals("Severus.Snape", trainer.getUsername());
-        assertNotNull(trainer.getPassword());
-        assertEquals(10, trainer.getPassword().length());
+        assertEquals("Passw0rd12", trainer.getPassword());
+        verify(passwordGenerator, times(1)).generate();
         verify(trainerDao, times(1)).save(trainer);
     }
 
@@ -103,8 +107,8 @@ public class TrainerServiceImplTest {
         trainerService.create(newTrainer);
 
         assertEquals("Severus.Snape2", newTrainer.getUsername());
-        assertNotNull(newTrainer.getPassword());
-        assertEquals(10, newTrainer.getPassword().length());
+        assertEquals("Passw0rd12", newTrainer.getPassword());
+        verify(passwordGenerator, times(1)).generate();
         verify(trainerDao, times(1)).save(newTrainer);
     }
 

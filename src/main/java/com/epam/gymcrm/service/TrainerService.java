@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service;
 
+import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainer;
-import java.util.Optional;
 
 /**
  * Business operations for trainer profiles.
@@ -27,7 +27,8 @@ public interface TrainerService {
      * Finds a trainer profile by user id.
      *
      * @param id user id to look up
-     * @return trainer with the given id, or {@link Optional#empty()} when absent
+     * @return trainer with the given id
+     * @throws EntityNotFoundException when no trainer exists with the given id
      */
-    Optional<Trainer> findById(Long id);
+    Trainer findById(Long id);
 }

@@ -1,6 +1,7 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TraineeDao;
+import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,23 +83,26 @@ public class TraineeServiceImplTest {
         Trainee trainee = Trainee.builder().userId(100L).firstName("Ron").build();
         when(traineeDao.findById(100L)).thenReturn(Optional.of(trainee));
 
-        Optional<Trainee> result = traineeService.findById(100L);
+        Trainee result = traineeService.findById(100L);
 
         assertAll(
-                () -> assertTrue(result.isPresent()),
-                () -> assertEquals("Ron", result.get().getFirstName()),
+                () -> assertSame(trainee, result),
+                () -> assertEquals("Ron", result.getFirstName()),
                 () -> verify(traineeDao, times(1)).findById(100L)
         );
     }
 
     @Test
-    void testFindByIdReturnsEmptyWhenNotFound() {
+    void testFindByIdThrowsWhenNotFound() {
         when(traineeDao.findById(999L)).thenReturn(Optional.empty());
 
-        Optional<Trainee> result = traineeService.findById(999L);
+        EntityNotFoundException result = assertThrows(
+                EntityNotFoundException.class,
+                () -> traineeService.findById(999L)
+        );
 
         assertAll(
-                () -> assertFalse(result.isPresent()),
+                () -> assertEquals("Trainee profile not found", result.getMessage()),
                 () -> verify(traineeDao, times(1)).findById(999L)
         );
     }
@@ -115,6 +119,16 @@ public class TraineeServiceImplTest {
         RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.create(trainee));
 
         assertSame(exception, result);
+    }
+
+    @Test
+    void testCreateTraineeRejectsNullTrainee() {
+        IllegalArgumentException result = assertThrows(
+                IllegalArgumentException.class,
+                () -> traineeService.create(null)
+        );
+
+        assertEquals("Trainee must not be null", result.getMessage());
     }
 
     @Test
@@ -192,6 +206,16 @@ public class TraineeServiceImplTest {
         RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.findById(15L));
 
         assertSame(exception, result);
+    }
+
+    @Test
+    void testFindTraineeByIdRejectsNullId() {
+        IllegalArgumentException result = assertThrows(
+                IllegalArgumentException.class,
+                () -> traineeService.findById(null)
+        );
+
+        assertEquals("Trainee id must not be null", result.getMessage());
     }
 
 }

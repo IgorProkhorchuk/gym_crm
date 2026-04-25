@@ -8,8 +8,6 @@ import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Component
 public class GymFacade {
 
@@ -27,7 +25,7 @@ public class GymFacade {
         traineeService.create(trainee);
     }
 
-    public Optional<Trainee> findTraineeById(Long id) {
+    public Trainee findTraineeById(Long id) {
         return traineeService.findById(id);
     }
 
@@ -43,7 +41,7 @@ public class GymFacade {
         trainerService.create(trainer);
     }
 
-    public Optional<Trainer> findTrainerById(Long id) {
+    public Trainer findTrainerById(Long id) {
         return trainerService.findById(id);
     }
 
@@ -55,7 +53,7 @@ public class GymFacade {
         trainingService.create(training);
     }
 
-    public Optional<Training> findTrainingById(Long id) {
+    public Training findTrainingById(Long id) {
         return trainingService.findById(id);
     }
 }

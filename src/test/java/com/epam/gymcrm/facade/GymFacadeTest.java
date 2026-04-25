@@ -12,10 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.*;
 
 public class GymFacadeTest {
@@ -47,12 +45,12 @@ public class GymFacadeTest {
     @Test
     void testFindTraineeById() {
         Trainee trainee = Trainee.builder().userId(1L).firstName("John").build();
-        when(traineeService.findById(1L)).thenReturn(Optional.of(trainee));
+        when(traineeService.findById(1L)).thenReturn(trainee);
 
-        Optional<Trainee> result = gymFacade.findTraineeById(1L);
+        Trainee result = gymFacade.findTraineeById(1L);
 
         assertAll(
-                () -> assertTrue(result.isPresent()),
+                () -> assertSame(trainee, result),
                 () -> verify(traineeService, times(1)).findById(1L)
         );
     }
@@ -80,12 +78,12 @@ public class GymFacadeTest {
     @Test
     void testFindTrainerById() {
         Trainer trainer = Trainer.builder().userId(2L).firstName("Mike").build();
-        when(trainerService.findById(2L)).thenReturn(Optional.of(trainer));
+        when(trainerService.findById(2L)).thenReturn(trainer);
 
-        Optional<Trainer> result = gymFacade.findTrainerById(2L);
+        Trainer result = gymFacade.findTrainerById(2L);
 
         assertAll(
-                () -> assertTrue(result.isPresent()),
+                () -> assertSame(trainer, result),
                 () -> verify(trainerService, times(1)).findById(2L)
         );
     }
@@ -107,12 +105,12 @@ public class GymFacadeTest {
     @Test
     void testFindTrainingById() {
         Training training = Training.builder().trainingId(3L).trainingName("Yoga").build();
-        when(trainingService.findById(3L)).thenReturn(Optional.of(training));
+        when(trainingService.findById(3L)).thenReturn(training);
 
-        Optional<Training> result = gymFacade.findTrainingById(3L);
+        Training result = gymFacade.findTrainingById(3L);
 
         assertAll(
-                () -> assertTrue(result.isPresent()),
+                () -> assertSame(training, result),
                 () -> verify(trainingService, times(1)).findById(3L)
         );
     }

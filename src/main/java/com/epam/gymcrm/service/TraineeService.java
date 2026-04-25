@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service;
 
+import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainee;
-import java.util.Optional;
 
 /**
  * Business operations for trainee profiles.
@@ -34,7 +34,8 @@ public interface TraineeService {
      * Finds a trainee profile by user id.
      *
      * @param id user id to look up
-     * @return trainee with the given id, or {@link Optional#empty()} when absent
+     * @return trainee with the given id
+     * @throws EntityNotFoundException when no trainee exists with the given id
      */
-    Optional<Trainee> findById(Long id);
+    Trainee findById(Long id);
 }

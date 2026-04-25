@@ -1,6 +1,7 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.impl.TrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,23 +83,26 @@ public class TrainerServiceImplTest {
         Trainer trainer = Trainer.builder().userId(50L).firstName("Minerva").build();
         when(trainerDao.findById(50L)).thenReturn(Optional.of(trainer));
 
-        Optional<Trainer> result = trainerService.findById(50L);
+        Trainer result = trainerService.findById(50L);
 
         assertAll(
-                () -> assertTrue(result.isPresent()),
-                () -> assertEquals("Minerva", result.get().getFirstName()),
+                () -> assertSame(trainer, result),
+                () -> assertEquals("Minerva", result.getFirstName()),
                 () -> verify(trainerDao, times(1)).findById(50L)
         );
     }
 
     @Test
-    void testFindByIdReturnsEmptyWhenNotFound() {
+    void testFindByIdThrowsWhenNotFound() {
         when(trainerDao.findById(99L)).thenReturn(Optional.empty());
 
-        Optional<Trainer> result = trainerService.findById(99L);
+        EntityNotFoundException result = assertThrows(
+                EntityNotFoundException.class,
+                () -> trainerService.findById(99L)
+        );
 
         assertAll(
-                () -> assertFalse(result.isPresent()),
+                () -> assertEquals("Trainer profile not found", result.getMessage()),
                 () -> verify(trainerDao, times(1)).findById(99L)
         );
     }
@@ -115,6 +119,16 @@ public class TrainerServiceImplTest {
         RuntimeException result = assertThrows(RuntimeException.class, () -> trainerService.create(trainer));
 
         assertSame(exception, result);
+    }
+
+    @Test
+    void testCreateTrainerRejectsNullTrainer() {
+        IllegalArgumentException result = assertThrows(
+                IllegalArgumentException.class,
+                () -> trainerService.create(null)
+        );
+
+        assertEquals("Trainer must not be null", result.getMessage());
     }
 
     @Test
@@ -176,6 +190,16 @@ public class TrainerServiceImplTest {
         RuntimeException result = assertThrows(RuntimeException.class, () -> trainerService.findById(22L));
 
         assertSame(exception, result);
+    }
+
+    @Test
+    void testFindTrainerByIdRejectsNullId() {
+        IllegalArgumentException result = assertThrows(
+                IllegalArgumentException.class,
+                () -> trainerService.findById(null)
+        );
+
+        assertEquals("Trainer id must not be null", result.getMessage());
     }
 
 }

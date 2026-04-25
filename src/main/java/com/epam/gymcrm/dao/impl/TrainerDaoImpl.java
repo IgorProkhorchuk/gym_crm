@@ -1,15 +1,15 @@
 package com.epam.gymcrm.dao.impl;
 
+import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.storage.InMemoryStorage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-@Repository
+@Dao
 public class TrainerDaoImpl implements TrainerDao {
 
     private InMemoryStorage storage;

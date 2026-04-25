@@ -40,6 +40,17 @@ public class TrainingServiceImplTest {
     }
 
     @Test
+    void testCreateTrainingRethrowsDaoFailure() {
+        Training training = Training.builder().trainingId(1L).build();
+        RuntimeException exception = new RuntimeException("DAO failure");
+        doThrow(exception).when(trainingDao).save(training);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> trainingService.create(training));
+
+        assertSame(exception, result);
+    }
+
+    @Test
     void testFindById() {
         Training training = Training.builder().trainingId(5L).trainingName("Yoga").build();
         when(trainingDao.findById(5L)).thenReturn(Optional.of(training));
@@ -63,5 +74,15 @@ public class TrainingServiceImplTest {
                 () -> assertFalse(result.isPresent()),
                 () -> verify(trainingDao, times(1)).findById(99L)
         );
+    }
+
+    @Test
+    void testFindTrainingByIdRethrowsDaoFailure() {
+        RuntimeException exception = new RuntimeException("DAO failure");
+        when(trainingDao.findById(99L)).thenThrow(exception);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> trainingService.findById(99L));
+
+        assertSame(exception, result);
     }
 }

@@ -104,6 +104,20 @@ public class TraineeServiceImplTest {
     }
 
     @Test
+    void testCreateTraineeRethrowsDaoFailure() {
+        Trainee trainee = Trainee.builder().userId(20L).firstName("John").lastName("Doe").build();
+        RuntimeException exception = new RuntimeException("DAO failure");
+
+        when(traineeDao.findAll()).thenReturn(Collections.emptyList());
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+        doThrow(exception).when(traineeDao).save(trainee);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.create(trainee));
+
+        assertSame(exception, result);
+    }
+
+    @Test
     void testCreateTraineeSkipsTakenSequentialSuffixes() {
         Trainee newTrainee = Trainee.builder()
                 .firstName("John")
@@ -142,11 +156,42 @@ public class TraineeServiceImplTest {
     }
 
     @Test
+    void testUpdateTraineeRethrowsDaoFailure() {
+        Trainee trainee = Trainee.builder().userId(10L).build();
+        RuntimeException exception = new RuntimeException("DAO failure");
+        doThrow(exception).when(traineeDao).save(trainee);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.update(trainee));
+
+        assertSame(exception, result);
+    }
+
+    @Test
     void testDeleteTraineeDelegatesToDao() {
         traineeService.delete(15L);
 
         verify(traineeDao, times(1)).delete(15L);
         verifyNoMoreInteractions(traineeDao);
+    }
+
+    @Test
+    void testDeleteTraineeRethrowsDaoFailure() {
+        RuntimeException exception = new RuntimeException("DAO failure");
+        doThrow(exception).when(traineeDao).delete(15L);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.delete(15L));
+
+        assertSame(exception, result);
+    }
+
+    @Test
+    void testFindTraineeByIdRethrowsDaoFailure() {
+        RuntimeException exception = new RuntimeException("DAO failure");
+        when(traineeDao.findById(15L)).thenThrow(exception);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.findById(15L));
+
+        assertSame(exception, result);
     }
 
 }

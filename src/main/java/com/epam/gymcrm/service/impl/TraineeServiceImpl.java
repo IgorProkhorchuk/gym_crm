@@ -32,33 +32,50 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public void create(Trainee trainee) {
-        log.info("Creating trainee profile for {} {}", trainee.getFirstName(), trainee.getLastName());
-        trainee.setUsername(generateUsername(trainee.getFirstName(), trainee.getLastName()));
-        trainee.setPassword(passwordGenerator.generate());
-        traineeDao.save(trainee);
-        log.info("Created trainee profile with username {}", trainee.getUsername());
+        log.info("Creating trainee profile");
+        try {
+            trainee.setUsername(generateUsername(trainee.getFirstName(), trainee.getLastName()));
+            trainee.setPassword(passwordGenerator.generate());
+            traineeDao.save(trainee);
+            log.info("Trainee profile created, userId={}", trainee.getUserId());
+        } catch (RuntimeException e) {
+            log.error("Failed to create trainee profile, userId={}", trainee.getUserId(), e);
+            throw e;
+        }
     }
 
     @Override
     public void update(Trainee trainee) {
-        log.info("Updating trainee profile with id {}", trainee.getUserId());
-        traineeDao.save(trainee);
-        log.info("Updated trainee profile with id {}", trainee.getUserId());
+        log.info("Updating trainee profile, userId={}", trainee.getUserId());
+        try {
+            traineeDao.save(trainee);
+            log.info("Trainee profile updated, userId={}", trainee.getUserId());
+        } catch (RuntimeException e) {
+            log.error("Failed to update trainee profile, userId={}", trainee.getUserId(), e);
+            throw e;
+        }
     }
 
     @Override
     public void delete(Long id) {
-        log.info("Deleting trainee profile with id {}", id);
-        traineeDao.delete(id);
-        log.info("Deleted trainee profile with id {}", id);
+        log.info("Deleting trainee profile, userId={}", id);
+        try {
+            traineeDao.delete(id);
+            log.info("Trainee profile deleted, userId={}", id);
+        } catch (RuntimeException e) {
+            log.error("Failed to delete trainee profile, userId={}", id, e);
+            throw e;
+        }
     }
 
     @Override
     public Optional<Trainee> findById(Long id) {
-        log.debug("Searching trainee profile by id {}", id);
-        Optional<Trainee> trainee = traineeDao.findById(id);
-        log.debug("Trainee profile lookup for id {} returned {}", id, trainee.isPresent() ? "a result" : "no result");
-        return trainee;
+        try {
+            return traineeDao.findById(id);
+        } catch (RuntimeException e) {
+            log.error("Failed to find trainee profile, userId={}", id, e);
+            throw e;
+        }
     }
 
 

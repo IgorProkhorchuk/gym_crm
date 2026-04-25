@@ -22,16 +22,23 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public void create(Training training) {
-        log.info("Creating training profile with id {}", training.getTrainingId());
-        trainingDao.save(training);
-        log.info("Created training profile with id {}", training.getTrainingId());
+        log.info("Creating training, trainingId={}", training.getTrainingId());
+        try {
+            trainingDao.save(training);
+            log.info("Training created, trainingId={}", training.getTrainingId());
+        } catch (RuntimeException e) {
+            log.error("Failed to create training, trainingId={}", training.getTrainingId(), e);
+            throw e;
+        }
     }
 
     @Override
     public Optional<Training> findById(Long id) {
-        log.debug("Searching training profile by id {}", id);
-        Optional<Training> training = trainingDao.findById(id);
-        log.debug("Training profile lookup for id {} returned {}", id, training.isPresent() ? "a result" : "no result");
-        return training;
+        try {
+            return trainingDao.findById(id);
+        } catch (RuntimeException e) {
+            log.error("Failed to find training, trainingId={}", id, e);
+            throw e;
+        }
     }
 }

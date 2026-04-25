@@ -104,6 +104,20 @@ public class TrainerServiceImplTest {
     }
 
     @Test
+    void testCreateTrainerRethrowsDaoFailure() {
+        Trainer trainer = Trainer.builder().userId(30L).firstName("Severus").lastName("Snape").build();
+        RuntimeException exception = new RuntimeException("DAO failure");
+
+        when(trainerDao.findAll()).thenReturn(Collections.emptyList());
+        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+        doThrow(exception).when(trainerDao).save(trainer);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> trainerService.create(trainer));
+
+        assertSame(exception, result);
+    }
+
+    @Test
     void testCreateTrainerSkipsTakenSequentialSuffixes() {
         Trainer newTrainer = Trainer.builder()
                 .firstName("Severus")
@@ -141,6 +155,27 @@ public class TrainerServiceImplTest {
                 () -> verify(trainerDao, times(1)).save(trainer),
                 () -> verifyNoMoreInteractions(trainerDao)
         );
+    }
+
+    @Test
+    void testUpdateTrainerRethrowsDaoFailure() {
+        Trainer trainer = Trainer.builder().userId(22L).build();
+        RuntimeException exception = new RuntimeException("DAO failure");
+        doThrow(exception).when(trainerDao).save(trainer);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> trainerService.update(trainer));
+
+        assertSame(exception, result);
+    }
+
+    @Test
+    void testFindTrainerByIdRethrowsDaoFailure() {
+        RuntimeException exception = new RuntimeException("DAO failure");
+        when(trainerDao.findById(22L)).thenThrow(exception);
+
+        RuntimeException result = assertThrows(RuntimeException.class, () -> trainerService.findById(22L));
+
+        assertSame(exception, result);
     }
 
 }

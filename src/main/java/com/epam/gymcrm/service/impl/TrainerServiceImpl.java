@@ -32,26 +32,38 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public void create(Trainer trainer) {
-        log.info("Creating trainer profile for {} {}", trainer.getFirstName(), trainer.getLastName());
-        trainer.setUsername(generateUsername(trainer.getFirstName(), trainer.getLastName()));
-        trainer.setPassword(passwordGenerator.generate());
-        trainerDao.save(trainer);
-        log.info("Created trainer profile with username {}", trainer.getUsername());
+        log.info("Creating trainer profile");
+        try {
+            trainer.setUsername(generateUsername(trainer.getFirstName(), trainer.getLastName()));
+            trainer.setPassword(passwordGenerator.generate());
+            trainerDao.save(trainer);
+            log.info("Trainer profile created, userId={}", trainer.getUserId());
+        } catch (RuntimeException e) {
+            log.error("Failed to create trainer profile, userId={}", trainer.getUserId(), e);
+            throw e;
+        }
     }
 
     @Override
     public void update(Trainer trainer) {
-        log.info("Updating trainer profile with id {}", trainer.getUserId());
-        trainerDao.save(trainer);
-        log.info("Updated trainer profile with id {}", trainer.getUserId());
+        log.info("Updating trainer profile, userId={}", trainer.getUserId());
+        try {
+            trainerDao.save(trainer);
+            log.info("Trainer profile updated, userId={}", trainer.getUserId());
+        } catch (RuntimeException e) {
+            log.error("Failed to update trainer profile, userId={}", trainer.getUserId(), e);
+            throw e;
+        }
     }
 
     @Override
     public Optional<Trainer> findById(Long id) {
-        log.debug("Searching trainer profile by id {}", id);
-        Optional<Trainer> trainer = trainerDao.findById(id);
-        log.debug("Trainer profile lookup for id {} returned {}", id, trainer.isPresent() ? "a result" : "no result");
-        return trainer;
+        try {
+            return trainerDao.findById(id);
+        } catch (RuntimeException e) {
+            log.error("Failed to find trainer profile, userId={}", id, e);
+            throw e;
+        }
     }
 
 

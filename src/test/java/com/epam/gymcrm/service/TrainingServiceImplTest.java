@@ -4,29 +4,27 @@ import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.service.impl.TrainingServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.*;
 
-public class TrainingServiceImplTest {
+@ExtendWith(MockitoExtension.class)
+class TrainingServiceImplTest {
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
     @Mock
     private TrainingDao trainingDao;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     @Test
     void testCreateTraining() {
@@ -37,7 +35,7 @@ public class TrainingServiceImplTest {
 
         trainingService.create(training);
 
-        verify(trainingDao, times(1)).save(training);
+        verify(trainingDao).save(training);
     }
 
     @Test
@@ -46,9 +44,8 @@ public class TrainingServiceImplTest {
         RuntimeException exception = new RuntimeException("DAO failure");
         doThrow(exception).when(trainingDao).save(training);
 
-        RuntimeException result = assertThrows(RuntimeException.class, () -> trainingService.create(training));
-
-        assertSame(exception, result);
+        assertThatThrownBy(() -> trainingService.create(training))
+                .isSameAs(exception);
     }
 
     @Test
@@ -59,9 +56,9 @@ public class TrainingServiceImplTest {
         Training result = trainingService.findById(5L);
 
         assertAll(
-                () -> assertSame(training, result),
-                () -> assertEquals("Yoga", result.getTrainingName()),
-                () -> verify(trainingDao, times(1)).findById(5L)
+                () -> assertThat(result).isSameAs(training),
+                () -> assertThat(result.getTrainingName()).isEqualTo("Yoga"),
+                () -> verify(trainingDao).findById(5L)
         );
     }
 
@@ -69,15 +66,11 @@ public class TrainingServiceImplTest {
     void testFindByIdThrowsWhenNotFound() {
         when(trainingDao.findById(99L)).thenReturn(Optional.empty());
 
-        EntityNotFoundException result = assertThrows(
-                EntityNotFoundException.class,
-                () -> trainingService.findById(99L)
-        );
+        assertThatThrownBy(() -> trainingService.findById(99L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Training not found");
 
-        assertAll(
-                () -> assertEquals("Training not found", result.getMessage()),
-                () -> verify(trainingDao, times(1)).findById(99L)
-        );
+        verify(trainingDao).findById(99L);
     }
 
     @Test
@@ -85,28 +78,21 @@ public class TrainingServiceImplTest {
         RuntimeException exception = new RuntimeException("DAO failure");
         when(trainingDao.findById(99L)).thenThrow(exception);
 
-        RuntimeException result = assertThrows(RuntimeException.class, () -> trainingService.findById(99L));
-
-        assertSame(exception, result);
+        assertThatThrownBy(() -> trainingService.findById(99L))
+                .isSameAs(exception);
     }
 
     @Test
     void testCreateTrainingRejectsNullTraining() {
-        IllegalArgumentException result = assertThrows(
-                IllegalArgumentException.class,
-                () -> trainingService.create(null)
-        );
-
-        assertEquals("Training must not be null", result.getMessage());
+        assertThatThrownBy(() -> trainingService.create(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Training must not be null");
     }
 
     @Test
     void testFindTrainingByIdRejectsNullId() {
-        IllegalArgumentException result = assertThrows(
-                IllegalArgumentException.class,
-                () -> trainingService.findById(null)
-        );
-
-        assertEquals("Training id must not be null", result.getMessage());
+        assertThatThrownBy(() -> trainingService.findById(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Training id must not be null");
     }
 }

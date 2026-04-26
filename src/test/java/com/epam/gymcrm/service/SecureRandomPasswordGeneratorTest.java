@@ -3,7 +3,9 @@ package com.epam.gymcrm.service;
 import com.epam.gymcrm.service.impl.SecureRandomPasswordGenerator;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 class SecureRandomPasswordGeneratorTest {
 
@@ -14,38 +16,29 @@ class SecureRandomPasswordGeneratorTest {
         String password = passwordGenerator.generate();
 
         assertAll(
-                () -> assertEquals(12, password.length()),
-                () -> assertTrue(password.chars().allMatch(character -> character == 'A' || character == 'B'))
+                () -> assertThat(password).hasSize(12),
+                () -> assertThat(password.chars()).allMatch(character -> character == 'A' || character == 'B')
         );
     }
 
     @Test
     void constructorRejectsNonPositiveLength() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> new SecureRandomPasswordGenerator(0, "ABC")
-        );
-
-        assertEquals("Password length must be positive", exception.getMessage());
+        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(0, "ABC"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password length must be positive");
     }
 
     @Test
     void constructorRejectsEmptyAlphabet() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> new SecureRandomPasswordGenerator(10, "")
-        );
-
-        assertEquals("Password alphabet must not be empty", exception.getMessage());
+        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(10, ""))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password alphabet must not be empty");
     }
 
     @Test
     void constructorRejectsNullAlphabet() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> new SecureRandomPasswordGenerator(10, null)
-        );
-
-        assertEquals("Password alphabet must not be empty", exception.getMessage());
+        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(10, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password alphabet must not be empty");
     }
 }

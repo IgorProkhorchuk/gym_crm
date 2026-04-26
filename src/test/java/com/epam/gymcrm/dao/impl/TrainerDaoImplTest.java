@@ -4,19 +4,22 @@ import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.storage.InMemoryStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.Mockito.when;
 
-public class TrainerDaoImplTest {
+@ExtendWith(MockitoExtension.class)
+class TrainerDaoImplTest {
 
     @InjectMocks
     private TrainerDaoImpl trainerDao;
@@ -28,7 +31,6 @@ public class TrainerDaoImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         trainerMap = new HashMap<>();
         when(storage.getStorage(Trainer.class)).thenReturn(trainerMap);
     }
@@ -45,16 +47,23 @@ public class TrainerDaoImplTest {
 
         Optional<Trainer> found = trainerDao.findById(1L);
         assertAll(
-                () -> assertTrue(found.isPresent()),
-                () -> assertEquals("Alice", found.get().getFirstName()),
-                () -> assertEquals("Fitness", found.get().getSpecialization())
+                () -> assertThat(found)
+                        .isPresent()
+                        .get()
+                        .extracting(Trainer::getFirstName)
+                        .isEqualTo("Alice"),
+                () -> assertThat(found)
+                        .isPresent()
+                        .get()
+                        .extracting(Trainer::getSpecialization)
+                        .isEqualTo("Fitness")
         );
     }
 
     @Test
     void testFindByIdNotFound() {
         Optional<Trainer> found = trainerDao.findById(999L);
-        assertFalse(found.isPresent());
+        assertThat(found).isEmpty();
     }
 
     @Test
@@ -65,7 +74,7 @@ public class TrainerDaoImplTest {
         trainerDao.delete(2L);
 
         Optional<Trainer> found = trainerDao.findById(2L);
-        assertFalse(found.isPresent(), "Trainer should be removed from storage");
+        assertThat(found).as("Trainer should be removed from storage").isEmpty();
     }
 
     @Test
@@ -78,10 +87,6 @@ public class TrainerDaoImplTest {
 
         List<Trainer> all = trainerDao.findAll();
 
-        assertAll(
-                () -> assertEquals(2, all.size()),
-                () -> assertTrue(all.contains(t1)),
-                () -> assertTrue(all.contains(t2))
-        );
+        assertThat(all).containsExactlyInAnyOrder(t1, t2);
     }
 }

@@ -6,16 +6,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class StorageIntegrationTest {
+class StorageIntegrationTest {
 
     @Test
     void testStorageInitializesFromFile() {
         ApplicationContext context = new AnnotationConfigApplicationContext(Main.class);
         InMemoryStorage storage = context.getBean(InMemoryStorage.class);
 
-        assertFalse(storage.getStorage(Trainee.class).isEmpty(),
-                "Storage should be initialized with data from JSON file");
+        assertThat(storage.getStorage(Trainee.class))
+                .as("Storage should be initialized with data from JSON file")
+                .isNotEmpty();
     }
 }

@@ -4,20 +4,23 @@ import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.*;
 
-public class TraineeServiceImplTest {
+@ExtendWith(MockitoExtension.class)
+class TraineeServiceImplTest {
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -28,11 +31,6 @@ public class TraineeServiceImplTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
     void testCreateTraineeGeneratesUsernameAndPassword() {
         Trainee trainee = Trainee.builder().firstName("John").lastName("Doe").build();
@@ -42,10 +40,10 @@ public class TraineeServiceImplTest {
         traineeService.create(trainee);
 
         assertAll(
-                () -> assertEquals("John.Doe", trainee.getUsername()),
-                () -> assertEquals("Passw0rd12", trainee.getPassword()),
-                () -> verify(passwordGenerator, times(1)).generate(),
-                () -> verify(traineeDao, times(1)).save(trainee)
+                () -> assertThat(trainee.getUsername()).isEqualTo("John.Doe"),
+                () -> assertThat(trainee.getPassword()).isEqualTo("Passw0rd12"),
+                () -> verify(passwordGenerator).generate(),
+                () -> verify(traineeDao).save(trainee)
         );
     }
 
@@ -59,7 +57,7 @@ public class TraineeServiceImplTest {
 
         traineeService.create(newTrainee);
 
-        assertEquals("John.Doe1", newTrainee.getUsername());
+        assertThat(newTrainee.getUsername()).isEqualTo("John.Doe1");
     }
 
     @Test
@@ -75,7 +73,7 @@ public class TraineeServiceImplTest {
 
         traineeService.create(newTrainee);
 
-        assertEquals("John.Doe1", newTrainee.getUsername());
+        assertThat(newTrainee.getUsername()).isEqualTo("John.Doe1");
     }
 
     @Test
@@ -86,9 +84,9 @@ public class TraineeServiceImplTest {
         Trainee result = traineeService.findById(100L);
 
         assertAll(
-                () -> assertSame(trainee, result),
-                () -> assertEquals("Ron", result.getFirstName()),
-                () -> verify(traineeDao, times(1)).findById(100L)
+                () -> assertThat(result).isSameAs(trainee),
+                () -> assertThat(result.getFirstName()).isEqualTo("Ron"),
+                () -> verify(traineeDao).findById(100L)
         );
     }
 
@@ -96,15 +94,11 @@ public class TraineeServiceImplTest {
     void testFindByIdThrowsWhenNotFound() {
         when(traineeDao.findById(999L)).thenReturn(Optional.empty());
 
-        EntityNotFoundException result = assertThrows(
-                EntityNotFoundException.class,
-                () -> traineeService.findById(999L)
-        );
+        assertThatThrownBy(() -> traineeService.findById(999L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Trainee profile not found");
 
-        assertAll(
-                () -> assertEquals("Trainee profile not found", result.getMessage()),
-                () -> verify(traineeDao, times(1)).findById(999L)
-        );
+        verify(traineeDao).findById(999L);
     }
 
     @Test
@@ -116,19 +110,15 @@ public class TraineeServiceImplTest {
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         doThrow(exception).when(traineeDao).save(trainee);
 
-        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.create(trainee));
-
-        assertSame(exception, result);
+        assertThatThrownBy(() -> traineeService.create(trainee))
+                .isSameAs(exception);
     }
 
     @Test
     void testCreateTraineeRejectsNullTrainee() {
-        IllegalArgumentException result = assertThrows(
-                IllegalArgumentException.class,
-                () -> traineeService.create(null)
-        );
-
-        assertEquals("Trainee must not be null", result.getMessage());
+        assertThatThrownBy(() -> traineeService.create(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainee must not be null");
     }
 
     @Test
@@ -147,10 +137,10 @@ public class TraineeServiceImplTest {
         traineeService.create(newTrainee);
 
         assertAll(
-                () -> assertEquals("John.Doe2", newTrainee.getUsername()),
-                () -> assertEquals("Passw0rd12", newTrainee.getPassword()),
-                () -> verify(passwordGenerator, times(1)).generate(),
-                () -> verify(traineeDao, times(1)).save(newTrainee)
+                () -> assertThat(newTrainee.getUsername()).isEqualTo("John.Doe2"),
+                () -> assertThat(newTrainee.getPassword()).isEqualTo("Passw0rd12"),
+                () -> verify(passwordGenerator).generate(),
+                () -> verify(traineeDao).save(newTrainee)
         );
     }
 
@@ -165,7 +155,7 @@ public class TraineeServiceImplTest {
 
         traineeService.update(trainee);
 
-        verify(traineeDao, times(1)).save(trainee);
+        verify(traineeDao).save(trainee);
         verifyNoMoreInteractions(traineeDao);
     }
 
@@ -175,16 +165,15 @@ public class TraineeServiceImplTest {
         RuntimeException exception = new RuntimeException("DAO failure");
         doThrow(exception).when(traineeDao).save(trainee);
 
-        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.update(trainee));
-
-        assertSame(exception, result);
+        assertThatThrownBy(() -> traineeService.update(trainee))
+                .isSameAs(exception);
     }
 
     @Test
     void testDeleteTraineeDelegatesToDao() {
         traineeService.delete(15L);
 
-        verify(traineeDao, times(1)).delete(15L);
+        verify(traineeDao).delete(15L);
         verifyNoMoreInteractions(traineeDao);
     }
 
@@ -193,9 +182,8 @@ public class TraineeServiceImplTest {
         RuntimeException exception = new RuntimeException("DAO failure");
         doThrow(exception).when(traineeDao).delete(15L);
 
-        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.delete(15L));
-
-        assertSame(exception, result);
+        assertThatThrownBy(() -> traineeService.delete(15L))
+                .isSameAs(exception);
     }
 
     @Test
@@ -203,19 +191,15 @@ public class TraineeServiceImplTest {
         RuntimeException exception = new RuntimeException("DAO failure");
         when(traineeDao.findById(15L)).thenThrow(exception);
 
-        RuntimeException result = assertThrows(RuntimeException.class, () -> traineeService.findById(15L));
-
-        assertSame(exception, result);
+        assertThatThrownBy(() -> traineeService.findById(15L))
+                .isSameAs(exception);
     }
 
     @Test
     void testFindTraineeByIdRejectsNullId() {
-        IllegalArgumentException result = assertThrows(
-                IllegalArgumentException.class,
-                () -> traineeService.findById(null)
-        );
-
-        assertEquals("Trainee id must not be null", result.getMessage());
+        assertThatThrownBy(() -> traineeService.findById(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainee id must not be null");
     }
 
 }

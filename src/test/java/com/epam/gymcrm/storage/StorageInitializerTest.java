@@ -5,9 +5,10 @@ import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 
 import java.io.ByteArrayInputStream;
@@ -16,10 +17,12 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.*;
 
-public class StorageInitializerTest {
+@ExtendWith(MockitoExtension.class)
+class StorageInitializerTest {
 
     @InjectMocks
     private StorageInitializer storageInitializer;
@@ -31,8 +34,6 @@ public class StorageInitializerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
-
         inMemoryStorage = new InMemoryStorage();
         inMemoryStorage.setTrainees(new HashMap<>());
         inMemoryStorage.setTrainers(new HashMap<>());
@@ -47,7 +48,8 @@ public class StorageInitializerTest {
     void testPostProcessAfterInitialization_NotInMemoryStorage() {
         Object bean = new Object();
         Object result = storageInitializer.postProcessAfterInitialization(bean, "testBean");
-        assertEquals(bean, result, "Має повернути той самий бін без змін");
+
+        assertThat(result).isSameAs(bean);
     }
 
     @Test
@@ -57,8 +59,8 @@ public class StorageInitializerTest {
         Object result = storageInitializer.postProcessAfterInitialization(inMemoryStorage, "inMemoryStorage");
 
         assertAll(
-                () -> assertEquals(inMemoryStorage, result),
-                () -> verify(mockResource, times(1)).exists()
+                () -> assertThat(result).isSameAs(inMemoryStorage),
+                () -> verify(mockResource).exists()
         );
     }
 
@@ -78,10 +80,10 @@ public class StorageInitializerTest {
         Object result = storageInitializer.postProcessAfterInitialization(inMemoryStorage, "inMemoryStorage");
 
         assertAll(
-                () -> assertSame(inMemoryStorage, result),
-                () -> assertEquals(1, inMemoryStorage.getStorage(Trainee.class).size()),
-                () -> assertEquals(1, inMemoryStorage.getStorage(Trainer.class).size()),
-                () -> assertEquals(1, inMemoryStorage.getStorage(Training.class).size())
+                () -> assertThat(result).isSameAs(inMemoryStorage),
+                () -> assertThat(inMemoryStorage.getStorage(Trainee.class)).hasSize(1),
+                () -> assertThat(inMemoryStorage.getStorage(Trainer.class)).hasSize(1),
+                () -> assertThat(inMemoryStorage.getStorage(Training.class)).hasSize(1)
         );
     }
 
@@ -93,15 +95,16 @@ public class StorageInitializerTest {
         Object result = storageInitializer.postProcessAfterInitialization(inMemoryStorage, "inMemoryStorage");
 
         assertAll(
-                () -> assertEquals(inMemoryStorage, result),
-                () -> assertEquals(0, inMemoryStorage.getStorage(Trainee.class).size())
+                () -> assertThat(result).isSameAs(inMemoryStorage),
+                () -> assertThat(inMemoryStorage.getStorage(Trainee.class)).isEmpty()
         );
     }
 
     @Test
     void testPostProcessAfterInitialization_NullBean() {
         Object result = storageInitializer.postProcessAfterInitialization(null, "testBean");
-        assertNull(result);
+
+        assertThat(result).isNull();
     }
 
     @Test
@@ -115,8 +118,8 @@ public class StorageInitializerTest {
         InputStream inputStream = new ByteArrayInputStream(jsonContent.getBytes());
         when(mockResource.getInputStream()).thenReturn(inputStream);
 
-        Object result = storageInitializer.postProcessAfterInitialization(inMemoryStorage, "inMemoryStorage");
+        storageInitializer.postProcessAfterInitialization(inMemoryStorage, "inMemoryStorage");
 
-        assertEquals(0, inMemoryStorage.getStorage(Trainer.class).size());
+        assertThat(inMemoryStorage.getStorage(Trainer.class)).isEmpty();
     }
 }

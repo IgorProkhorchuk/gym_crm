@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class InMemoryStorageTest {
+class InMemoryStorageTest {
 
     private InMemoryStorage storage;
 
@@ -28,33 +29,38 @@ public class InMemoryStorageTest {
     @Test
     void testGetStorageForTrainee() {
         Map<Long, Trainee> traineeMap = storage.getStorage(Trainee.class);
-        assertNotNull(traineeMap);
+        assertThat(traineeMap).isNotNull();
     }
 
     @Test
     void testGetStorageForTrainer() {
         Map<Long, Trainer> trainerMap = storage.getStorage(Trainer.class);
-        assertNotNull(trainerMap);
+        assertThat(trainerMap).isNotNull();
     }
 
     @Test
     void testGetStorageForTraining() {
         Map<Long, Training> trainingMap = storage.getStorage(Training.class);
-        assertNotNull(trainingMap);
+        assertThat(trainingMap).isNotNull();
     }
 
     @Test
     void testGetStorageForUnknownClassThrowsException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
-            storage.getStorage(String.class)
-        );
+        assertThatThrownBy(() -> storage.getStorage(String.class))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown entity type");
+    }
 
-        assertTrue(exception.getMessage().contains("Unknown entity type"));
+    @Test
+    void testGetStorageForNullClassThrowsException() {
+        assertThatThrownBy(() -> storage.getStorage(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Entity class must not be null");
     }
 
     @Test
     void testGetStorageForTrainingType() {
         Map<Long, TrainingType> trainingTypeMap = storage.getStorage(TrainingType.class);
-        assertNotNull(trainingTypeMap);
+        assertThat(trainingTypeMap).isNotNull();
     }
 }

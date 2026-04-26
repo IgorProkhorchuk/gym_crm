@@ -27,10 +27,17 @@ public class InMemoryStorage {
 
     @SuppressWarnings("unchecked")
     public <T> Map<Long, T> getStorage(Class<T> entityClass) {
-        if (entityClass == Trainee.class) return (Map<Long, T>) trainees;
-        if (entityClass == Trainer.class) return (Map<Long, T>) trainers;
-        if (entityClass == Training.class) return (Map<Long, T>) trainings;
-        if (entityClass == TrainingType.class) return (Map<Long, T>) trainingTypes;
-        throw new IllegalArgumentException("Unknown entity type: " + entityClass.getName());
+        return switch (entityClass) {
+            case null -> throw new IllegalArgumentException("Entity class must not be null");
+
+            case Class<?> entityType when entityType == Trainee.class -> (Map<Long, T>) trainees;
+            case Class<?> entityType when entityType == Trainer.class -> (Map<Long, T>) trainers;
+            case Class<?> entityType when entityType == Training.class -> (Map<Long, T>) trainings;
+            case Class<?> entityType when entityType == TrainingType.class -> (Map<Long, T>) trainingTypes;
+
+            default -> throw new IllegalArgumentException(
+                    "Unknown entity type: " + entityClass.getName()
+            );
+        };
     }
 }

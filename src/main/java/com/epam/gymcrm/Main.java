@@ -1,6 +1,5 @@
 package com.epam.gymcrm;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.*;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
@@ -14,7 +13,6 @@ public class Main {
         return new PropertySourcesPlaceholderConfigurer();
     }
     public static void main(String[] args) {
-        ApplicationContext context =
-                new AnnotationConfigApplicationContext(Main.class);
+        new AnnotationConfigApplicationContext(Main.class);
     }
 }

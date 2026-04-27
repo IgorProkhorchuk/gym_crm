@@ -6,20 +6,16 @@ import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class GymFacade {
 
-    private TraineeService traineeService;
-    private TrainerService trainerService;
-    private TrainingService trainingService;
-
-    public GymFacade(TraineeService traineeService, TrainerService trainerService, TrainingService trainingService) {
-        this.traineeService = traineeService;
-        this.trainerService = trainerService;
-        this.trainingService = trainingService;
-    }
+    private final TraineeService traineeService;
+    private final TrainerService trainerService;
+    private final TrainingService trainingService;
 
     public void createTrainee(Trainee trainee) {
         traineeService.create(trainee);

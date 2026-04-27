@@ -9,11 +9,12 @@ import java.security.SecureRandom;
 @Component
 public class SecureRandomPasswordGenerator implements PasswordGenerator {
 
-    private final SecureRandom random = new SecureRandom();
+    private final SecureRandom random;
     private final int passwordLength;
     private final String passwordAlphabet;
 
     public SecureRandomPasswordGenerator(
+            SecureRandom random,
             @Value("${password.length}") int passwordLength,
             @Value("${password.alphabet}") String passwordAlphabet
     ) {
@@ -23,6 +24,7 @@ public class SecureRandomPasswordGenerator implements PasswordGenerator {
         if (passwordAlphabet == null || passwordAlphabet.isEmpty()) {
             throw new IllegalArgumentException("Password alphabet must not be empty");
         }
+        this.random = random;
         this.passwordLength = passwordLength;
         this.passwordAlphabet = passwordAlphabet;
     }

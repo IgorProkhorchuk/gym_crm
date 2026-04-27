@@ -3,6 +3,8 @@ package com.epam.gymcrm.service;
 import com.epam.gymcrm.service.impl.SecureRandomPasswordGenerator;
 import org.junit.jupiter.api.Test;
 
+import java.security.SecureRandom;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -11,7 +13,7 @@ class SecureRandomPasswordGeneratorTest {
 
     @Test
     void generateReturnsConfiguredLengthAndAlphabet() {
-        PasswordGenerator passwordGenerator = new SecureRandomPasswordGenerator(12, "AB");
+        PasswordGenerator passwordGenerator = new SecureRandomPasswordGenerator(new SecureRandom(), 12, "AB");
 
         String password = passwordGenerator.generate();
 
@@ -23,21 +25,21 @@ class SecureRandomPasswordGeneratorTest {
 
     @Test
     void constructorRejectsNonPositiveLength() {
-        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(0, "ABC"))
+        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(new SecureRandom(),0, "ABC"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password length must be positive");
     }
 
     @Test
     void constructorRejectsEmptyAlphabet() {
-        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(10, ""))
+        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(new SecureRandom(), 10, ""))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password alphabet must not be empty");
     }
 
     @Test
     void constructorRejectsNullAlphabet() {
-        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(10, null))
+        assertThatThrownBy(() -> new SecureRandomPasswordGenerator(new SecureRandom(), 10, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password alphabet must not be empty");
     }

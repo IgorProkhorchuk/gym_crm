@@ -14,7 +14,6 @@ public class TrainingDaoImpl implements TrainingDao {
     private InMemoryStorage storage;
 
     @Autowired
-    @Override
     public void setStorage(InMemoryStorage storage) {
         this.storage = storage;
     }

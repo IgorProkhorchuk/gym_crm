@@ -5,6 +5,7 @@ import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TrainerService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,20 +16,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class TrainerServiceImpl implements TrainerService {
 
-    private TrainerDao trainerDao;
-    private PasswordGenerator passwordGenerator;
-
-    @Autowired
-    public void setTrainerDao(TrainerDao trainerDao) {
-        this.trainerDao = trainerDao;
-    }
-
-    @Autowired
-    public void setPasswordGenerator(PasswordGenerator passwordGenerator) {
-        this.passwordGenerator = passwordGenerator;
-    }
+    private final TrainerDao trainerDao;
+    private final PasswordGenerator passwordGenerator;
 
     @Override
     public void create(Trainer trainer) {

@@ -1,7 +1,6 @@
 package com.epam.gymcrm.dao;
 
 import com.epam.gymcrm.model.Trainee;
-import com.epam.gymcrm.storage.InMemoryStorage;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,13 +9,6 @@ import java.util.Optional;
  * Persistence contract for {@link Trainee} records keyed by {@link Trainee#getUserId()}.
  */
 public interface TraineeDao {
-
-    /**
-     * Provides the storage instance used by this DAO.
-     *
-     * @param storage storage containing trainee records
-     */
-    void setStorage(InMemoryStorage storage);
 
     /**
      * Stores the trainee under its user id, replacing any record with the same id.

@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,17 +32,22 @@ class TraineeServiceImplTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @Mock
+    private UsernameGenerator usernameGenerator;
+
     @Test
     void testCreateTraineeGeneratesUsernameAndPassword() {
         Trainee trainee = Trainee.builder().firstName("John").lastName("Doe").build();
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(Collections.emptyList());
+        when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
 
         traineeService.create(trainee);
 
         assertAll(
                 () -> assertThat(trainee.getUsername()).isEqualTo("John.Doe"),
                 () -> assertThat(trainee.getPassword()).isEqualTo("Passw0rd12"),
+                () -> verify(usernameGenerator).generate("John", "Doe", Collections.emptySet()),
                 () -> verify(passwordGenerator).generate(),
                 () -> verify(traineeDao).save(trainee)
         );
@@ -54,14 +60,18 @@ class TraineeServiceImplTest {
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(List.of(existingTrainee));
+        when(usernameGenerator.generate("John", "Doe", Set.of("John.Doe"))).thenReturn("John.Doe1");
 
         traineeService.create(newTrainee);
 
-        assertThat(newTrainee.getUsername()).isEqualTo("John.Doe1");
+        assertAll(
+                () -> assertThat(newTrainee.getUsername()).isEqualTo("John.Doe1"),
+                () -> verify(usernameGenerator).generate("John", "Doe", Set.of("John.Doe"))
+        );
     }
 
     @Test
-    void testCreateTraineeFillsTheGapInUsernames() {
+    void testCreateTraineePassesExistingUsernamesToGenerator() {
         Trainee newTrainee = Trainee.builder().firstName("John").lastName("Doe").build();
 
         Trainee existingBase = Trainee.builder().username("John.Doe").build();
@@ -70,10 +80,19 @@ class TraineeServiceImplTest {
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(List.of(existingBase, existing2, similarName));
+        when(usernameGenerator.generate("John", "Doe", Set.of("John.Doe", "John.Doe2", "John.Doering")))
+                .thenReturn("John.Doe1");
 
         traineeService.create(newTrainee);
 
-        assertThat(newTrainee.getUsername()).isEqualTo("John.Doe1");
+        assertAll(
+                () -> assertThat(newTrainee.getUsername()).isEqualTo("John.Doe1"),
+                () -> verify(usernameGenerator).generate(
+                        "John",
+                        "Doe",
+                        Set.of("John.Doe", "John.Doe2", "John.Doering")
+                )
+        );
     }
 
     @Test
@@ -108,6 +127,7 @@ class TraineeServiceImplTest {
 
         when(traineeDao.findAll()).thenReturn(Collections.emptyList());
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+        when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
         doThrow(exception).when(traineeDao).save(trainee);
 
         assertThatThrownBy(() -> traineeService.create(trainee))
@@ -133,6 +153,8 @@ class TraineeServiceImplTest {
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(traineeDao.findAll()).thenReturn(List.of(existingBase, existing1));
+        when(usernameGenerator.generate("John", "Doe", Set.of("John.Doe", "John.Doe1")))
+                .thenReturn("John.Doe2");
 
         traineeService.create(newTrainee);
 

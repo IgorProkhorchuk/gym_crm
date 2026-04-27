@@ -20,6 +20,7 @@ public interface TraineeService {
      * Saves trainee profile changes, replacing the stored record with the same user id.
      *
      * @param trainee trainee data to save
+     * @throws EntityNotFoundException when no trainee exists with the given id
      */
     void update(Trainee trainee);
 

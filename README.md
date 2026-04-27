@@ -50,7 +50,7 @@ classDiagram
         +String lastName
         +String username
         +String password
-        +Boolean isActive
+        +Boolean active
     }
 
     class Trainee {

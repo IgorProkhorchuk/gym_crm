@@ -6,7 +6,7 @@
       "lastName": "Smith",
       "username": "John.Smith",
       "password": "abc123xyz0",
-      "isActive": true,
+      "active": true,
       "specialization": "Yoga"
     }
   ],
@@ -17,7 +17,7 @@
       "lastName": "Doe",
       "username": "Jane.Doe",
       "password": "xyz987abc1",
-      "isActive": true,
+      "active": true,
       "dateOfBirth": "1995-06-15",
       "address": "Berlin, Germany"
     }

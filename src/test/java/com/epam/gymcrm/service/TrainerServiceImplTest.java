@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,17 +32,22 @@ class TrainerServiceImplTest {
     @Mock
     private PasswordGenerator passwordGenerator;
 
+    @Mock
+    private UsernameGenerator usernameGenerator;
+
     @Test
     void testCreateTrainerGeneratesUsernameAndPassword() {
         Trainer trainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
+        when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet())).thenReturn("Severus.Snape");
 
         trainerService.create(trainer);
 
         assertAll(
                 () -> assertThat(trainer.getUsername()).isEqualTo("Severus.Snape"),
                 () -> assertThat(trainer.getPassword()).isEqualTo("Passw0rd12"),
+                () -> verify(usernameGenerator).generate("Severus", "Snape", Collections.emptySet()),
                 () -> verify(passwordGenerator).generate(),
                 () -> verify(trainerDao).save(trainer)
         );
@@ -54,14 +60,19 @@ class TrainerServiceImplTest {
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(existingTrainer));
+        when(usernameGenerator.generate("Severus", "Snape", Set.of("Severus.Snape")))
+                .thenReturn("Severus.Snape1");
 
         trainerService.create(newTrainer);
 
-        assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape1");
+        assertAll(
+                () -> assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape1"),
+                () -> verify(usernameGenerator).generate("Severus", "Snape", Set.of("Severus.Snape"))
+        );
     }
 
     @Test
-    void testCreateTrainerFillsTheGapInUsernames() {
+    void testCreateTrainerPassesExistingUsernamesToGenerator() {
         Trainer newTrainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
 
         Trainer existingBase = Trainer.builder().username("Severus.Snape").build();
@@ -70,10 +81,22 @@ class TrainerServiceImplTest {
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing2, similarName));
+        when(usernameGenerator.generate(
+                "Severus",
+                "Snape",
+                Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely")
+        )).thenReturn("Severus.Snape1");
 
         trainerService.create(newTrainer);
 
-        assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape1");
+        assertAll(
+                () -> assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape1"),
+                () -> verify(usernameGenerator).generate(
+                        "Severus",
+                        "Snape",
+                        Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely")
+                )
+        );
     }
 
     @Test
@@ -108,6 +131,8 @@ class TrainerServiceImplTest {
 
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+        when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
+                .thenReturn("Severus.Snape");
         doThrow(exception).when(trainerDao).save(trainer);
 
         assertThatThrownBy(() -> trainerService.create(trainer))
@@ -133,6 +158,8 @@ class TrainerServiceImplTest {
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing1));
+        when(usernameGenerator.generate("Severus", "Snape", Set.of("Severus.Snape", "Severus.Snape1")))
+                .thenReturn("Severus.Snape2");
 
         trainerService.create(newTrainer);
 

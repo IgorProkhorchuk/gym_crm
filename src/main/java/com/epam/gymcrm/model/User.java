@@ -16,7 +16,7 @@ public abstract class User {
     private Long userId;
 
     private String password;
-    private Boolean isActive;
+    private Boolean active;
     private String firstName;
     private String lastName;
     @EqualsAndHashCode.Include

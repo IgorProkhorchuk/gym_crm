@@ -20,25 +20,15 @@ public class TrainingServiceImpl implements TrainingService {
     public void create(Training training) {
         requireNonNull(training, "Training must not be null");
         log.info("Creating training, trainingId={}", training.getTrainingId());
-        try {
-            trainingDao.save(training);
-            log.info("Training created, trainingId={}", training.getTrainingId());
-        } catch (RuntimeException e) {
-            log.error("Failed to create training, trainingId={}", training.getTrainingId(), e);
-            throw e;
-        }
+        trainingDao.save(training);
+        log.info("Training created, trainingId={}", training.getTrainingId());
     }
 
     @Override
     public Training findById(Long id) {
         requireNonNull(id, "Training id must not be null");
-        try {
             return trainingDao.findById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Training not found"));
-        } catch (RuntimeException e) {
-            log.error("Failed to find training, trainingId={}", id, e);
-            throw e;
-        }
     }
 
     private static void requireNonNull(Object value, String message) {

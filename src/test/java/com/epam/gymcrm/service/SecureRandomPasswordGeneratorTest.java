@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 class SecureRandomPasswordGeneratorTest {
 
     @Test
-    void generateReturnsConfiguredLengthAndAlphabet() {
+    void generateShouldReturnPasswordWithConfiguredLengthAndAlphabet() {
         PasswordGenerator passwordGenerator = new SecureRandomPasswordGenerator(new SecureRandom(), 12, "AB");
 
         String password = passwordGenerator.generate();
@@ -24,21 +24,21 @@ class SecureRandomPasswordGeneratorTest {
     }
 
     @Test
-    void constructorRejectsNonPositiveLength() {
+    void constructorShouldThrowIllegalArgumentExceptionWhenLengthIsNotPositive() {
         assertThatThrownBy(() -> new SecureRandomPasswordGenerator(new SecureRandom(),0, "ABC"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password length must be positive");
     }
 
     @Test
-    void constructorRejectsEmptyAlphabet() {
+    void constructorShouldThrowIllegalArgumentExceptionWhenAlphabetIsEmpty() {
         assertThatThrownBy(() -> new SecureRandomPasswordGenerator(new SecureRandom(), 10, ""))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password alphabet must not be empty");
     }
 
     @Test
-    void constructorRejectsNullAlphabet() {
+    void constructorShouldThrowIllegalArgumentExceptionWhenAlphabetIsNull() {
         assertThatThrownBy(() -> new SecureRandomPasswordGenerator(new SecureRandom(), 10, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Password alphabet must not be empty");

@@ -34,7 +34,7 @@ class TrainingDaoImplTest {
     }
 
     @Test
-    void testSaveAndFindById() {
+    void saveShouldStoreTrainingAndFindByIdShouldReturnIt() {
         Training training = Training.builder()
                 .trainingId(1L)
                 .trainingName("Yoga Basics")
@@ -51,7 +51,7 @@ class TrainingDaoImplTest {
     }
 
     @Test
-    void testFindByIdNotFound() {
+    void findByIdShouldReturnEmptyOptionalWhenTrainingDoesNotExist() {
         Optional<Training> found = trainingDao.findById(99L);
         assertThat(found).isEmpty();
     }

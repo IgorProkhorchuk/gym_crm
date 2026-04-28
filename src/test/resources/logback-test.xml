@@ -5,10 +5,8 @@
         </encoder>
     </appender>
 
-    <!-- Configure Spring framework logging level -->
     <logger name="org.springframework" level="WARN"/>
 
-    <!-- Set root logger level for tests -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>

@@ -27,39 +27,39 @@ class InMemoryStorageTest {
     }
 
     @Test
-    void testGetStorageForTrainee() {
+    void getStorageShouldReturnTraineeStorageWhenEntityClassIsTrainee() {
         Map<Long, Trainee> traineeMap = storage.getStorage(Trainee.class);
         assertThat(traineeMap).isNotNull();
     }
 
     @Test
-    void testGetStorageForTrainer() {
+    void getStorageShouldReturnTrainerStorageWhenEntityClassIsTrainer() {
         Map<Long, Trainer> trainerMap = storage.getStorage(Trainer.class);
         assertThat(trainerMap).isNotNull();
     }
 
     @Test
-    void testGetStorageForTraining() {
+    void getStorageShouldReturnTrainingStorageWhenEntityClassIsTraining() {
         Map<Long, Training> trainingMap = storage.getStorage(Training.class);
         assertThat(trainingMap).isNotNull();
     }
 
     @Test
-    void testGetStorageForUnknownClassThrowsException() {
+    void getStorageShouldThrowIllegalArgumentExceptionWhenEntityClassIsUnknown() {
         assertThatThrownBy(() -> storage.getStorage(String.class))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown entity type");
     }
 
     @Test
-    void testGetStorageForNullClassThrowsException() {
+    void getStorageShouldThrowIllegalArgumentExceptionWhenEntityClassIsNull() {
         assertThatThrownBy(() -> storage.getStorage(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Entity class must not be null");
     }
 
     @Test
-    void testGetStorageForTrainingType() {
+    void getStorageShouldReturnTrainingTypeStorageWhenEntityClassIsTrainingType() {
         Map<Long, TrainingType> trainingTypeMap = storage.getStorage(TrainingType.class);
         assertThat(trainingTypeMap).isNotNull();
     }

@@ -32,14 +32,14 @@ class GymFacadeTest {
     private TrainingService trainingService;
 
     @Test
-    void testCreateTrainee() {
+    void createTraineeShouldDelegateToTraineeService() {
         Trainee trainee = Trainee.builder().firstName("John").build();
         gymFacade.createTrainee(trainee);
         verify(traineeService).create(trainee);
     }
 
     @Test
-    void testFindTraineeById() {
+    void findTraineeByIdShouldReturnTraineeFromService() {
         Trainee trainee = Trainee.builder().userId(1L).firstName("John").build();
         when(traineeService.findById(1L)).thenReturn(trainee);
 
@@ -52,27 +52,27 @@ class GymFacadeTest {
     }
 
     @Test
-    void testUpdateTrainee() {
+    void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = Trainee.builder().userId(1L).firstName("John").build();
         gymFacade.updateTrainee(trainee);
         verify(traineeService).update(trainee);
     }
 
     @Test
-    void testDeleteTrainee() {
+    void deleteTraineeShouldDelegateToTraineeService() {
         gymFacade.deleteTrainee(7L);
         verify(traineeService).delete(7L);
     }
 
     @Test
-    void testCreateTrainer() {
+    void createTrainerShouldDelegateToTrainerService() {
         Trainer trainer = Trainer.builder().firstName("Mike").build();
         gymFacade.createTrainer(trainer);
         verify(trainerService).create(trainer);
     }
 
     @Test
-    void testFindTrainerById() {
+    void findTrainerByIdShouldReturnTrainerFromService() {
         Trainer trainer = Trainer.builder().userId(2L).firstName("Mike").build();
         when(trainerService.findById(2L)).thenReturn(trainer);
 
@@ -85,21 +85,21 @@ class GymFacadeTest {
     }
 
     @Test
-    void testUpdateTrainer() {
+    void updateTrainerShouldDelegateToTrainerService() {
         Trainer trainer = Trainer.builder().userId(2L).firstName("Mike").build();
         gymFacade.updateTrainer(trainer);
         verify(trainerService).update(trainer);
     }
 
     @Test
-    void testCreateTraining() {
+    void createTrainingShouldDelegateToTrainingService() {
         Training training = Training.builder().trainingName("Yoga").build();
         gymFacade.createTraining(training);
         verify(trainingService).create(training);
     }
 
     @Test
-    void testFindTrainingById() {
+    void findTrainingByIdShouldReturnTrainingFromService() {
         Training training = Training.builder().trainingId(3L).trainingName("Yoga").build();
         when(trainingService.findById(3L)).thenReturn(training);
 

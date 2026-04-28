@@ -27,7 +27,7 @@ class TrainingServiceImplTest {
     private TrainingDao trainingDao;
 
     @Test
-    void testCreateTraining() {
+    void createShouldSaveTraining() {
         Training training = Training.builder()
                 .trainingId(1L)
                 .trainingName("Cardio")
@@ -39,7 +39,7 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    void testCreateTrainingRethrowsDaoFailure() {
+    void createShouldThrowRuntimeExceptionWhenDaoFails() {
         Training training = Training.builder().trainingId(1L).build();
         RuntimeException exception = new RuntimeException("DAO failure");
         doThrow(exception).when(trainingDao).save(training);
@@ -49,7 +49,7 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    void testFindById() {
+    void findByIdShouldReturnTrainingWhenTrainingExists() {
         Training training = Training.builder().trainingId(5L).trainingName("Yoga").build();
         when(trainingDao.findById(5L)).thenReturn(Optional.of(training));
 
@@ -63,7 +63,7 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    void testFindByIdThrowsWhenNotFound() {
+    void findByIdShouldThrowEntityNotFoundExceptionWhenTrainingDoesNotExist() {
         when(trainingDao.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainingService.findById(99L))
@@ -74,7 +74,7 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    void testFindTrainingByIdRethrowsDaoFailure() {
+    void findByIdShouldThrowRuntimeExceptionWhenDaoFails() {
         RuntimeException exception = new RuntimeException("DAO failure");
         when(trainingDao.findById(99L)).thenThrow(exception);
 
@@ -83,14 +83,14 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    void testCreateTrainingRejectsNullTraining() {
+    void createShouldThrowIllegalArgumentExceptionWhenTrainingIsNull() {
         assertThatThrownBy(() -> trainingService.create(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Training must not be null");
     }
 
     @Test
-    void testFindTrainingByIdRejectsNullId() {
+    void findByIdShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
         assertThatThrownBy(() -> trainingService.findById(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Training id must not be null");

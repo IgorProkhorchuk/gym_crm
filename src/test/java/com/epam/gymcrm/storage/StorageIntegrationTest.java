@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StorageIntegrationTest {
 
     @Test
-    void testStorageInitializesFromFile() {
+    void storageShouldInitializeFromFileWhenApplicationContextStarts() {
         ApplicationContext context = new AnnotationConfigApplicationContext(Main.class);
         InMemoryStorage storage = context.getBean(InMemoryStorage.class);
 

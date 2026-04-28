@@ -36,7 +36,7 @@ class TrainerServiceImplTest {
     private UsernameGenerator usernameGenerator;
 
     @Test
-    void testCreateTrainerGeneratesUsernameAndPassword() {
+    void createShouldGenerateUsernameAndPassword() {
         Trainer trainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
@@ -54,7 +54,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testCreateTrainerWithExistingUsernameGeneratesSuffix() {
+    void createShouldUseGeneratedUsernameWithSuffixWhenUsernameExists() {
         Trainer newTrainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
         Trainer existingTrainer = Trainer.builder().username("Severus.Snape").build();
 
@@ -72,7 +72,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testCreateTrainerPassesExistingUsernamesToGenerator() {
+    void createShouldPassExistingUsernamesToGenerator() {
         Trainer newTrainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
 
         Trainer existingBase = Trainer.builder().username("Severus.Snape").build();
@@ -100,7 +100,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testFindByIdReturnsTrainer() {
+    void findByIdShouldReturnTrainerWhenTrainerExists() {
         Trainer trainer = Trainer.builder().userId(50L).firstName("Minerva").build();
         when(trainerDao.findById(50L)).thenReturn(Optional.of(trainer));
 
@@ -114,7 +114,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testFindByIdThrowsWhenNotFound() {
+    void findByIdShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
         when(trainerDao.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainerService.findById(99L))
@@ -125,7 +125,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testCreateTrainerRethrowsDaoFailure() {
+    void createShouldThrowRuntimeExceptionWhenDaoFails() {
         Trainer trainer = Trainer.builder().userId(30L).firstName("Severus").lastName("Snape").build();
         RuntimeException exception = new RuntimeException("DAO failure");
 
@@ -140,14 +140,14 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testCreateTrainerRejectsNullTrainer() {
+    void createShouldThrowIllegalArgumentExceptionWhenTrainerIsNull() {
         assertThatThrownBy(() -> trainerService.create(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer must not be null");
     }
 
     @Test
-    void testCreateTrainerSkipsTakenSequentialSuffixes() {
+    void createShouldUseGeneratedUsernameWithNextSuffixWhenSequentialSuffixesExist() {
         Trainer newTrainer = Trainer.builder()
                 .firstName("Severus")
                 .lastName("Snape")
@@ -172,26 +172,29 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testUpdateTrainerDelegatesToDao() {
+    void updateShouldSaveTrainerChanges() {
         Trainer trainer = Trainer.builder()
                 .userId(22L)
                 .firstName("Minerva")
                 .lastName("McGonagall")
                 .username("Minerva.McGonagall")
                 .build();
+        when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
 
         trainerService.update(trainer);
 
         assertAll(
+                () -> verify(trainerDao).findById(22L),
                 () -> verify(trainerDao).save(trainer),
                 () -> verifyNoMoreInteractions(trainerDao)
         );
     }
 
     @Test
-    void testUpdateTrainerRethrowsDaoFailure() {
+    void updateShouldThrowRuntimeExceptionWhenDaoFails() {
         Trainer trainer = Trainer.builder().userId(22L).build();
         RuntimeException exception = new RuntimeException("DAO failure");
+        when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
         doThrow(exception).when(trainerDao).save(trainer);
 
         assertThatThrownBy(() -> trainerService.update(trainer))
@@ -199,7 +202,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testFindTrainerByIdRethrowsDaoFailure() {
+    void findByIdShouldThrowRuntimeExceptionWhenDaoFails() {
         RuntimeException exception = new RuntimeException("DAO failure");
         when(trainerDao.findById(22L)).thenThrow(exception);
 
@@ -208,7 +211,7 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void testFindTrainerByIdRejectsNullId() {
+    void findByIdShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
         assertThatThrownBy(() -> trainerService.findById(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer id must not be null");

@@ -12,21 +12,21 @@ class UsernameGeneratorImplTest {
     private final UsernameGenerator usernameGenerator = new UsernameGeneratorImpl();
 
     @Test
-    void testGenerateReturnsBaseUsernameWhenAvailable() {
+    void generateShouldReturnBaseUsernameWhenItIsAvailable() {
         String username = usernameGenerator.generate("John", "Doe", Set.of());
 
         assertThat(username).isEqualTo("John.Doe");
     }
 
     @Test
-    void testGenerateAddsSuffixWhenBaseUsernameExists() {
+    void generateShouldAddSuffixWhenBaseUsernameExists() {
         String username = usernameGenerator.generate("John", "Doe", Set.of("John.Doe"));
 
         assertThat(username).isEqualTo("John.Doe1");
     }
 
     @Test
-    void testGenerateSkipsTakenSequentialSuffixes() {
+    void generateShouldSkipTakenSequentialSuffixes() {
         String username = usernameGenerator.generate(
                 "John",
                 "Doe",
@@ -37,7 +37,7 @@ class UsernameGeneratorImplTest {
     }
 
     @Test
-    void testGenerateFillsFirstAvailableSuffixGap() {
+    void generateShouldReturnFirstAvailableSuffixWhenGapExists() {
         String username = usernameGenerator.generate(
                 "John",
                 "Doe",

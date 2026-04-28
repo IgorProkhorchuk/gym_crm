@@ -3,10 +3,11 @@ package com.epam.gymcrm.storage;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
@@ -24,7 +25,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class StorageInitializerTest {
 
-    @InjectMocks
     private StorageInitializer storageInitializer;
 
     @Mock
@@ -34,6 +34,9 @@ class StorageInitializerTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        storageInitializer = new StorageInitializer(objectMapper);
+
         inMemoryStorage = new InMemoryStorage();
         inMemoryStorage.setTrainees(new HashMap<>());
         inMemoryStorage.setTrainers(new HashMap<>());
@@ -45,7 +48,7 @@ class StorageInitializerTest {
     }
 
     @Test
-    void testPostProcessAfterInitialization_NotInMemoryStorage() {
+    void postProcessAfterInitializationShouldReturnBeanWhenBeanIsNotInMemoryStorage() {
         Object bean = new Object();
         Object result = storageInitializer.postProcessAfterInitialization(bean, "testBean");
 
@@ -53,7 +56,7 @@ class StorageInitializerTest {
     }
 
     @Test
-    void testPostProcessAfterInitialization_FileDoesNotExist() {
+    void postProcessAfterInitializationShouldSkipInitializationWhenFileDoesNotExist() {
         when(mockResource.exists()).thenReturn(false);
 
         Object result = storageInitializer.postProcessAfterInitialization(inMemoryStorage, "inMemoryStorage");
@@ -65,7 +68,7 @@ class StorageInitializerTest {
     }
 
     @Test
-    void testPostProcessAfterInitialization_Success() throws Exception {
+    void postProcessAfterInitializationShouldPopulateStorageWhenFileExists() throws Exception {
         when(mockResource.exists()).thenReturn(true);
 
         String jsonContent = "{" +
@@ -88,7 +91,7 @@ class StorageInitializerTest {
     }
 
     @Test
-    void testPostProcessAfterInitialization_ThrowsIOException() throws Exception {
+    void postProcessAfterInitializationShouldLogErrorWhenIOExceptionOccurs() throws Exception {
         when(mockResource.exists()).thenReturn(true);
         when(mockResource.getInputStream()).thenThrow(new IOException("Mocked IO Exception"));
 
@@ -101,14 +104,14 @@ class StorageInitializerTest {
     }
 
     @Test
-    void testPostProcessAfterInitialization_NullBean() {
+    void postProcessAfterInitializationShouldReturnNullWhenBeanIsNull() {
         Object result = storageInitializer.postProcessAfterInitialization(null, "testBean");
 
         assertThat(result).isNull();
     }
 
     @Test
-    void testPostProcessAfterInitialization_NodeIsNotArray() throws Exception {
+    void postProcessAfterInitializationShouldIgnoreNodeWhenNodeIsNotArray() throws Exception {
         when(mockResource.exists()).thenReturn(true);
 
         String jsonContent = "{" +

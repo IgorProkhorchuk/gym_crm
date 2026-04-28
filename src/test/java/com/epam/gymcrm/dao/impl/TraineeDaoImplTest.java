@@ -36,7 +36,7 @@ class TraineeDaoImplTest {
     }
 
     @Test
-    void testSaveAndFindById() {
+    void saveShouldStoreTraineeAndFindByIdShouldReturnIt() {
         Trainee trainee = Trainee.builder().userId(1L).firstName("Oleg").build();
 
         traineeDao.save(trainee);
@@ -53,13 +53,13 @@ class TraineeDaoImplTest {
     }
 
     @Test
-    void testFindByIdNotFound() {
+    void findByIdShouldReturnEmptyOptionalWhenTraineeDoesNotExist() {
         Optional<Trainee> found = traineeDao.findById(99L);
         assertThat(found).isEmpty();
     }
 
     @Test
-    void testDelete() {
+    void deleteShouldRemoveTraineeById() {
         Trainee trainee = Trainee.builder().userId(2L).firstName("Ivan").build();
         traineeDao.save(trainee);
 
@@ -70,7 +70,7 @@ class TraineeDaoImplTest {
     }
 
     @Test
-    void testFindAll() {
+    void findAllShouldReturnAllTrainees() {
         Trainee trainee1 = Trainee.builder().userId(3L).firstName("Anna").build();
         Trainee trainee2 = Trainee.builder().userId(4L).firstName("Maria").build();
 

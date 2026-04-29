@@ -1,0 +1,36 @@
+{
+  "trainers": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Smith",
+      "username": "John.Smith",
+      "password": "abc123xyz0",
+      "active": true,
+      "specialization": "Yoga"
+    }
+  ],
+  "trainees": [
+    {
+      "id": 2,
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "username": "Jane.Doe",
+      "password": "xyz987abc1",
+      "active": true,
+      "dateOfBirth": "1995-06-15",
+      "address": "Berlin, Germany"
+    }
+  ],
+  "trainings": [
+    {
+      "id": 1,
+      "traineeId": 2,
+      "trainerId": 1,
+      "trainingName": "Morning Yoga",
+      "trainingType": { "id": 1, "trainingTypeName": "Yoga" },
+      "trainingDate": "2024-01-15",
+      "trainingDuration": "PT1H"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  #==================MASTER==============
+  gym-master:
+    image: docker.io/library/postgres:16
+    container_name: gym-master
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      REPL_PASSWORD: ${REPL_PASSWORD}
+    ports:
+      - "5433:5432"
+    networks:
+      - gym-crm-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - master_data:/var/lib/postgresql/data
+      - ./init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
+
+  #==================REPLICA==============
+  gym-replica:
+    image: docker.io/library/postgres:16
+    container_name: gym-replica
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      REPL_PASSWORD: ${REPL_PASSWORD}
+    ports:
+      - "5434:5432"
+    networks:
+      - gym-crm-net
+    depends_on:
+      gym-master:
+        condition: service_healthy
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+      - ./init-replica.sh:/init-replica.sh:ro
+    entrypoint: ["bash", "/init-replica.sh"]
+
+  #==================PGPOOL==============
+  gym-pgpool:
+    image: docker.io/bitnami/pgpool:4
+    container_name: gym-pgpool
+    ports:
+      - "5432:5432"
+    networks:
+      - gym-crm-net
+    environment:
+      - PGPOOL_BACKEND_NODES=0:gym-master:5432,1:gym-replica:5432
+      - PGPOOL_ENABLE_LOAD_BALANCING=yes
+      - PGPOOL_SR_CHECK_USER=postgres
+      - PGPOOL_SR_CHECK_PASSWORD=${POSTGRES_ROOT_PASSWORD}
+      - PGPOOL_POSTGRES_USERNAME=${POSTGRES_USER}
+      - PGPOOL_POSTGRES_PASSWORD=${POSTGRES_ROOT_PASSWORD}
+      - PGPOOL_ADMIN_USERNAME=${ADMIN_USERNAME}
+      - PGPOOL_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      gym-master:
+        condition: service_healthy
+      gym-replica:
+        condition: service_started
+
+networks:
+  gym-crm-net:
+    driver: bridge
+
+volumes:
+  master_data:
+  replica_data:

@@ -1,84 +1,116 @@
 package com.epam.gymcrm.dao.impl;
 
+import com.epam.gymcrm.Main;
+import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
-import com.epam.gymcrm.storage.InMemoryStorage;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.annotation.Resource;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import static com.epam.gymcrm.TestFixtures.trainee;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = Main.class)
+@Transactional
 class TraineeDaoImplTest {
 
-    @InjectMocks
-    private TraineeDaoImpl traineeDao;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @Mock
-    private InMemoryStorage storage;
-
-    private Map<Long, Trainee> traineeMap;
-
-    @BeforeEach
-    void setUp() {
-        traineeMap = new HashMap<>();
-        when(storage.getStorage(Trainee.class)).thenReturn(traineeMap);
-    }
+    @Resource
+    private TraineeDao traineeDao;
 
     @Test
-    void saveShouldStoreTraineeAndFindByIdShouldReturnIt() {
-        Trainee trainee = Trainee.builder().userId(1L).firstName("Oleg").build();
+    void saveShouldPersistTraineeAndFindByIdShouldReturnIt() {
+        Trainee trainee = trainee("Oleg", "Petrenko", "Oleg.Petrenko");
 
         traineeDao.save(trainee);
+        entityManager.flush();
+        entityManager.clear();
 
-        Optional<Trainee> found = traineeDao.findById(1L);
+        Optional<Trainee> found = traineeDao.findById(trainee.getId());
+
         assertAll(
-                () -> assertThat(found)
-                        .isPresent()
-                        .get()
-                        .extracting(Trainee::getFirstName)
-                        .isEqualTo("Oleg"),
-                () -> verify(storage, atLeastOnce()).getStorage(Trainee.class)
+                () -> assertThat(found).isPresent(),
+                () -> assertThat(found.get().getUser().getFirstName()).isEqualTo("Oleg"),
+                () -> assertThat(found.get().getUser().getUsername()).isEqualTo("Oleg.Petrenko"),
+                () -> assertThat(found.get().getAddress()).isEqualTo("Main Street, 123")
         );
     }
 
     @Test
+    void saveShouldMergeExistingTrainee() {
+        Trainee trainee = trainee("Ivan", "Franko", "Ivan.Franko");
+        entityManager.persist(trainee);
+        entityManager.flush();
+        entityManager.clear();
+
+        trainee.setAddress("Updated Street, 55");
+        traineeDao.save(trainee);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Trainee> found = traineeDao.findById(trainee.getId());
+
+        assertThat(found)
+                .isPresent()
+                .get()
+                .extracting(Trainee::getAddress)
+                .isEqualTo("Updated Street, 55");
+    }
+
+    @Test
     void findByIdShouldReturnEmptyOptionalWhenTraineeDoesNotExist() {
-        Optional<Trainee> found = traineeDao.findById(99L);
+        Optional<Trainee> found = traineeDao.findById(-1L);
+
         assertThat(found).isEmpty();
     }
 
     @Test
     void deleteShouldRemoveTraineeById() {
-        Trainee trainee = Trainee.builder().userId(2L).firstName("Ivan").build();
-        traineeDao.save(trainee);
+        Trainee trainee = trainee("Lesya", "Ukrainka", "Lesya.Ukrainka");
+        entityManager.persist(trainee);
+        entityManager.flush();
+        Long id = trainee.getId();
 
-        traineeDao.delete(2L);
+        traineeDao.delete(id);
+        entityManager.flush();
+        entityManager.clear();
 
-        Optional<Trainee> found = traineeDao.findById(2L);
-        assertThat(found).as("Trainee should be deleted").isEmpty();
+        assertThat(traineeDao.findById(id)).isEmpty();
     }
 
     @Test
-    void findAllShouldReturnAllTrainees() {
-        Trainee trainee1 = Trainee.builder().userId(3L).firstName("Anna").build();
-        Trainee trainee2 = Trainee.builder().userId(4L).firstName("Maria").build();
+    void deleteShouldDoNothingWhenTraineeDoesNotExist() {
+        traineeDao.delete(-1L);
+        entityManager.flush();
 
-        traineeDao.save(trainee1);
-        traineeDao.save(trainee2);
+        assertThat(traineeDao.findById(-1L)).isEmpty();
+    }
+
+    @Test
+    void findAllShouldReturnStoredTrainees() {
+        Trainee first = trainee("Anna", "Taylor", "Anna.Taylor");
+        Trainee second = trainee("Brian", "Miller", "Brian.Miller");
+        entityManager.persist(first);
+        entityManager.persist(second);
+        entityManager.flush();
+        entityManager.clear();
 
         List<Trainee> all = traineeDao.findAll();
 
-        assertThat(all).containsExactlyInAnyOrder(trainee1, trainee2);
+        assertThat(all)
+                .extracting(trainee -> trainee.getUser().getUsername())
+                .contains("Anna.Taylor", "Brian.Miller");
     }
 }

@@ -1,19 +1,29 @@
 package com.epam.gymcrm.model;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import jakarta.persistence.*;
+import lombok.*;
+
 
 import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
-@SuperBuilder
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
-@ToString(callSuper = true)
-public class Trainee extends User{
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
+@Entity
+public class Trainee {
+
+    @Id
+    @EqualsAndHashCode.Include
+    @ToString.Include
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     private LocalDate dateOfBirth;
     private String address;

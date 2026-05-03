@@ -3,8 +3,8 @@ package com.epam.gymcrm.dao.impl;
 import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.model.Trainer;
-import com.epam.gymcrm.storage.InMemoryStorage;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,30 +12,33 @@ import java.util.Optional;
 @Dao
 public class TrainerDaoImpl implements TrainerDao {
 
-    private InMemoryStorage storage;
-
-    @Autowired
-    public void setStorage(InMemoryStorage storage) {
-        this.storage = storage;
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public void save(Trainer trainer) {
-        storage.getStorage(Trainer.class).put(trainer.getUserId(), trainer);
+        if (trainer.getId() == null) {
+            entityManager.persist(trainer);
+        } else {
+            entityManager.merge(trainer);
+        }
     }
 
     @Override
     public Optional<Trainer> findById(Long id) {
-        return Optional.ofNullable(storage.getStorage(Trainer.class).get(id));
+        return Optional.ofNullable(entityManager.find(Trainer.class, id));
     }
 
     @Override
     public void delete(Long id) {
-        storage.getStorage(Trainer.class).remove(id);
+        findById(id).ifPresent(entityManager::remove);
     }
 
     @Override
     public List<Trainer> findAll() {
-        return List.copyOf(storage.getStorage(Trainer.class).values());
+        return entityManager
+                .createQuery("select t from Trainer t", Trainer.class)
+                .getResultList();
     }
+
 }

@@ -8,6 +8,9 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
       REPL_PASSWORD: ${REPL_PASSWORD}
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USERNAME: ${POSTGRES_USER}
+      APP_DB_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
     ports:
       - "5433:5432"
     networks:

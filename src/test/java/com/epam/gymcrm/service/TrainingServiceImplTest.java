@@ -12,10 +12,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static com.epam.gymcrm.TestFixtures.trainee;
+import static com.epam.gymcrm.TestFixtures.trainer;
+import static com.epam.gymcrm.TestFixtures.training;
+import static com.epam.gymcrm.TestFixtures.trainingType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TrainingServiceImplTest {
@@ -28,10 +34,7 @@ class TrainingServiceImplTest {
 
     @Test
     void createShouldSaveTraining() {
-        Training training = Training.builder()
-                .trainingId(1L)
-                .trainingName("Cardio")
-                .build();
+        Training training = validTraining();
 
         trainingService.create(training);
 
@@ -40,7 +43,7 @@ class TrainingServiceImplTest {
 
     @Test
     void createShouldThrowRuntimeExceptionWhenDaoFails() {
-        Training training = Training.builder().trainingId(1L).build();
+        Training training = validTraining();
         RuntimeException exception = new RuntimeException("DAO failure");
         doThrow(exception).when(trainingDao).save(training);
 
@@ -49,8 +52,47 @@ class TrainingServiceImplTest {
     }
 
     @Test
+    void createShouldThrowIllegalArgumentExceptionWhenTrainingIsNull() {
+        assertThatThrownBy(() -> trainingService.create(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Training must not be null");
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenTraineeIsNull() {
+        Training training = validTraining();
+        training.setTrainee(null);
+
+        assertThatThrownBy(() -> trainingService.create(training))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Training trainee must not be null");
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenTrainerIsNull() {
+        Training training = validTraining();
+        training.setTrainer(null);
+
+        assertThatThrownBy(() -> trainingService.create(training))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Training trainer must not be null");
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenTrainingTypeIsNull() {
+        Training training = validTraining();
+        training.setTrainingType(null);
+
+        assertThatThrownBy(() -> trainingService.create(training))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Training type must not be null");
+    }
+
+    @Test
     void findByIdShouldReturnTrainingWhenTrainingExists() {
-        Training training = Training.builder().trainingId(5L).trainingName("Yoga").build();
+        Training training = validTraining();
+        training.setTrainingId(5L);
+        training.setTrainingName("Yoga");
         when(trainingDao.findById(5L)).thenReturn(Optional.of(training));
 
         Training result = trainingService.findById(5L);
@@ -83,16 +125,17 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    void createShouldThrowIllegalArgumentExceptionWhenTrainingIsNull() {
-        assertThatThrownBy(() -> trainingService.create(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training must not be null");
-    }
-
-    @Test
     void findByIdShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
         assertThatThrownBy(() -> trainingService.findById(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Training id must not be null");
+    }
+
+    private static Training validTraining() {
+        return training(
+                trainee("Training", "Trainee", "Training.Trainee"),
+                trainer("Training", "Trainer", "Training.Trainer"),
+                trainingType("Yoga")
+        );
     }
 }

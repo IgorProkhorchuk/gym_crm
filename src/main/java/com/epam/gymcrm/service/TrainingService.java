@@ -9,7 +9,7 @@ import com.epam.gymcrm.model.Training;
 public interface TrainingService {
 
     /**
-     * Saves a training session, replacing any stored session with the same training id.
+     * Creates a training session.
      *
      * @param training training session to save
      */

@@ -17,16 +17,16 @@ public interface TrainerService {
     void create(Trainer trainer);
 
     /**
-     * Saves trainer profile changes, replacing the stored record with the same user id.
+     * Saves trainer profile changes, replacing the stored record with the same trainer profile id.
      *
      * @param trainer trainer data to save
      */
     void update(Trainer trainer);
 
     /**
-     * Finds a trainer profile by user id.
+     * Finds a trainer profile by trainer profile id.
      *
-     * @param id user id to look up
+     * @param id trainer profile id to look up
      * @return trainer with the given id
      * @throws EntityNotFoundException when no trainer exists with the given id
      */

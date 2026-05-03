@@ -1,92 +1,116 @@
 package com.epam.gymcrm.dao.impl;
 
+import com.epam.gymcrm.Main;
+import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.model.Trainer;
-import com.epam.gymcrm.storage.InMemoryStorage;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.annotation.Resource;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import static com.epam.gymcrm.TestFixtures.trainer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = Main.class)
+@Transactional
 class TrainerDaoImplTest {
 
-    @InjectMocks
-    private TrainerDaoImpl trainerDao;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @Mock
-    private InMemoryStorage storage;
-
-    private Map<Long, Trainer> trainerMap;
-
-    @BeforeEach
-    void setUp() {
-        trainerMap = new HashMap<>();
-        when(storage.getStorage(Trainer.class)).thenReturn(trainerMap);
-    }
+    @Resource
+    private TrainerDao trainerDao;
 
     @Test
-    void saveShouldStoreTrainerAndFindByIdShouldReturnIt() {
-        Trainer trainer = Trainer.builder()
-                .userId(1L)
-                .firstName("Alice")
-                .specialization("Fitness")
-                .build();
+    void saveShouldPersistTrainerAndFindByIdShouldReturnIt() {
+        Trainer trainer = trainer("Alice", "Brown", "Alice.Brown");
 
         trainerDao.save(trainer);
+        entityManager.flush();
+        entityManager.clear();
 
-        Optional<Trainer> found = trainerDao.findById(1L);
+        Optional<Trainer> found = trainerDao.findById(trainer.getId());
+
         assertAll(
-                () -> assertThat(found)
-                        .isPresent()
-                        .get()
-                        .extracting(Trainer::getFirstName)
-                        .isEqualTo("Alice"),
-                () -> assertThat(found)
-                        .isPresent()
-                        .get()
-                        .extracting(Trainer::getSpecialization)
-                        .isEqualTo("Fitness")
+                () -> assertThat(found).isPresent(),
+                () -> assertThat(found.get().getUser().getFirstName()).isEqualTo("Alice"),
+                () -> assertThat(found.get().getUser().getUsername()).isEqualTo("Alice.Brown"),
+                () -> assertThat(found.get().getSpecialization()).isEqualTo("Fitness")
         );
     }
 
     @Test
+    void saveShouldMergeExistingTrainer() {
+        Trainer trainer = trainer("Bob", "Smith", "Bob.Smith");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        entityManager.clear();
+
+        trainer.setSpecialization("Cardio");
+        trainerDao.save(trainer);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Trainer> found = trainerDao.findById(trainer.getId());
+
+        assertThat(found)
+                .isPresent()
+                .get()
+                .extracting(Trainer::getSpecialization)
+                .isEqualTo("Cardio");
+    }
+
+    @Test
     void findByIdShouldReturnEmptyOptionalWhenTrainerDoesNotExist() {
-        Optional<Trainer> found = trainerDao.findById(999L);
+        Optional<Trainer> found = trainerDao.findById(-1L);
+
         assertThat(found).isEmpty();
     }
 
     @Test
     void deleteShouldRemoveTrainerById() {
-        Trainer trainer = Trainer.builder().userId(2L).firstName("Bob").build();
-        trainerDao.save(trainer);
+        Trainer trainer = trainer("Carol", "White", "Carol.White");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        Long id = trainer.getId();
 
-        trainerDao.delete(2L);
+        trainerDao.delete(id);
+        entityManager.flush();
+        entityManager.clear();
 
-        Optional<Trainer> found = trainerDao.findById(2L);
-        assertThat(found).as("Trainer should be removed from storage").isEmpty();
+        assertThat(trainerDao.findById(id)).isEmpty();
     }
 
     @Test
-    void findAllShouldReturnAllTrainers() {
-        Trainer t1 = Trainer.builder().userId(10L).firstName("Trainer1").build();
-        Trainer t2 = Trainer.builder().userId(20L).firstName("Trainer2").build();
+    void deleteShouldDoNothingWhenTrainerDoesNotExist() {
+        trainerDao.delete(-1L);
+        entityManager.flush();
 
-        trainerDao.save(t1);
-        trainerDao.save(t2);
+        assertThat(trainerDao.findById(-1L)).isEmpty();
+    }
+
+    @Test
+    void findAllShouldReturnStoredTrainers() {
+        Trainer first = trainer("Diana", "Green", "Diana.Green");
+        Trainer second = trainer("Ethan", "Black", "Ethan.Black");
+        entityManager.persist(first);
+        entityManager.persist(second);
+        entityManager.flush();
+        entityManager.clear();
 
         List<Trainer> all = trainerDao.findAll();
 
-        assertThat(all).containsExactlyInAnyOrder(t1, t2);
+        assertThat(all)
+                .extracting(trainer -> trainer.getUser().getUsername())
+                .contains("Diana.Green", "Ethan.Black");
     }
 }

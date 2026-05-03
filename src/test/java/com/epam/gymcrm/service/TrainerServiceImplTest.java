@@ -15,10 +15,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.epam.gymcrm.TestFixtures.trainer;
+import static com.epam.gymcrm.TestFixtures.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerServiceImplTest {
@@ -37,7 +42,10 @@ class TrainerServiceImplTest {
 
     @Test
     void createShouldGenerateUsernameAndPassword() {
-        Trainer trainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
+        Trainer trainer = Trainer.builder()
+                .user(user("Severus", "Snape", null))
+                .build();
+
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
         when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet())).thenReturn("Severus.Snape");
@@ -45,8 +53,8 @@ class TrainerServiceImplTest {
         trainerService.create(trainer);
 
         assertAll(
-                () -> assertThat(trainer.getUsername()).isEqualTo("Severus.Snape"),
-                () -> assertThat(trainer.getPassword()).isEqualTo("Passw0rd12"),
+                () -> assertThat(trainer.getUser().getUsername()).isEqualTo("Severus.Snape"),
+                () -> assertThat(trainer.getUser().getPassword()).isEqualTo("Passw0rd12"),
                 () -> verify(usernameGenerator).generate("Severus", "Snape", Collections.emptySet()),
                 () -> verify(passwordGenerator).generate(),
                 () -> verify(trainerDao).save(trainer)
@@ -54,79 +62,43 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void createShouldUseGeneratedUsernameWithSuffixWhenUsernameExists() {
-        Trainer newTrainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
-        Trainer existingTrainer = Trainer.builder().username("Severus.Snape").build();
-
-        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(trainerDao.findAll()).thenReturn(List.of(existingTrainer));
-        when(usernameGenerator.generate("Severus", "Snape", Set.of("Severus.Snape")))
-                .thenReturn("Severus.Snape1");
-
-        trainerService.create(newTrainer);
-
-        assertAll(
-                () -> assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape1"),
-                () -> verify(usernameGenerator).generate("Severus", "Snape", Set.of("Severus.Snape"))
-        );
-    }
-
-    @Test
     void createShouldPassExistingUsernamesToGenerator() {
-        Trainer newTrainer = Trainer.builder().firstName("Severus").lastName("Snape").build();
+        Trainer newTrainer = Trainer.builder()
+                .user(user("Severus", "Snape", null))
+                .build();
+        Trainer existingBase = trainer("Jane", "Base", "Severus.Snape");
+        Trainer existing2 = trainer("Jane", "Second", "Severus.Snape2");
+        Trainer similarName = trainer("Jane", "Similar", "Severus.Snapely");
+        Trainer withoutUser = Trainer.builder().build();
+        Trainer withoutUsername = Trainer.builder()
+                .user(user("Jane", "Null", null))
+                .build();
 
-        Trainer existingBase = Trainer.builder().username("Severus.Snape").build();
-        Trainer existing2 = Trainer.builder().username("Severus.Snape2").build();
-        Trainer similarName = Trainer.builder().username("Severus.Snapely").build();
-
+        Set<String> existingUsernames = Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely");
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing2, similarName));
-        when(usernameGenerator.generate(
-                "Severus",
-                "Snape",
-                Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely")
-        )).thenReturn("Severus.Snape1");
+        when(trainerDao.findAll()).thenReturn(List.of(
+                existingBase,
+                existing2,
+                similarName,
+                withoutUser,
+                withoutUsername
+        ));
+        when(usernameGenerator.generate("Severus", "Snape", existingUsernames)).thenReturn("Severus.Snape1");
 
         trainerService.create(newTrainer);
 
         assertAll(
-                () -> assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape1"),
-                () -> verify(usernameGenerator).generate(
-                        "Severus",
-                        "Snape",
-                        Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely")
-                )
+                () -> assertThat(newTrainer.getUser().getUsername()).isEqualTo("Severus.Snape1"),
+                () -> verify(usernameGenerator).generate("Severus", "Snape", existingUsernames),
+                () -> verify(trainerDao).save(newTrainer)
         );
-    }
-
-    @Test
-    void findByIdShouldReturnTrainerWhenTrainerExists() {
-        Trainer trainer = Trainer.builder().userId(50L).firstName("Minerva").build();
-        when(trainerDao.findById(50L)).thenReturn(Optional.of(trainer));
-
-        Trainer result = trainerService.findById(50L);
-
-        assertAll(
-                () -> assertThat(result).isSameAs(trainer),
-                () -> assertThat(result.getFirstName()).isEqualTo("Minerva"),
-                () -> verify(trainerDao).findById(50L)
-        );
-    }
-
-    @Test
-    void findByIdShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
-        when(trainerDao.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> trainerService.findById(99L))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trainer profile not found");
-
-        verify(trainerDao).findById(99L);
     }
 
     @Test
     void createShouldThrowRuntimeExceptionWhenDaoFails() {
-        Trainer trainer = Trainer.builder().userId(30L).firstName("Severus").lastName("Snape").build();
+        Trainer trainer = Trainer.builder()
+                .user(user("Severus", "Snape", null))
+                .build();
         RuntimeException exception = new RuntimeException("DAO failure");
 
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
@@ -147,38 +119,17 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void createShouldUseGeneratedUsernameWithNextSuffixWhenSequentialSuffixesExist() {
-        Trainer newTrainer = Trainer.builder()
-                .firstName("Severus")
-                .lastName("Snape")
-                .build();
+    void createShouldThrowIllegalArgumentExceptionWhenUserIsNull() {
+        Trainer trainer = Trainer.builder().build();
 
-        Trainer existingBase = Trainer.builder().username("Severus.Snape").build();
-        Trainer existing1 = Trainer.builder().username("Severus.Snape1").build();
-
-        when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(trainerDao.findAll()).thenReturn(List.of(existingBase, existing1));
-        when(usernameGenerator.generate("Severus", "Snape", Set.of("Severus.Snape", "Severus.Snape1")))
-                .thenReturn("Severus.Snape2");
-
-        trainerService.create(newTrainer);
-
-        assertAll(
-                () -> assertThat(newTrainer.getUsername()).isEqualTo("Severus.Snape2"),
-                () -> assertThat(newTrainer.getPassword()).isEqualTo("Passw0rd12"),
-                () -> verify(passwordGenerator).generate(),
-                () -> verify(trainerDao).save(newTrainer)
-        );
+        assertThatThrownBy(() -> trainerService.create(trainer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer username must not be null");
     }
 
     @Test
     void updateShouldSaveTrainerChanges() {
-        Trainer trainer = Trainer.builder()
-                .userId(22L)
-                .firstName("Minerva")
-                .lastName("McGonagall")
-                .username("Minerva.McGonagall")
-                .build();
+        Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
         when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
 
         trainerService.update(trainer);
@@ -191,14 +142,65 @@ class TrainerServiceImplTest {
     }
 
     @Test
+    void updateShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
+        Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        when(trainerDao.findById(22L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.update(trainer))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Trainer profile not found");
+    }
+
+    @Test
     void updateShouldThrowRuntimeExceptionWhenDaoFails() {
-        Trainer trainer = Trainer.builder().userId(22L).build();
+        Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
         RuntimeException exception = new RuntimeException("DAO failure");
         when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
         doThrow(exception).when(trainerDao).save(trainer);
 
         assertThatThrownBy(() -> trainerService.update(trainer))
                 .isSameAs(exception);
+    }
+
+    @Test
+    void updateShouldThrowIllegalArgumentExceptionWhenTrainerIsNull() {
+        assertThatThrownBy(() -> trainerService.update(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer must not be null");
+    }
+
+    @Test
+    void updateShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
+        Trainer trainer = trainer("Minerva", "McGonagall", "Minerva.McGonagall");
+
+        assertThatThrownBy(() -> trainerService.update(trainer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer id must not be null");
+    }
+
+    @Test
+    void findByIdShouldReturnTrainerWhenTrainerExists() {
+        Trainer trainer = trainer(50L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        when(trainerDao.findById(50L)).thenReturn(Optional.of(trainer));
+
+        Trainer result = trainerService.findById(50L);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainer),
+                () -> assertThat(result.getUser().getFirstName()).isEqualTo("Minerva"),
+                () -> verify(trainerDao).findById(50L)
+        );
+    }
+
+    @Test
+    void findByIdShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
+        when(trainerDao.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.findById(99L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Trainer profile not found");
+
+        verify(trainerDao).findById(99L);
     }
 
     @Test
@@ -216,5 +218,4 @@ class TrainerServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer id must not be null");
     }
-
 }

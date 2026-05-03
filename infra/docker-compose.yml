@@ -11,6 +11,7 @@ services:
       APP_DB_NAME: ${APP_DB_NAME}
       APP_DB_USERNAME: ${POSTGRES_USER}
       APP_DB_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      TEST_DB_NAME: ${TEST_DB_NAME}
     ports:
       - "5433:5432"
     networks:

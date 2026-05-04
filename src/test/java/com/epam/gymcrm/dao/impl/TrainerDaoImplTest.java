@@ -1,6 +1,6 @@
 package com.epam.gymcrm.dao.impl;
 
-import com.epam.gymcrm.Main;
+import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
@@ -8,10 +8,6 @@ import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +17,7 @@ import static com.epam.gymcrm.TestFixtures.trainer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = Main.class)
-@Transactional
-class TrainerDaoImplTest {
+class TrainerDaoImplTest extends PostgresContainerTest {
 
     @PersistenceContext
     private EntityManager entityManager;

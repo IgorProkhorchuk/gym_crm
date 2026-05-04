@@ -72,6 +72,13 @@ class GymFacadeTest {
     }
 
     @Test
+    void changeTraineePasswordShouldDelegateToTraineeService() {
+        gymFacade.changeTraineePassword("John.Doe", "old-password", "new-password");
+
+        verify(traineeService).changePassword("John.Doe", "old-password", "new-password");
+    }
+
+    @Test
     void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
 
@@ -120,6 +127,13 @@ class GymFacadeTest {
                 () -> assertThat(result).isSameAs(trainer),
                 () -> verify(trainerService).getProfile("Mike.Stone", "password")
         );
+    }
+
+    @Test
+    void changeTrainerPasswordShouldDelegateToTrainerService() {
+        gymFacade.changeTrainerPassword("Mike.Stone", "old-password", "new-password");
+
+        verify(trainerService).changePassword("Mike.Stone", "old-password", "new-password");
     }
 
     @Test

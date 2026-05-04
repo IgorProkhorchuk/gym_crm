@@ -145,6 +145,34 @@ class TrainerServiceImplTest {
     }
 
     @Test
+    void changePasswordShouldUpdateAuthenticatedTrainerPassword() {
+        Trainer trainer = trainer("John", "Coach", "John.Coach");
+        when(authenticationService.authenticateTrainer("John.Coach", "old-password")).thenReturn(trainer);
+
+        trainerService.changePassword("John.Coach", "old-password", "new-password");
+
+        assertAll(
+                () -> assertThat(trainer.getUser().getPassword()).isEqualTo("new-password"),
+                () -> verify(authenticationService).authenticateTrainer("John.Coach", "old-password"),
+                () -> verify(trainerDao).save(trainer)
+        );
+    }
+
+    @Test
+    void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsNull() {
+        assertThatThrownBy(() -> trainerService.changePassword("John.Coach", "old-password", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("New password must not be blank");
+    }
+
+    @Test
+    void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsBlank() {
+        assertThatThrownBy(() -> trainerService.changePassword("John.Coach", "old-password", " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("New password must not be blank");
+    }
+
+    @Test
     void updateShouldSaveTrainerChanges() {
         Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
         when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));

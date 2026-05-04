@@ -144,6 +144,34 @@ class TraineeServiceImplTest {
     }
 
     @Test
+    void changePasswordShouldUpdateAuthenticatedTraineePassword() {
+        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "old-password")).thenReturn(trainee);
+
+        traineeService.changePassword("Jane.Doe", "old-password", "new-password");
+
+        assertAll(
+                () -> assertThat(trainee.getUser().getPassword()).isEqualTo("new-password"),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "old-password"),
+                () -> verify(traineeDao).save(trainee)
+        );
+    }
+
+    @Test
+    void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsNull() {
+        assertThatThrownBy(() -> traineeService.changePassword("Jane.Doe", "old-password", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("New password must not be blank");
+    }
+
+    @Test
+    void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsBlank() {
+        assertThatThrownBy(() -> traineeService.changePassword("Jane.Doe", "old-password", " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("New password must not be blank");
+    }
+
+    @Test
     void updateShouldSaveTraineeChanges() {
         Trainee trainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
         when(traineeDao.findById(10L)).thenReturn(Optional.of(trainee));

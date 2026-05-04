@@ -26,6 +26,15 @@ public interface TrainerService {
     Trainer getProfile(String username, String password);
 
     /**
+     * Changes a trainer password after authenticating the current credentials.
+     *
+     * @param username trainer username
+     * @param oldPassword current trainer password
+     * @param newPassword replacement trainer password
+     */
+    void changePassword(String username, String oldPassword, String newPassword);
+
+    /**
      * Saves trainer profile changes, replacing the stored record with the same trainer profile id.
      *
      * @param trainer trainer data to save

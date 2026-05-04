@@ -59,6 +59,19 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
+    @Transactional
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        requireNonBlank(newPassword, "New password must not be blank");
+        log.info("Changing trainee password");
+
+        Trainee trainee = authenticationService.authenticateTrainee(username, oldPassword);
+        trainee.getUser().setPassword(newPassword);
+        traineeDao.save(trainee);
+
+        log.info("Trainee password changed, userId={}", trainee.getId());
+    }
+
+    @Override
     public void update(Trainee trainee) {
         requireNonNull(trainee, "Trainee must not be null");
         requireNonNull(trainee.getId(), TRAINEE_ID_NULL_ERROR);
@@ -90,6 +103,12 @@ public class TraineeServiceImpl implements TraineeService {
 
     private static void requireNonNull(Object value, String message) {
         if (value == null) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private static void requireNonBlank(String value, String message) {
+        if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
         }
     }

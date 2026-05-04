@@ -60,6 +60,19 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        requireNonBlank(newPassword, "New password must not be blank");
+        log.info("Changing trainer password");
+
+        Trainer trainer = authenticationService.authenticateTrainer(username, oldPassword);
+        trainer.getUser().setPassword(newPassword);
+        trainerDao.save(trainer);
+
+        log.info("Trainer password changed, userId={}", trainer.getId());
+    }
+
+    @Override
     public void update(Trainer trainer) {
         requireNonNull(trainer, "Trainer must not be null");
         requireNonNull(trainer.getId(), TRAINER_ID_NULL_ERROR);
@@ -80,6 +93,12 @@ public class TrainerServiceImpl implements TrainerService {
 
     private static void requireNonNull(Object value, String message) {
         if (value == null) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private static void requireNonBlank(String value, String message) {
+        if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
         }
     }

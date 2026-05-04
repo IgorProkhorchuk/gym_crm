@@ -26,6 +26,15 @@ public interface TraineeService {
     Trainee getProfile(String username, String password);
 
     /**
+     * Changes a trainee password after authenticating the current credentials.
+     *
+     * @param username trainee username
+     * @param oldPassword current trainee password
+     * @param newPassword replacement trainee password
+     */
+    void changePassword(String username, String oldPassword, String newPassword);
+
+    /**
      * Saves trainee profile changes, replacing the stored record with the same user id.
      *
      * @param trainee trainee data to save

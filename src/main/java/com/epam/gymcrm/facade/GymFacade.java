@@ -29,6 +29,10 @@ public class GymFacade {
         return traineeService.getProfile(username, password);
     }
 
+    public void changeTraineePassword(String username, String oldPassword, String newPassword) {
+        traineeService.changePassword(username, oldPassword, newPassword);
+    }
+
     public void updateTrainee(Trainee trainee) {
         traineeService.update(trainee);
     }
@@ -47,6 +51,10 @@ public class GymFacade {
 
     public Trainer getTrainerProfile(String username, String password) {
         return trainerService.getProfile(username, password);
+    }
+
+    public void changeTrainerPassword(String username, String oldPassword, String newPassword) {
+        trainerService.changePassword(username, oldPassword, newPassword);
     }
 
     public void updateTrainer(Trainer trainer) {

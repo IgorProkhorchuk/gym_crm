@@ -77,6 +77,29 @@ class TrainerDaoImplTest {
     }
 
     @Test
+    void findByUsernameShouldReturnTrainerWhenUsernameExists() {
+        Trainer trainer = trainer("Petro", "Fitness", "Petro.Fitness");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Trainer> found = trainerDao.findByUsername("Petro.Fitness");
+
+        assertAll(
+                () -> assertThat(found).isPresent(),
+                () -> assertThat(found.get().getUser().getUsername()).isEqualTo("Petro.Fitness"),
+                () -> assertThat(found.get().getUser().getFirstName()).isEqualTo("Petro")
+        );
+    }
+
+    @Test
+    void findByUsernameShouldReturnEmptyOptionalWhenUsernameDoesNotExist() {
+        Optional<Trainer> found = trainerDao.findByUsername("Unknown.Trainer");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void deleteShouldRemoveTrainerById() {
         Trainer trainer = trainer("Carol", "White", "Carol.White");
         entityManager.persist(trainer);

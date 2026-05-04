@@ -30,6 +30,19 @@ public class TrainerDaoImpl implements TrainerDao {
     }
 
     @Override
+    public Optional<Trainer> findByUsername(String username) {
+        return entityManager.createQuery("""
+                        select t
+                        from Trainer t
+                        join fetch t.user u
+                        where u.username = :username
+                        """, Trainer.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst();
+    }
+
+    @Override
     public void delete(Long id) {
         findById(id).ifPresent(entityManager::remove);
     }

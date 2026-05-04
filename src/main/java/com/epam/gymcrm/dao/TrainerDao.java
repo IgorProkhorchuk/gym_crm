@@ -27,6 +27,14 @@ public interface TrainerDao {
     Optional<Trainer> findById(Long id);
 
     /**
+     * Finds a trainer by the username stored in the associated user record.
+     *
+     * @param username trainer username to look up
+     * @return trainer with the given username, or {@link Optional#empty()} when absent
+     */
+    Optional<Trainer> findByUsername(String username);
+
+    /**
      * Removes a trainer by profile id.
      *
      * @param id trainer profile id to remove

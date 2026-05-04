@@ -5,7 +5,6 @@ import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +27,19 @@ public class TraineeDaoImpl implements TraineeDao {
     @Override
     public Optional<Trainee> findById(Long id) {
         return Optional.ofNullable(entityManager.find(Trainee.class, id));
+    }
+
+    @Override
+    public Optional<Trainee> findByUsername(String username) {
+        return entityManager.createQuery("""
+                        select t
+                        from Trainee t
+                        join fetch t.user u
+                        where u.username = :username
+                        """, Trainee.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst();
     }
 
     @Override

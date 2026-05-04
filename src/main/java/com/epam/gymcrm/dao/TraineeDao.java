@@ -26,6 +26,14 @@ public interface TraineeDao {
     Optional<Trainee> findById(Long id);
 
     /**
+     * Finds a trainee by the username stored in the associated user record.
+     *
+     * @param username trainee username to look up
+     * @return trainee with the given username, or {@link Optional#empty()} when absent
+     */
+    Optional<Trainee> findByUsername(String username);
+
+    /**
      * Removes a trainee by profile id.
      *
      * @param id trainee profile id to remove

@@ -77,6 +77,29 @@ class TraineeDaoImplTest {
     }
 
     @Test
+    void findByUsernameShouldReturnTraineeWhenUsernameExists() {
+        Trainee trainee = trainee("Maria", "Shevchenko", "Maria.Shevchenko");
+        entityManager.persist(trainee);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Trainee> found = traineeDao.findByUsername("Maria.Shevchenko");
+
+        assertAll(
+                () -> assertThat(found).isPresent(),
+                () -> assertThat(found.get().getUser().getUsername()).isEqualTo("Maria.Shevchenko"),
+                () -> assertThat(found.get().getUser().getFirstName()).isEqualTo("Maria")
+        );
+    }
+
+    @Test
+    void findByUsernameShouldReturnEmptyOptionalWhenUsernameDoesNotExist() {
+        Optional<Trainee> found = traineeDao.findByUsername("Unknown.Trainee");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     void deleteShouldRemoveTraineeById() {
         Trainee trainee = trainee("Lesya", "Ukrainka", "Lesya.Ukrainka");
         entityManager.persist(trainee);

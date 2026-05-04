@@ -2,6 +2,7 @@ package com.epam.gymcrm.dao.impl;
 
 import com.epam.gymcrm.Main;
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -97,6 +99,28 @@ class TrainerDaoImplTest {
         Optional<Trainer> found = trainerDao.findByUsername("Unknown.Trainer");
 
         assertThat(found).isEmpty();
+    }
+
+    @Test
+    void findByIdShouldReturnAssignedTraineesFromManyToManyRelation() {
+        Trainer trainer = trainer("Relation", "Trainer", "Relation.Trainer");
+        entityManager.persist(trainer);
+
+        Trainee trainee = trainee("Relation", "Trainee", "Relation.Trainee");
+        trainee.getTrainers().add(trainer);
+        entityManager.persist(trainee);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Trainer> found = trainerDao.findById(trainer.getId());
+
+        assertThat(found)
+                .isPresent()
+                .get()
+                .extracting(Trainer::getTrainees)
+                .satisfies(trainees -> assertThat(trainees)
+                        .extracting(assignedTrainee -> assignedTrainee.getUser().getUsername())
+                        .containsExactly("Relation.Trainee"));
     }
 
     @Test

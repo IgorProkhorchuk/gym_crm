@@ -4,6 +4,7 @@ import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.User;
+import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.UsernameGenerator;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 public class TraineeServiceImpl implements TraineeService {
 
     private final TraineeDao traineeDao;
+    private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
     private static final String TRAINEE_ID_NULL_ERROR = "Trainee id must not be null";
@@ -47,6 +49,13 @@ public class TraineeServiceImpl implements TraineeService {
         user.setPassword(passwordGenerator.generate());
         traineeDao.save(trainee);
         log.info("Trainee profile created, userId={}", trainee.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Trainee getProfile(String username, String password) {
+        log.info("Getting trainee profile");
+        return authenticationService.authenticateTrainee(username, password);
     }
 
     @Override

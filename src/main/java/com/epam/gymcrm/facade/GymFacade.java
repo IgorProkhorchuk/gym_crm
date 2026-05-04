@@ -25,6 +25,10 @@ public class GymFacade {
         return traineeService.findById(id);
     }
 
+    public Trainee getTraineeProfile(String username, String password) {
+        return traineeService.getProfile(username, password);
+    }
+
     public void updateTrainee(Trainee trainee) {
         traineeService.update(trainee);
     }
@@ -39,6 +43,10 @@ public class GymFacade {
 
     public Trainer findTrainerById(Long id) {
         return trainerService.findById(id);
+    }
+
+    public Trainer getTrainerProfile(String username, String password) {
+        return trainerService.getProfile(username, password);
     }
 
     public void updateTrainer(Trainer trainer) {

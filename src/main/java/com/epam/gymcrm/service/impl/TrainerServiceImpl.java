@@ -4,6 +4,7 @@ import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.User;
+import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.UsernameGenerator;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 public class TrainerServiceImpl implements TrainerService {
 
     private final TrainerDao trainerDao;
+    private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
     private static final String TRAINER_ID_NULL_ERROR = "Trainer id must not be null";
@@ -48,6 +50,13 @@ public class TrainerServiceImpl implements TrainerService {
         user.setPassword(passwordGenerator.generate());
         trainerDao.save(trainer);
         log.info("Trainer profile created, Id={}, userId={}", trainer.getId(), user.getUserId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Trainer getProfile(String username, String password) {
+        log.info("Getting trainer profile");
+        return authenticationService.authenticateTrainer(username, password);
     }
 
     @Override

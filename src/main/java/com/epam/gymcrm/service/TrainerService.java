@@ -17,6 +17,15 @@ public interface TrainerService {
     void create(Trainer trainer);
 
     /**
+     * Returns a trainer profile after authenticating the trainer credentials.
+     *
+     * @param username trainer username
+     * @param password trainer password
+     * @return authenticated trainer profile
+     */
+    Trainer getProfile(String username, String password);
+
+    /**
      * Saves trainer profile changes, replacing the stored record with the same trainer profile id.
      *
      * @param trainer trainer data to save

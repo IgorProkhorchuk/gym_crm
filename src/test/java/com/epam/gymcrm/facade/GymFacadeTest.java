@@ -59,6 +59,19 @@ class GymFacadeTest {
     }
 
     @Test
+    void getTraineeProfileShouldReturnTraineeFromService() {
+        Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
+        when(traineeService.getProfile("John.Doe", "password")).thenReturn(trainee);
+
+        Trainee result = gymFacade.getTraineeProfile("John.Doe", "password");
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainee),
+                () -> verify(traineeService).getProfile("John.Doe", "password")
+        );
+    }
+
+    @Test
     void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
 
@@ -93,6 +106,19 @@ class GymFacadeTest {
         assertAll(
                 () -> assertThat(result).isSameAs(trainer),
                 () -> verify(trainerService).findById(2L)
+        );
+    }
+
+    @Test
+    void getTrainerProfileShouldReturnTrainerFromService() {
+        Trainer trainer = trainer(2L, "Mike", "Stone", "Mike.Stone");
+        when(trainerService.getProfile("Mike.Stone", "password")).thenReturn(trainer);
+
+        Trainer result = gymFacade.getTrainerProfile("Mike.Stone", "password");
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainer),
+                () -> verify(trainerService).getProfile("Mike.Stone", "password")
         );
     }
 

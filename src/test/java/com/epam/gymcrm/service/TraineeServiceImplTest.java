@@ -35,6 +35,9 @@ class TraineeServiceImplTest {
     private TraineeDao traineeDao;
 
     @Mock
+    private AuthenticationService authenticationService;
+
+    @Mock
     private PasswordGenerator passwordGenerator;
 
     @Mock
@@ -124,6 +127,20 @@ class TraineeServiceImplTest {
         assertThatThrownBy(() -> traineeService.create(trainee))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainee user must not be null");
+    }
+
+    @Test
+    void getProfileShouldReturnAuthenticatedTrainee() {
+        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        Trainee result = traineeService.getProfile("Jane.Doe", "password");
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainee),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verifyNoMoreInteractions(authenticationService)
+        );
     }
 
     @Test

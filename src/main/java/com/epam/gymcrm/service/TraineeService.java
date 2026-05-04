@@ -17,6 +17,15 @@ public interface TraineeService {
     void create(Trainee trainee);
 
     /**
+     * Returns a trainee profile after authenticating the trainee credentials.
+     *
+     * @param username trainee username
+     * @param password trainee password
+     * @return authenticated trainee profile
+     */
+    Trainee getProfile(String username, String password);
+
+    /**
      * Saves trainee profile changes, replacing the stored record with the same user id.
      *
      * @param trainee trainee data to save

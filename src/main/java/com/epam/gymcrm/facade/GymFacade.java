@@ -2,6 +2,7 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
+import com.epam.gymcrm.dto.AddTrainingRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
@@ -87,6 +88,10 @@ public class GymFacade {
 
     public void createTraining(Training training) {
         trainingService.create(training);
+    }
+
+    public void addTraining(String traineeUsername, String traineePassword, AddTrainingRequest request) {
+        trainingService.addTraining(traineeUsername, traineePassword, request);
     }
 
     public Training findTrainingById(Long id) {

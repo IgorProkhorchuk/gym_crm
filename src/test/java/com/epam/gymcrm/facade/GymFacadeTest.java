@@ -2,6 +2,7 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
+import com.epam.gymcrm.dto.AddTrainingRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
@@ -194,6 +195,21 @@ class GymFacadeTest {
         gymFacade.createTraining(training);
 
         verify(trainingService).create(training);
+    }
+
+    @Test
+    void addTrainingShouldDelegateToTrainingService() {
+        AddTrainingRequest request = new AddTrainingRequest(
+                "Mike.Stone",
+                "Yoga Basics",
+                "Yoga",
+                LocalDate.of(2026, 5, 3),
+                60
+        );
+
+        gymFacade.addTraining("John.Doe", "password", request);
+
+        verify(trainingService).addTraining("John.Doe", "password", request);
     }
 
     @Test

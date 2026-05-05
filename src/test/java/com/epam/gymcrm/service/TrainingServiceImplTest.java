@@ -1,5 +1,7 @@
 package com.epam.gymcrm.service;
 
+import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
+import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Training;
@@ -10,6 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
@@ -31,6 +35,9 @@ class TrainingServiceImplTest {
 
     @Mock
     private TrainingDao trainingDao;
+
+    @Mock
+    private AuthenticationService authenticationService;
 
     @Test
     void createShouldSaveTraining() {
@@ -129,6 +136,81 @@ class TrainingServiceImplTest {
         assertThatThrownBy(() -> trainingService.findById(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Training id must not be null");
+    }
+
+    @Test
+    void getTraineeTrainingsShouldAuthenticateTraineeAndReturnMatchingTrainings() {
+        TraineeTrainingCriteria criteria = new TraineeTrainingCriteria(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 1, 31),
+                "Coach",
+                "Yoga"
+        );
+        List<Training> trainings = List.of(validTraining());
+        when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", criteria)).thenReturn(trainings);
+
+        List<Training> result = trainingService.getTraineeTrainings("Training.Trainee", "password", criteria);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainings),
+                () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
+                () -> verify(trainingDao).findByTraineeUsernameAndCriteria("Training.Trainee", criteria)
+        );
+    }
+
+    @Test
+    void getTraineeTrainingsShouldUseEmptyCriteriaWhenCriteriaIsNull() {
+        List<Training> trainings = List.of(validTraining());
+        when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", TraineeTrainingCriteria.empty()))
+                .thenReturn(trainings);
+
+        List<Training> result = trainingService.getTraineeTrainings("Training.Trainee", "password", null);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainings),
+                () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
+                () -> verify(trainingDao).findByTraineeUsernameAndCriteria(
+                        "Training.Trainee",
+                        TraineeTrainingCriteria.empty()
+                )
+        );
+    }
+
+    @Test
+    void getTrainerTrainingsShouldAuthenticateTrainerAndReturnMatchingTrainings() {
+        TrainerTrainingCriteria criteria = new TrainerTrainingCriteria(
+                LocalDate.of(2026, 2, 1),
+                LocalDate.of(2026, 2, 28),
+                "Trainee"
+        );
+        List<Training> trainings = List.of(validTraining());
+        when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", criteria)).thenReturn(trainings);
+
+        List<Training> result = trainingService.getTrainerTrainings("Training.Trainer", "password", criteria);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainings),
+                () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
+                () -> verify(trainingDao).findByTrainerUsernameAndCriteria("Training.Trainer", criteria)
+        );
+    }
+
+    @Test
+    void getTrainerTrainingsShouldUseEmptyCriteriaWhenCriteriaIsNull() {
+        List<Training> trainings = List.of(validTraining());
+        when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", TrainerTrainingCriteria.empty()))
+                .thenReturn(trainings);
+
+        List<Training> result = trainingService.getTrainerTrainings("Training.Trainer", "password", null);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainings),
+                () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
+                () -> verify(trainingDao).findByTrainerUsernameAndCriteria(
+                        "Training.Trainer",
+                        TrainerTrainingCriteria.empty()
+                )
+        );
     }
 
     private static Training validTraining() {

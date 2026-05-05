@@ -1,5 +1,7 @@
 package com.epam.gymcrm.facade;
 
+import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
+import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
@@ -8,6 +10,8 @@ import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -87,5 +91,21 @@ public class GymFacade {
 
     public Training findTrainingById(Long id) {
         return trainingService.findById(id);
+    }
+
+    public List<Training> getTraineeTrainings(
+            String username,
+            String password,
+            TraineeTrainingCriteria criteria
+    ) {
+        return trainingService.getTraineeTrainings(username, password, criteria);
+    }
+
+    public List<Training> getTrainerTrainings(
+            String username,
+            String password,
+            TrainerTrainingCriteria criteria
+    ) {
+        return trainingService.getTrainerTrainings(username, password, criteria);
     }
 }

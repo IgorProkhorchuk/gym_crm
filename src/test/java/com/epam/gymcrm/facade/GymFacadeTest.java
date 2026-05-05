@@ -1,5 +1,7 @@
 package com.epam.gymcrm.facade;
 
+import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
+import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
@@ -11,6 +13,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.util.List;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
@@ -204,6 +209,51 @@ class GymFacadeTest {
         assertAll(
                 () -> assertThat(result).isSameAs(training),
                 () -> verify(trainingService).findById(3L)
+        );
+    }
+
+    @Test
+    void getTraineeTrainingsShouldReturnTrainingsFromService() {
+        TraineeTrainingCriteria criteria = new TraineeTrainingCriteria(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 1, 31),
+                "Mike",
+                "Yoga"
+        );
+        List<Training> trainings = List.of(training(
+                trainee(1L, "John", "Doe", "John.Doe"),
+                trainer(2L, "Mike", "Stone", "Mike.Stone"),
+                trainingType("Yoga")
+        ));
+        when(trainingService.getTraineeTrainings("John.Doe", "password", criteria)).thenReturn(trainings);
+
+        List<Training> result = gymFacade.getTraineeTrainings("John.Doe", "password", criteria);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainings),
+                () -> verify(trainingService).getTraineeTrainings("John.Doe", "password", criteria)
+        );
+    }
+
+    @Test
+    void getTrainerTrainingsShouldReturnTrainingsFromService() {
+        TrainerTrainingCriteria criteria = new TrainerTrainingCriteria(
+                LocalDate.of(2026, 2, 1),
+                LocalDate.of(2026, 2, 28),
+                "John"
+        );
+        List<Training> trainings = List.of(training(
+                trainee(1L, "John", "Doe", "John.Doe"),
+                trainer(2L, "Mike", "Stone", "Mike.Stone"),
+                trainingType("Yoga")
+        ));
+        when(trainingService.getTrainerTrainings("Mike.Stone", "password", criteria)).thenReturn(trainings);
+
+        List<Training> result = gymFacade.getTrainerTrainings("Mike.Stone", "password", criteria);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainings),
+                () -> verify(trainingService).getTrainerTrainings("Mike.Stone", "password", criteria)
         );
     }
 }

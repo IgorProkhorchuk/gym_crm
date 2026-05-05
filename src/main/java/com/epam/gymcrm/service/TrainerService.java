@@ -3,6 +3,8 @@ package com.epam.gymcrm.service;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainer;
 
+import java.util.List;
+
 /**
  * Business operations for trainer profiles.
  */
@@ -51,6 +53,15 @@ public interface TrainerService {
      * @param password trainer password
      */
     void deactivate(String username, String password);
+
+    /**
+     * Returns active trainers that are not assigned to an authenticated trainee profile.
+     *
+     * @param traineeUsername trainee username
+     * @param traineePassword trainee password
+     * @return active trainers not assigned to the trainee
+     */
+    List<Trainer> getUnassignedTrainers(String traineeUsername, String traineePassword);
 
     /**
      * Saves trainer profile changes, replacing the stored record with the same trainer profile id.

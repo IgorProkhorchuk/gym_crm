@@ -234,6 +234,22 @@ class TrainerServiceImplTest {
     }
 
     @Test
+    void getUnassignedTrainersShouldAuthenticateTraineeAndReturnDaoResult() {
+        Trainer trainer = trainer("Available", "Trainer", "Available.Trainer");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password"))
+                .thenReturn(com.epam.gymcrm.TestFixtures.trainee("Jane", "Doe", "Jane.Doe"));
+        when(trainerDao.findNotAssignedToTrainee("Jane.Doe")).thenReturn(List.of(trainer));
+
+        List<Trainer> result = trainerService.getUnassignedTrainers("Jane.Doe", "password");
+
+        assertAll(
+                () -> assertThat(result).containsExactly(trainer),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(trainerDao).findNotAssignedToTrainee("Jane.Doe")
+        );
+    }
+
+    @Test
     void updateShouldSaveTrainerChanges() {
         Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
         when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));

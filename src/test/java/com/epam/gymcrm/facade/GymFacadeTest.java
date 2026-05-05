@@ -178,6 +178,19 @@ class GymFacadeTest {
     }
 
     @Test
+    void getUnassignedTrainersShouldReturnTrainersFromService() {
+        List<Trainer> trainers = List.of(trainer("Available", "Trainer", "Available.Trainer"));
+        when(trainerService.getUnassignedTrainers("John.Doe", "password")).thenReturn(trainers);
+
+        List<Trainer> result = gymFacade.getUnassignedTrainers("John.Doe", "password");
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainers),
+                () -> verify(trainerService).getUnassignedTrainers("John.Doe", "password")
+        );
+    }
+
+    @Test
     void updateTrainerShouldDelegateToTrainerService() {
         Trainer trainer = trainer(2L, "Mike", "Stone", "Mike.Stone");
 

@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -93,6 +94,15 @@ public class TrainerServiceImpl implements TrainerService {
         changeActiveStatus(trainer, false, "Trainer profile is already inactive");
 
         log.info("Trainer profile deactivated, userId={}", trainer.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Trainer> getUnassignedTrainers(String traineeUsername, String traineePassword) {
+        log.info("Getting active trainers not assigned to trainee");
+
+        authenticationService.authenticateTrainee(traineeUsername, traineePassword);
+        return trainerDao.findNotAssignedToTrainee(traineeUsername);
     }
 
     @Override

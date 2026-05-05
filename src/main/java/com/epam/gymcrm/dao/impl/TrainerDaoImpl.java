@@ -43,6 +43,33 @@ public class TrainerDaoImpl implements TrainerDao {
     }
 
     @Override
+    public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
+        return entityManager.createQuery("""
+                        select distinct t
+                        from Trainer t
+                        join fetch t.user u
+                        where u.active = true
+                          and exists (
+                              select trainee.id
+                              from Trainee trainee
+                              join trainee.user traineeUser
+                              where traineeUser.username = :traineeUsername
+                          )
+                          and not exists (
+                              select assignedTrainer.id
+                              from Trainee trainee
+                              join trainee.user traineeUser
+                              join trainee.trainers assignedTrainer
+                              where traineeUser.username = :traineeUsername
+                                and assignedTrainer = t
+                          )
+                        order by u.firstName, u.lastName, u.username
+                        """, Trainer.class)
+                .setParameter("traineeUsername", traineeUsername)
+                .getResultList();
+    }
+
+    @Override
     public void delete(Long id) {
         findById(id).ifPresent(entityManager::remove);
     }

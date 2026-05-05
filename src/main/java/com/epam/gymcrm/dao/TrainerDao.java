@@ -35,6 +35,14 @@ public interface TrainerDao {
     Optional<Trainer> findByUsername(String username);
 
     /**
+     * Finds active trainers that are not assigned to the trainee with the given username.
+     *
+     * @param traineeUsername trainee username to check assignments for
+     * @return active trainers not assigned to the trainee, or an empty list when the trainee does not exist
+     */
+    List<Trainer> findNotAssignedToTrainee(String traineeUsername);
+
+    /**
      * Removes a trainer by profile id.
      *
      * @param id trainer profile id to remove

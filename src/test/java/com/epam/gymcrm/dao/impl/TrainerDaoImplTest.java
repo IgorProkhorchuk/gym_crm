@@ -117,6 +117,41 @@ class TrainerDaoImplTest extends PostgresContainerTest {
     }
 
     @Test
+    void findNotAssignedToTraineeShouldReturnActiveTrainersNotAssignedToTrainee() {
+        Trainer assignedTrainer = trainer("Assigned", "Trainer", "Assigned.Trainer");
+        Trainer unassignedTrainer = trainer("Available", "Trainer", "Available.Trainer");
+        Trainer inactiveTrainer = trainer("Inactive", "Trainer", "Inactive.Trainer");
+        inactiveTrainer.getUser().setActive(false);
+        entityManager.persist(assignedTrainer);
+        entityManager.persist(unassignedTrainer);
+        entityManager.persist(inactiveTrainer);
+
+        Trainee trainee = trainee("Target", "Trainee", "Target.Trainee");
+        trainee.getTrainers().add(assignedTrainer);
+        entityManager.persist(trainee);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Trainer> result = trainerDao.findNotAssignedToTrainee("Target.Trainee");
+
+        assertThat(result)
+                .extracting(trainer -> trainer.getUser().getUsername())
+                .containsExactly("Available.Trainer");
+    }
+
+    @Test
+    void findNotAssignedToTraineeShouldReturnEmptyListWhenTraineeDoesNotExist() {
+        Trainer trainer = trainer("Available", "Trainer", "Available.Trainer");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Trainer> result = trainerDao.findNotAssignedToTrainee("Unknown.Trainee");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void deleteShouldRemoveTrainerById() {
         Trainer trainer = trainer("Carol", "White", "Carol.White");
         entityManager.persist(trainer);

@@ -82,6 +82,10 @@ public class GymFacade {
         trainerService.deactivate(username, password);
     }
 
+    public List<Trainer> getUnassignedTrainers(String traineeUsername, String traineePassword) {
+        return trainerService.getUnassignedTrainers(traineeUsername, traineePassword);
+    }
+
     public void updateTrainer(Trainer trainer) {
         trainerService.update(trainer);
     }

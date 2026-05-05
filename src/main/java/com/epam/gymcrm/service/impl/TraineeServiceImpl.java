@@ -1,9 +1,11 @@
 package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TraineeDao;
+import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainee;
+import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.User;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
@@ -14,7 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 public class TraineeServiceImpl implements TraineeService {
 
     private final TraineeDao traineeDao;
+    private final TrainerDao trainerDao;
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
@@ -106,6 +112,27 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
+    @Transactional
+    public List<Trainer> updateTrainers(String username, String password, List<String> trainerUsernames) {
+        requireNonNull(trainerUsernames, "Trainer usernames must not be null");
+        log.info("Updating trainee trainers list");
+
+        Set<String> uniqueTrainerUsernames = normalizeTrainerUsernames(trainerUsernames);
+        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        List<Trainer> trainers = uniqueTrainerUsernames.stream()
+                .map(trainerUsername -> trainerDao.findByUsername(trainerUsername)
+                        .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found")))
+                .toList();
+
+        trainee.getTrainers().clear();
+        trainee.getTrainers().addAll(trainers);
+        traineeDao.save(trainee);
+
+        log.info("Trainee trainers list updated, userId={}", trainee.getId());
+        return trainers;
+    }
+
+    @Override
     public void update(Trainee trainee) {
         requireNonNull(trainee, "Trainee must not be null");
         requireNonNull(trainee.getId(), TRAINEE_ID_NULL_ERROR);
@@ -145,6 +172,15 @@ public class TraineeServiceImpl implements TraineeService {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private static Set<String> normalizeTrainerUsernames(List<String> trainerUsernames) {
+        Set<String> uniqueTrainerUsernames = new LinkedHashSet<>();
+        for (String trainerUsername : trainerUsernames) {
+            requireNonBlank(trainerUsername, "Trainer username must not be blank");
+            uniqueTrainerUsernames.add(trainerUsername);
+        }
+        return uniqueTrainerUsernames;
     }
 
     private void changeActiveStatus(Trainee trainee, boolean active, String errorMessage) {

@@ -106,6 +106,23 @@ class GymFacadeTest {
     }
 
     @Test
+    void updateTraineeTrainersShouldReturnTrainersFromService() {
+        List<String> trainerUsernames = List.of("First.Trainer", "Second.Trainer");
+        List<Trainer> trainers = List.of(
+                trainer("First", "Trainer", "First.Trainer"),
+                trainer("Second", "Trainer", "Second.Trainer")
+        );
+        when(traineeService.updateTrainers("John.Doe", "password", trainerUsernames)).thenReturn(trainers);
+
+        List<Trainer> result = gymFacade.updateTraineeTrainers("John.Doe", "password", trainerUsernames);
+
+        assertAll(
+                () -> assertThat(result).isSameAs(trainers),
+                () -> verify(traineeService).updateTrainers("John.Doe", "password", trainerUsernames)
+        );
+    }
+
+    @Test
     void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
 

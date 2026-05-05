@@ -1,10 +1,12 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TraineeDao;
+import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainee;
+import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
+import static com.epam.gymcrm.TestFixtures.trainer;
 import static com.epam.gymcrm.TestFixtures.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,6 +39,9 @@ class TraineeServiceImplTest {
 
     @Mock
     private TraineeDao traineeDao;
+
+    @Mock
+    private TrainerDao trainerDao;
 
     @Mock
     private AuthenticationService authenticationService;
@@ -271,6 +277,121 @@ class TraineeServiceImplTest {
 
         assertAll(
                 () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "wrong-password"),
+                () -> verifyNoInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void updateTrainersShouldReplaceAuthenticatedTraineeTrainers() {
+        Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
+        Trainer oldTrainer = trainer(19L, "Old", "Trainer", "Old.Trainer");
+        Trainer firstTrainer = trainer(20L, "First", "Trainer", "First.Trainer");
+        Trainer secondTrainer = trainer(21L, "Second", "Trainer", "Second.Trainer");
+        trainee.getTrainers().add(oldTrainer);
+
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+        when(trainerDao.findByUsername("First.Trainer")).thenReturn(Optional.of(firstTrainer));
+        when(trainerDao.findByUsername("Second.Trainer")).thenReturn(Optional.of(secondTrainer));
+
+        List<Trainer> result = traineeService.updateTrainers(
+                "Jane.Doe",
+                "password",
+                List.of("First.Trainer", "Second.Trainer")
+        );
+
+        assertAll(
+                () -> assertThat(result).containsExactly(firstTrainer, secondTrainer),
+                () -> assertThat(trainee.getTrainers()).containsExactlyInAnyOrder(firstTrainer, secondTrainer),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(trainerDao).findByUsername("First.Trainer"),
+                () -> verify(trainerDao).findByUsername("Second.Trainer"),
+                () -> verify(traineeDao).save(trainee)
+        );
+    }
+
+    @Test
+    void updateTrainersShouldIgnoreDuplicateTrainerUsernames() {
+        Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
+        Trainer trainer = trainer(20L, "First", "Trainer", "First.Trainer");
+
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+        when(trainerDao.findByUsername("First.Trainer")).thenReturn(Optional.of(trainer));
+
+        List<Trainer> result = traineeService.updateTrainers(
+                "Jane.Doe",
+                "password",
+                List.of("First.Trainer", "First.Trainer")
+        );
+
+        assertAll(
+                () -> assertThat(result).containsExactly(trainer),
+                () -> assertThat(trainee.getTrainers()).containsExactly(trainer),
+                () -> verify(trainerDao).findByUsername("First.Trainer"),
+                () -> verify(traineeDao).save(trainee)
+        );
+    }
+
+    @Test
+    void updateTrainersShouldClearTrainersWhenTrainerUsernamesAreEmpty() {
+        Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
+        trainee.getTrainers().add(trainer(19L, "Old", "Trainer", "Old.Trainer"));
+
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        List<Trainer> result = traineeService.updateTrainers("Jane.Doe", "password", Collections.emptyList());
+
+        assertAll(
+                () -> assertThat(result).isEmpty(),
+                () -> assertThat(trainee.getTrainers()).isEmpty(),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verifyNoInteractions(trainerDao),
+                () -> verify(traineeDao).save(trainee)
+        );
+    }
+
+    @Test
+    void updateTrainersShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
+        Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+        when(trainerDao.findByUsername("Unknown.Trainer")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> traineeService.updateTrainers(
+                "Jane.Doe",
+                "password",
+                List.of("Unknown.Trainer")
+        ))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Trainer profile not found");
+
+        assertAll(
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(trainerDao).findByUsername("Unknown.Trainer"),
+                () -> verifyNoMoreInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void updateTrainersShouldThrowIllegalArgumentExceptionWhenTrainerUsernamesAreNull() {
+        assertThatThrownBy(() -> traineeService.updateTrainers("Jane.Doe", "password", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer usernames must not be null");
+
+        assertAll(
+                () -> verifyNoInteractions(authenticationService),
+                () -> verifyNoInteractions(trainerDao),
+                () -> verifyNoInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void updateTrainersShouldThrowIllegalArgumentExceptionWhenTrainerUsernameIsBlank() {
+        assertThatThrownBy(() -> traineeService.updateTrainers("Jane.Doe", "password", List.of(" ")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer username must not be blank");
+
+        assertAll(
+                () -> verifyNoInteractions(authenticationService),
+                () -> verifyNoInteractions(trainerDao),
                 () -> verifyNoInteractions(traineeDao)
         );
     }

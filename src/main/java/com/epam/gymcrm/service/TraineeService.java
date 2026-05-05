@@ -2,6 +2,9 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainee;
+import com.epam.gymcrm.model.Trainer;
+
+import java.util.List;
 
 /**
  * Business operations for trainee profiles.
@@ -60,6 +63,16 @@ public interface TraineeService {
      * @param password trainee password
      */
     void deleteByUsername(String username, String password);
+
+    /**
+     * Replaces an authenticated trainee's assigned trainers with the provided trainer usernames.
+     *
+     * @param username trainee username
+     * @param password trainee password
+     * @param trainerUsernames usernames of trainers to assign
+     * @return updated assigned trainers list
+     */
+    List<Trainer> updateTrainers(String username, String password, List<String> trainerUsernames);
 
     /**
      * Saves trainee profile changes, replacing the stored record with the same user id.

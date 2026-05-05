@@ -50,6 +50,14 @@ public class GymFacade {
         traineeService.deleteByUsername(username, password);
     }
 
+    public List<Trainer> updateTraineeTrainers(
+            String traineeUsername,
+            String traineePassword,
+            List<String> trainerUsernames
+    ) {
+        return traineeService.updateTrainers(traineeUsername, traineePassword, trainerUsernames);
+    }
+
     public void updateTrainee(Trainee trainee) {
         traineeService.update(trainee);
     }

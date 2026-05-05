@@ -122,6 +122,38 @@ class TraineeDaoImplTest extends PostgresContainerTest {
     }
 
     @Test
+    void saveShouldReplaceAssignedTrainersRelation() {
+        Trainer oldTrainer = trainer("Old", "Trainer", "Old.Trainer");
+        Trainer newTrainer = trainer("New", "Trainer", "New.Trainer");
+        entityManager.persist(oldTrainer);
+        entityManager.persist(newTrainer);
+
+        Trainee trainee = trainee("Updated", "Trainee", "Updated.Trainee");
+        trainee.getTrainers().add(oldTrainer);
+        entityManager.persist(trainee);
+        entityManager.flush();
+        entityManager.clear();
+
+        Trainee found = traineeDao.findByUsername("Updated.Trainee").orElseThrow();
+        Trainer managedNewTrainer = entityManager.find(Trainer.class, newTrainer.getId());
+        found.getTrainers().clear();
+        found.getTrainers().add(managedNewTrainer);
+        traineeDao.save(found);
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Trainee> updated = traineeDao.findById(trainee.getId());
+
+        assertThat(updated)
+                .isPresent()
+                .get()
+                .extracting(Trainee::getTrainers)
+                .satisfies(trainers -> assertThat(trainers)
+                        .extracting(assignedTrainer -> assignedTrainer.getUser().getUsername())
+                        .containsExactly("New.Trainer"));
+    }
+
+    @Test
     void deleteShouldRemoveTraineeById() {
         Trainee trainee = trainee("Lesya", "Ukrainka", "Lesya.Ukrainka");
         entityManager.persist(trainee);

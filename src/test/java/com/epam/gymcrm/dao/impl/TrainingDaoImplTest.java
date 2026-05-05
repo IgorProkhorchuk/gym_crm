@@ -87,8 +87,8 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         Trainee otherTrainee = trainee("Other", "Trainee", "Other.Trainee");
         Trainer johnTrainer = trainer("John", "Coach", "John.Coach");
         Trainer annTrainer = trainer("Ann", "Coach", "Ann.Coach");
-        TrainingType yogaType = trainingType("Yoga");
-        TrainingType boxingType = trainingType("Boxing");
+        TrainingType yogaType = findTrainingType("Yoga");
+        TrainingType boxingType = findTrainingType("Boxing");
         persistAll(targetTrainee, otherTrainee, johnTrainer, annTrainer, yogaType, boxingType);
 
         Training expected = persistTraining(
@@ -128,7 +128,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         Trainee targetTrainee = trainee("Null", "Criteria", "Null.Criteria");
         Trainee otherTrainee = trainee("Other", "Criteria", "Other.Criteria");
         Trainer trainer = trainer("Null", "Trainer", "Null.Trainer");
-        TrainingType trainingType = trainingType("Null Criteria Yoga");
+        TrainingType trainingType = findTrainingType("Yoga");
         persistAll(targetTrainee, otherTrainee, trainer, trainingType);
 
         Training first = persistTraining(targetTrainee, trainer, trainingType, LocalDate.of(2026, 1, 10));
@@ -149,8 +149,8 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         Trainee targetTrainee = trainee("Blank", "Criteria", "Blank.Criteria");
         Trainer firstTrainer = trainer("First", "Trainer", "First.Trainer");
         Trainer secondTrainer = trainer("Second", "Trainer", "Second.Trainer");
-        TrainingType yogaType = trainingType("Blank Criteria Yoga");
-        TrainingType boxingType = trainingType("Blank Criteria Boxing");
+        TrainingType yogaType = findTrainingType("Yoga");
+        TrainingType boxingType = findTrainingType("Boxing");
         persistAll(targetTrainee, firstTrainer, secondTrainer, yogaType, boxingType);
 
         Training first = persistTraining(targetTrainee, firstTrainer, yogaType, LocalDate.of(2026, 1, 10));
@@ -174,7 +174,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         Trainee bobTrainee = trainee("Bob", "Runner", "Bob.Runner");
         Trainer targetTrainer = trainer("Target", "Trainer", "Target.Trainer");
         Trainer otherTrainer = trainer("Other", "Trainer", "Other.Trainer");
-        TrainingType yogaType = trainingType("Trainer Yoga");
+        TrainingType yogaType = findTrainingType("Yoga");
         persistAll(aliceTrainee, bobTrainee, targetTrainer, otherTrainer, yogaType);
 
         Training expected = persistTraining(
@@ -213,7 +213,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         Trainee secondTrainee = trainee("Second", "Runner", "Second.Runner");
         Trainer targetTrainer = trainer("Null", "Trainer", "Null.Criteria.Trainer");
         Trainer otherTrainer = trainer("Other", "Trainer", "Other.Criteria.Trainer");
-        TrainingType trainingType = trainingType("Trainer Null Criteria Yoga");
+        TrainingType trainingType = findTrainingType("Yoga");
         persistAll(firstTrainee, secondTrainee, targetTrainer, otherTrainer, trainingType);
 
         Training first = persistTraining(firstTrainee, targetTrainer, trainingType, LocalDate.of(2026, 1, 10));
@@ -232,19 +232,40 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     private Training persistedTrainingGraph() {
         Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
         Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
-        TrainingType trainingType = trainingType("Yoga");
+        TrainingType trainingType = findTrainingType("Yoga");
 
-        entityManager.persist(trainee);
-        entityManager.persist(trainer);
-        entityManager.persist(trainingType);
+        persistAll(trainee, trainer, trainingType);
 
         return training(trainee, trainer, trainingType);
     }
 
     private void persistAll(Object... entities) {
         for (Object entity : entities) {
+            if (entityManager.contains(entity)) {
+                continue;
+            }
+            if (entity instanceof Trainer trainer) {
+                persistSpecialization(trainer);
+            }
             entityManager.persist(entity);
         }
+    }
+
+    private void persistSpecialization(Trainer trainer) {
+        TrainingType specialization = trainer.getSpecialization();
+        if (specialization.getTrainingTypeId() == null) {
+            trainer.setSpecialization(findTrainingType(specialization.getTrainingTypeName()));
+        }
+    }
+
+    private TrainingType findTrainingType(String name) {
+        return entityManager.createQuery("""
+                        select tt
+                        from TrainingType tt
+                        where tt.trainingTypeName = :name
+                        """, TrainingType.class)
+                .setParameter("name", name)
+                .getSingleResult();
     }
 
     private Training persistTraining(

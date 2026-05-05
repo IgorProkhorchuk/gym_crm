@@ -41,17 +41,31 @@ public final class TestFixtures {
     }
 
     public static Trainer trainer(String firstName, String lastName, String username) {
+        return trainer(firstName, lastName, username, trainingType("Fitness"));
+    }
+
+    public static Trainer trainer(String firstName, String lastName, String username, TrainingType specialization) {
         return Trainer.builder()
                 .user(user(firstName, lastName, username))
-                .specialization("Fitness")
+                .specialization(specialization)
                 .build();
     }
 
     public static Trainer trainer(Long id, String firstName, String lastName, String username) {
+        return trainer(id, firstName, lastName, username, trainingType("Fitness"));
+    }
+
+    public static Trainer trainer(
+            Long id,
+            String firstName,
+            String lastName,
+            String username,
+            TrainingType specialization
+    ) {
         return Trainer.builder()
                 .id(id)
                 .user(user(firstName, lastName, username))
-                .specialization("Fitness")
+                .specialization(specialization)
                 .build();
     }
 

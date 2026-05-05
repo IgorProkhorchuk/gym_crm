@@ -1,9 +1,11 @@
 package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.model.User;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class TrainerServiceImpl implements TrainerService {
 
     private final TrainerDao trainerDao;
+    private final TrainingTypeDao trainingTypeDao;
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
@@ -34,6 +37,7 @@ public class TrainerServiceImpl implements TrainerService {
     public void create(Trainer trainer) {
         requireNonNull(trainer, "Trainer must not be null");
         requireNonNull(trainer.getUser(), "Trainer username must not be null");
+        trainer.setSpecialization(resolveSpecialization(trainer.getSpecialization()));
 
         User user = trainer.getUser();
 
@@ -109,6 +113,7 @@ public class TrainerServiceImpl implements TrainerService {
     public void update(Trainer trainer) {
         requireNonNull(trainer, "Trainer must not be null");
         requireNonNull(trainer.getId(), TRAINER_ID_NULL_ERROR);
+        trainer.setSpecialization(resolveSpecialization(trainer.getSpecialization()));
         log.info("Updating trainer profile, userId={}", trainer.getId());
         trainerDao.findById(trainer.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
@@ -134,6 +139,14 @@ public class TrainerServiceImpl implements TrainerService {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private TrainingType resolveSpecialization(TrainingType specialization) {
+        requireNonNull(specialization, "Trainer specialization must not be null");
+        requireNonBlank(specialization.getTrainingTypeName(), "Trainer specialization must not be blank");
+
+        return trainingTypeDao.findByName(specialization.getTrainingTypeName())
+                .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
     }
 
     private void changeActiveStatus(Trainer trainer, boolean active, String errorMessage) {

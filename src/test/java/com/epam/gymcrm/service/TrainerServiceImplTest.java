@@ -1,6 +1,7 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainer;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.epam.gymcrm.TestFixtures.trainer;
+import static com.epam.gymcrm.TestFixtures.trainingType;
 import static com.epam.gymcrm.TestFixtures.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,6 +38,9 @@ class TrainerServiceImplTest {
     private TrainerDao trainerDao;
 
     @Mock
+    private TrainingTypeDao trainingTypeDao;
+
+    @Mock
     private AuthenticationService authenticationService;
 
     @Mock
@@ -48,8 +53,10 @@ class TrainerServiceImplTest {
     void createShouldGenerateUsernameAndPassword() {
         Trainer trainer = Trainer.builder()
                 .user(user("Severus", "Snape", null))
+                .specialization(trainingType("Fitness"))
                 .build();
 
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
         when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet())).thenReturn("Severus.Snape");
@@ -69,6 +76,7 @@ class TrainerServiceImplTest {
     void createShouldPassExistingUsernamesToGenerator() {
         Trainer newTrainer = Trainer.builder()
                 .user(user("Severus", "Snape", null))
+                .specialization(trainingType("Fitness"))
                 .build();
         Trainer existingBase = trainer("Jane", "Base", "Severus.Snape");
         Trainer existing2 = trainer("Jane", "Second", "Severus.Snape2");
@@ -79,6 +87,7 @@ class TrainerServiceImplTest {
                 .build();
 
         Set<String> existingUsernames = Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely");
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(trainerDao.findAll()).thenReturn(List.of(
                 existingBase,
@@ -102,9 +111,11 @@ class TrainerServiceImplTest {
     void createShouldThrowRuntimeExceptionWhenDaoFails() {
         Trainer trainer = Trainer.builder()
                 .user(user("Severus", "Snape", null))
+                .specialization(trainingType("Fitness"))
                 .build();
         RuntimeException exception = new RuntimeException("DAO failure");
 
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(trainerDao.findAll()).thenReturn(Collections.emptyList());
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
@@ -129,6 +140,30 @@ class TrainerServiceImplTest {
         assertThatThrownBy(() -> trainerService.create(trainer))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer username must not be null");
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenSpecializationIsNull() {
+        Trainer trainer = Trainer.builder()
+                .user(user("Severus", "Snape", null))
+                .build();
+
+        assertThatThrownBy(() -> trainerService.create(trainer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer specialization must not be null");
+    }
+
+    @Test
+    void createShouldThrowEntityNotFoundExceptionWhenSpecializationDoesNotExist() {
+        Trainer trainer = Trainer.builder()
+                .user(user("Severus", "Snape", null))
+                .specialization(trainingType("Unknown"))
+                .build();
+        when(trainingTypeDao.findByName("Unknown")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.create(trainer))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Training type not found");
     }
 
     @Test
@@ -252,6 +287,7 @@ class TrainerServiceImplTest {
     @Test
     void updateShouldSaveTrainerChanges() {
         Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
 
         trainerService.update(trainer);
@@ -266,6 +302,7 @@ class TrainerServiceImplTest {
     @Test
     void updateShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
         Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(trainerDao.findById(22L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainerService.update(trainer))
@@ -277,6 +314,7 @@ class TrainerServiceImplTest {
     void updateShouldThrowRuntimeExceptionWhenDaoFails() {
         Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
         RuntimeException exception = new RuntimeException("DAO failure");
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
         doThrow(exception).when(trainerDao).save(trainer);
 

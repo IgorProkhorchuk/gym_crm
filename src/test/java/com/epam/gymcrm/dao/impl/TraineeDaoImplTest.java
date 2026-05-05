@@ -101,6 +101,7 @@ class TraineeDaoImplTest extends PostgresContainerTest {
     @Test
     void saveShouldPersistAssignedTrainersRelation() {
         Trainer trainer = trainer("Assigned", "Trainer", "Assigned.Trainer");
+        persistSpecialization(trainer);
         entityManager.persist(trainer);
 
         Trainee trainee = trainee("Linked", "Trainee", "Linked.Trainee");
@@ -125,6 +126,8 @@ class TraineeDaoImplTest extends PostgresContainerTest {
     void saveShouldReplaceAssignedTrainersRelation() {
         Trainer oldTrainer = trainer("Old", "Trainer", "Old.Trainer");
         Trainer newTrainer = trainer("New", "Trainer", "New.Trainer");
+        persistSpecialization(oldTrainer);
+        persistSpecialization(newTrainer);
         entityManager.persist(oldTrainer);
         entityManager.persist(newTrainer);
 
@@ -171,12 +174,12 @@ class TraineeDaoImplTest extends PostgresContainerTest {
     void deleteShouldCascadeRemoveRelevantTrainingsButKeepTrainer() {
         Trainee trainee = trainee("Cascade", "Trainee", "Cascade.Trainee");
         Trainer trainer = trainer("Cascade", "Trainer", "Cascade.Trainer");
-        TrainingType trainingType = trainingType("Cascade Fitness");
+        TrainingType trainingType = findTrainingType("Fitness");
 
+        persistSpecialization(trainer);
         entityManager.persist(trainer);
         trainee.getTrainers().add(trainer);
         entityManager.persist(trainee);
-        entityManager.persist(trainingType);
 
         Training training = training(trainee, trainer, trainingType);
         entityManager.persist(training);
@@ -229,5 +232,22 @@ class TraineeDaoImplTest extends PostgresContainerTest {
         assertThat(all)
                 .extracting(trainee -> trainee.getUser().getUsername())
                 .contains("Anna.Taylor", "Brian.Miller");
+    }
+
+    private void persistSpecialization(Trainer trainer) {
+        TrainingType specialization = trainer.getSpecialization();
+        if (specialization.getTrainingTypeId() == null) {
+            trainer.setSpecialization(findTrainingType(specialization.getTrainingTypeName()));
+        }
+    }
+
+    private TrainingType findTrainingType(String name) {
+        return entityManager.createQuery("""
+                        select tt
+                        from TrainingType tt
+                        where tt.trainingTypeName = :name
+                        """, TrainingType.class)
+                .setParameter("name", name)
+                .getSingleResult();
     }
 }

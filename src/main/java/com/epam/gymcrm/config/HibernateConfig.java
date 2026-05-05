@@ -41,6 +41,9 @@ public class HibernateConfig {
     @Value("${hibernate.hbm2ddl.auto}")
     private String hibernateHbm2ddlAuto;
 
+    @Value("${hibernate.hbm2ddl.import_files:}")
+    private String hibernateImportFiles;
+
     @Value("${hibernate.packagesToScan}")
     private String hibernatePackagesToScan;
 
@@ -70,6 +73,9 @@ public class HibernateConfig {
         hibernateProperties.setProperty("hibernate.dialect", hibernateDialect);
         hibernateProperties.setProperty("hibernate.show_sql", hibernateShowSql);
         hibernateProperties.setProperty("hibernate.hbm2ddl.auto", hibernateHbm2ddlAuto);
+        if (!hibernateImportFiles.isBlank()) {
+            hibernateProperties.setProperty("hibernate.hbm2ddl.import_files", hibernateImportFiles);
+        }
 
         em.setJpaProperties(hibernateProperties);
         return em;

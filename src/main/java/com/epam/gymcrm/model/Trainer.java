@@ -30,7 +30,9 @@ public class Trainer {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    private String specialization;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "specialization_id", nullable = false)
+    private TrainingType specialization;
 
     @Builder.Default
     @ManyToMany(mappedBy = "trainers")

@@ -2,6 +2,7 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -169,6 +170,66 @@ class TraineeServiceImplTest {
         assertThatThrownBy(() -> traineeService.changePassword("Jane.Doe", "old-password", " "))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("New password must not be blank");
+    }
+
+    @Test
+    void activateShouldSetAuthenticatedTraineeActiveWhenCurrentlyInactive() {
+        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
+        trainee.getUser().setActive(false);
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        traineeService.activate("Jane.Doe", "password");
+
+        assertAll(
+                () -> assertThat(trainee.getUser().getActive()).isTrue(),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(traineeDao).save(trainee)
+        );
+    }
+
+    @Test
+    void activateShouldThrowProfileStateExceptionWhenTraineeAlreadyActive() {
+        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        assertThatThrownBy(() -> traineeService.activate("Jane.Doe", "password"))
+                .isInstanceOf(ProfileStateException.class)
+                .hasMessage("Trainee profile is already active");
+
+        assertAll(
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verifyNoMoreInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void deactivateShouldSetAuthenticatedTraineeInactiveWhenCurrentlyActive() {
+        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        traineeService.deactivate("Jane.Doe", "password");
+
+        assertAll(
+                () -> assertThat(trainee.getUser().getActive()).isFalse(),
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(traineeDao).save(trainee)
+        );
+    }
+
+    @Test
+    void deactivateShouldThrowProfileStateExceptionWhenTraineeAlreadyInactive() {
+        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
+        trainee.getUser().setActive(false);
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        assertThatThrownBy(() -> traineeService.deactivate("Jane.Doe", "password"))
+                .isInstanceOf(ProfileStateException.class)
+                .hasMessage("Trainee profile is already inactive");
+
+        assertAll(
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verifyNoMoreInteractions(traineeDao)
+        );
     }
 
     @Test

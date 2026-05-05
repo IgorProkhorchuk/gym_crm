@@ -35,6 +35,24 @@ public interface TrainerService {
     void changePassword(String username, String oldPassword, String newPassword);
 
     /**
+     * Activates a trainer profile after authenticating the trainer credentials.
+     * This operation is not idempotent and fails when the profile is already active.
+     *
+     * @param username trainer username
+     * @param password trainer password
+     */
+    void activate(String username, String password);
+
+    /**
+     * Deactivates a trainer profile after authenticating the trainer credentials.
+     * This operation is not idempotent and fails when the profile is already inactive.
+     *
+     * @param username trainer username
+     * @param password trainer password
+     */
+    void deactivate(String username, String password);
+
+    /**
      * Saves trainer profile changes, replacing the stored record with the same trainer profile id.
      *
      * @param trainer trainer data to save

@@ -35,6 +35,24 @@ public interface TraineeService {
     void changePassword(String username, String oldPassword, String newPassword);
 
     /**
+     * Activates a trainee profile after authenticating the trainee credentials.
+     * This operation is not idempotent and fails when the profile is already active.
+     *
+     * @param username trainee username
+     * @param password trainee password
+     */
+    void activate(String username, String password);
+
+    /**
+     * Deactivates a trainee profile after authenticating the trainee credentials.
+     * This operation is not idempotent and fails when the profile is already inactive.
+     *
+     * @param username trainee username
+     * @param password trainee password
+     */
+    void deactivate(String username, String password);
+
+    /**
      * Saves trainee profile changes, replacing the stored record with the same user id.
      *
      * @param trainee trainee data to save

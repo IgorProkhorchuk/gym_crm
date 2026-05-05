@@ -2,6 +2,7 @@ package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.User;
 import com.epam.gymcrm.service.AuthenticationService;
@@ -73,6 +74,28 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional
+    public void activate(String username, String password) {
+        log.info("Activating trainer profile");
+
+        Trainer trainer = authenticationService.authenticateTrainer(username, password);
+        changeActiveStatus(trainer, true, "Trainer profile is already active");
+
+        log.info("Trainer profile activated, userId={}", trainer.getId());
+    }
+
+    @Override
+    @Transactional
+    public void deactivate(String username, String password) {
+        log.info("Deactivating trainer profile");
+
+        Trainer trainer = authenticationService.authenticateTrainer(username, password);
+        changeActiveStatus(trainer, false, "Trainer profile is already inactive");
+
+        log.info("Trainer profile deactivated, userId={}", trainer.getId());
+    }
+
+    @Override
     public void update(Trainer trainer) {
         requireNonNull(trainer, "Trainer must not be null");
         requireNonNull(trainer.getId(), TRAINER_ID_NULL_ERROR);
@@ -101,5 +124,15 @@ public class TrainerServiceImpl implements TrainerService {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private void changeActiveStatus(Trainer trainer, boolean active, String errorMessage) {
+        User user = trainer.getUser();
+        if (Boolean.valueOf(active).equals(user.getActive())) {
+            throw new ProfileStateException(errorMessage);
+        }
+
+        user.setActive(active);
+        trainerDao.save(trainer);
     }
 }

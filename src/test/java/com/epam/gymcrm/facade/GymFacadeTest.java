@@ -79,6 +79,20 @@ class GymFacadeTest {
     }
 
     @Test
+    void activateTraineeShouldDelegateToTraineeService() {
+        gymFacade.activateTrainee("John.Doe", "password");
+
+        verify(traineeService).activate("John.Doe", "password");
+    }
+
+    @Test
+    void deactivateTraineeShouldDelegateToTraineeService() {
+        gymFacade.deactivateTrainee("John.Doe", "password");
+
+        verify(traineeService).deactivate("John.Doe", "password");
+    }
+
+    @Test
     void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
 
@@ -134,6 +148,20 @@ class GymFacadeTest {
         gymFacade.changeTrainerPassword("Mike.Stone", "old-password", "new-password");
 
         verify(trainerService).changePassword("Mike.Stone", "old-password", "new-password");
+    }
+
+    @Test
+    void activateTrainerShouldDelegateToTrainerService() {
+        gymFacade.activateTrainer("Mike.Stone", "password");
+
+        verify(trainerService).activate("Mike.Stone", "password");
+    }
+
+    @Test
+    void deactivateTrainerShouldDelegateToTrainerService() {
+        gymFacade.deactivateTrainer("Mike.Stone", "password");
+
+        verify(trainerService).deactivate("Mike.Stone", "password");
     }
 
     @Test

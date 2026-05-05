@@ -33,6 +33,14 @@ public class GymFacade {
         traineeService.changePassword(username, oldPassword, newPassword);
     }
 
+    public void activateTrainee(String username, String password) {
+        traineeService.activate(username, password);
+    }
+
+    public void deactivateTrainee(String username, String password) {
+        traineeService.deactivate(username, password);
+    }
+
     public void updateTrainee(Trainee trainee) {
         traineeService.update(trainee);
     }
@@ -55,6 +63,14 @@ public class GymFacade {
 
     public void changeTrainerPassword(String username, String oldPassword, String newPassword) {
         trainerService.changePassword(username, oldPassword, newPassword);
+    }
+
+    public void activateTrainer(String username, String password) {
+        trainerService.activate(username, password);
+    }
+
+    public void deactivateTrainer(String username, String password) {
+        trainerService.deactivate(username, password);
     }
 
     public void updateTrainer(Trainer trainer) {

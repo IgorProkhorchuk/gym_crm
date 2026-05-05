@@ -93,6 +93,13 @@ class GymFacadeTest {
     }
 
     @Test
+    void deleteTraineeByUsernameShouldDelegateToTraineeService() {
+        gymFacade.deleteTraineeByUsername("John.Doe", "password");
+
+        verify(traineeService).deleteByUsername("John.Doe", "password");
+    }
+
+    @Test
     void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
 

@@ -1,6 +1,7 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TraineeDao;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainee;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -229,6 +231,47 @@ class TraineeServiceImplTest {
         assertAll(
                 () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
                 () -> verifyNoMoreInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void deleteByUsernameShouldDeleteAuthenticatedTraineeById() {
+        Trainee trainee = trainee(15L, "Jane", "Doe", "Jane.Doe");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+
+        traineeService.deleteByUsername("Jane.Doe", "password");
+
+        assertAll(
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(traineeDao).delete(15L)
+        );
+    }
+
+    @Test
+    void deleteByUsernameShouldNotDeleteWhenTraineeDoesNotExist() {
+        AuthenticationException exception = new AuthenticationException("Invalid username or password");
+        when(authenticationService.authenticateTrainee("Deleted.Trainee", "password")).thenThrow(exception);
+
+        assertThatThrownBy(() -> traineeService.deleteByUsername("Deleted.Trainee", "password"))
+                .isSameAs(exception);
+
+        assertAll(
+                () -> verify(authenticationService).authenticateTrainee("Deleted.Trainee", "password"),
+                () -> verifyNoInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void deleteByUsernameShouldNotDeleteWhenPasswordIsWrong() {
+        AuthenticationException exception = new AuthenticationException("Invalid username or password");
+        when(authenticationService.authenticateTrainee("Jane.Doe", "wrong-password")).thenThrow(exception);
+
+        assertThatThrownBy(() -> traineeService.deleteByUsername("Jane.Doe", "wrong-password"))
+                .isSameAs(exception);
+
+        assertAll(
+                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "wrong-password"),
+                () -> verifyNoInteractions(traineeDao)
         );
     }
 

@@ -95,6 +95,17 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
+    @Transactional
+    public void deleteByUsername(String username, String password) {
+        log.info("Deleting trainee profile");
+
+        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        traineeDao.delete(trainee.getId());
+
+        log.info("Trainee profile deleted, username={}", username);
+    }
+
+    @Override
     public void update(Trainee trainee) {
         requireNonNull(trainee, "Trainee must not be null");
         requireNonNull(trainee.getId(), TRAINEE_ID_NULL_ERROR);

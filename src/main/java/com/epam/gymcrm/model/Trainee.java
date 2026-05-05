@@ -38,4 +38,8 @@ public class Trainee {
             inverseJoinColumns = @JoinColumn(name = "trainer_id")
     )
     private Set<Trainer> trainers = new HashSet<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "trainee", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private Set<Training> trainings = new HashSet<>();
 }

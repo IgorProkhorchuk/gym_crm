@@ -41,6 +41,10 @@ public class GymFacade {
         traineeService.deactivate(username, password);
     }
 
+    public void deleteTraineeByUsername(String username, String password) {
+        traineeService.deleteByUsername(username, password);
+    }
+
     public void updateTrainee(Trainee trainee) {
         traineeService.update(trainee);
     }

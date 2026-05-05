@@ -4,6 +4,8 @@ import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.Training;
+import com.epam.gymcrm.model.TrainingType;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -14,6 +16,8 @@ import java.util.Optional;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
+import static com.epam.gymcrm.TestFixtures.training;
+import static com.epam.gymcrm.TestFixtures.trainingType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
@@ -129,6 +133,46 @@ class TraineeDaoImplTest extends PostgresContainerTest {
         entityManager.clear();
 
         assertThat(traineeDao.findById(id)).isEmpty();
+    }
+
+    @Test
+    void deleteShouldCascadeRemoveRelevantTrainingsButKeepTrainer() {
+        Trainee trainee = trainee("Cascade", "Trainee", "Cascade.Trainee");
+        Trainer trainer = trainer("Cascade", "Trainer", "Cascade.Trainer");
+        TrainingType trainingType = trainingType("Cascade Fitness");
+
+        entityManager.persist(trainer);
+        trainee.getTrainers().add(trainer);
+        entityManager.persist(trainee);
+        entityManager.persist(trainingType);
+
+        Training training = training(trainee, trainer, trainingType);
+        entityManager.persist(training);
+        entityManager.flush();
+        entityManager.clear();
+
+        Long traineeId = trainee.getId();
+        Long trainerId = trainer.getId();
+        Long trainingId = training.getTrainingId();
+
+        traineeDao.delete(traineeId);
+        entityManager.flush();
+        entityManager.clear();
+
+        Number traineeTrainerCount = (Number) entityManager.createNativeQuery("""
+                        select count(*)
+                        from trainee_trainer
+                        where trainee_id = :traineeId
+                        """)
+                .setParameter("traineeId", traineeId)
+                .getSingleResult();
+
+        assertAll(
+                () -> assertThat(entityManager.find(Trainee.class, traineeId)).isNull(),
+                () -> assertThat(entityManager.find(Training.class, trainingId)).isNull(),
+                () -> assertThat(traineeTrainerCount.longValue()).isZero(),
+                () -> assertThat(entityManager.find(Trainer.class, trainerId)).isNotNull()
+        );
     }
 
     @Test

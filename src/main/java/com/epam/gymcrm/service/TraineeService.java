@@ -53,6 +53,15 @@ public interface TraineeService {
     void deactivate(String username, String password);
 
     /**
+     * Hard deletes a trainee profile by username after authenticating the trainee credentials.
+     * Relevant trainings are deleted by cascade.
+     *
+     * @param username trainee username
+     * @param password trainee password
+     */
+    void deleteByUsername(String username, String password);
+
+    /**
      * Saves trainee profile changes, replacing the stored record with the same user id.
      *
      * @param trainee trainee data to save

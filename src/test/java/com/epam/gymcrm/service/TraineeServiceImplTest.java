@@ -139,6 +139,58 @@ class TraineeServiceImplTest {
     }
 
     @Test
+    void createShouldThrowIllegalArgumentExceptionWhenFirstNameIsBlank() {
+        Trainee trainee = Trainee.builder()
+                .user(user(" ", "Doe", null))
+                .build();
+
+        assertThatThrownBy(() -> traineeService.create(trainee))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("First name must not be blank");
+
+        assertAll(
+                () -> verifyNoInteractions(usernameGenerator),
+                () -> verifyNoInteractions(passwordGenerator),
+                () -> verifyNoInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenLastNameIsBlank() {
+        Trainee trainee = Trainee.builder()
+                .user(user("John", " ", null))
+                .build();
+
+        assertThatThrownBy(() -> traineeService.create(trainee))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Last name must not be blank");
+
+        assertAll(
+                () -> verifyNoInteractions(usernameGenerator),
+                () -> verifyNoInteractions(passwordGenerator),
+                () -> verifyNoInteractions(traineeDao)
+        );
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenActiveIsNull() {
+        Trainee trainee = Trainee.builder()
+                .user(user("John", "Doe", null))
+                .build();
+        trainee.getUser().setActive(null);
+
+        assertThatThrownBy(() -> traineeService.create(trainee))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Active must not be null");
+
+        assertAll(
+                () -> verifyNoInteractions(usernameGenerator),
+                () -> verifyNoInteractions(passwordGenerator),
+                () -> verifyNoInteractions(traineeDao)
+        );
+    }
+
+    @Test
     void getProfileShouldReturnAuthenticatedTrainee() {
         Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
         when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
@@ -397,43 +449,58 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void updateShouldSaveTraineeChanges() {
-        Trainee trainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
-        when(traineeDao.findById(10L)).thenReturn(Optional.of(trainee));
+    void updateShouldSaveAuthenticatedTraineeChanges() {
+        Trainee authenticatedTrainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
+        Trainee updatedTrainee = trainee(10L, "Jean", "Granger-Weasley", "Changed.Username");
+        updatedTrainee.setAddress("Updated Address");
+        updatedTrainee.setDateOfBirth(java.time.LocalDate.of(1994, 9, 19));
+        updatedTrainee.getUser().setPassword("changed-password");
+        updatedTrainee.getUser().setActive(false);
+        when(authenticationService.authenticateTrainee("Hermione.Granger", "password")).thenReturn(authenticatedTrainee);
 
-        traineeService.update(trainee);
+        traineeService.update("Hermione.Granger", "password", updatedTrainee);
 
         assertAll(
-                () -> verify(traineeDao).findById(10L),
-                () -> verify(traineeDao).save(trainee),
+                () -> assertThat(authenticatedTrainee.getUser().getFirstName()).isEqualTo("Jean"),
+                () -> assertThat(authenticatedTrainee.getUser().getLastName()).isEqualTo("Granger-Weasley"),
+                () -> assertThat(authenticatedTrainee.getUser().getUsername()).isEqualTo("Hermione.Granger"),
+                () -> assertThat(authenticatedTrainee.getUser().getPassword()).isEqualTo("password"),
+                () -> assertThat(authenticatedTrainee.getUser().getActive()).isTrue(),
+                () -> assertThat(authenticatedTrainee.getAddress()).isEqualTo("Updated Address"),
+                () -> assertThat(authenticatedTrainee.getDateOfBirth()).isEqualTo(java.time.LocalDate.of(1994, 9, 19)),
+                () -> verify(authenticationService).authenticateTrainee("Hermione.Granger", "password"),
+                () -> verify(traineeDao).save(authenticatedTrainee),
                 () -> verifyNoMoreInteractions(traineeDao)
         );
     }
 
     @Test
-    void updateShouldThrowEntityNotFoundExceptionWhenTraineeDoesNotExist() {
+    void updateShouldThrowAuthenticationExceptionWhenTraineeDoesNotExist() {
         Trainee trainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
-        when(traineeDao.findById(10L)).thenReturn(Optional.empty());
+        AuthenticationException exception = new AuthenticationException("Invalid username or password");
+        when(authenticationService.authenticateTrainee("Hermione.Granger", "password")).thenThrow(exception);
 
-        assertThatThrownBy(() -> traineeService.update(trainee))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trainee profile not found");
+        assertThatThrownBy(() -> traineeService.update("Hermione.Granger", "password", trainee))
+                .isSameAs(exception);
+
+        verifyNoInteractions(traineeDao);
     }
 
     @Test
     void updateShouldThrowRuntimeExceptionWhenDaoFails() {
-        Trainee trainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
+        Trainee authenticatedTrainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
+        Trainee updatedTrainee = trainee(10L, "Jean", "Granger", "Hermione.Granger");
         RuntimeException exception = new RuntimeException("DAO failure");
-        when(traineeDao.findById(10L)).thenReturn(Optional.of(trainee));
-        doThrow(exception).when(traineeDao).save(trainee);
+        when(authenticationService.authenticateTrainee("Hermione.Granger", "password")).thenReturn(authenticatedTrainee);
+        doThrow(exception).when(traineeDao).save(authenticatedTrainee);
 
-        assertThatThrownBy(() -> traineeService.update(trainee))
+        assertThatThrownBy(() -> traineeService.update("Hermione.Granger", "password", updatedTrainee))
                 .isSameAs(exception);
     }
 
     @Test
     void updateShouldThrowIllegalArgumentExceptionWhenTraineeIsNull() {
-        assertThatThrownBy(() -> traineeService.update(null))
+        assertThatThrownBy(() -> traineeService.update("Hermione.Granger", "password", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainee must not be null");
     }
@@ -442,73 +509,22 @@ class TraineeServiceImplTest {
     void updateShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
         Trainee trainee = trainee("Hermione", "Granger", "Hermione.Granger");
 
-        assertThatThrownBy(() -> traineeService.update(trainee))
+        assertThatThrownBy(() -> traineeService.update("Hermione.Granger", "password", trainee))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainee id must not be null");
     }
 
     @Test
-    void deleteShouldDelegateToDao() {
-        traineeService.delete(15L);
+    void updateShouldThrowAuthenticationExceptionWhenAuthenticatedTraineeDoesNotMatchPayload() {
+        Trainee authenticatedTrainee = trainee(11L, "Hermione", "Granger", "Hermione.Granger");
+        Trainee updatedTrainee = trainee(10L, "Jean", "Granger", "Hermione.Granger");
+        when(authenticationService.authenticateTrainee("Hermione.Granger", "password")).thenReturn(authenticatedTrainee);
 
-        verify(traineeDao).delete(15L);
-        verifyNoMoreInteractions(traineeDao);
+        assertThatThrownBy(() -> traineeService.update("Hermione.Granger", "password", updatedTrainee))
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessage("Authenticated trainee does not match updated profile");
+
+        verifyNoInteractions(traineeDao);
     }
 
-    @Test
-    void deleteShouldThrowRuntimeExceptionWhenDaoFails() {
-        RuntimeException exception = new RuntimeException("DAO failure");
-        doThrow(exception).when(traineeDao).delete(15L);
-
-        assertThatThrownBy(() -> traineeService.delete(15L))
-                .isSameAs(exception);
-    }
-
-    @Test
-    void deleteShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
-        assertThatThrownBy(() -> traineeService.delete(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainee id must not be null");
-    }
-
-    @Test
-    void findByIdShouldReturnTraineeWhenTraineeExists() {
-        Trainee trainee = trainee(100L, "Ron", "Weasley", "Ron.Weasley");
-        when(traineeDao.findById(100L)).thenReturn(Optional.of(trainee));
-
-        Trainee result = traineeService.findById(100L);
-
-        assertAll(
-                () -> assertThat(result).isSameAs(trainee),
-                () -> assertThat(result.getUser().getFirstName()).isEqualTo("Ron"),
-                () -> verify(traineeDao).findById(100L)
-        );
-    }
-
-    @Test
-    void findByIdShouldThrowEntityNotFoundExceptionWhenTraineeDoesNotExist() {
-        when(traineeDao.findById(999L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> traineeService.findById(999L))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trainee profile not found");
-
-        verify(traineeDao).findById(999L);
-    }
-
-    @Test
-    void findByIdShouldThrowRuntimeExceptionWhenDaoFails() {
-        RuntimeException exception = new RuntimeException("DAO failure");
-        when(traineeDao.findById(15L)).thenThrow(exception);
-
-        assertThatThrownBy(() -> traineeService.findById(15L))
-                .isSameAs(exception);
-    }
-
-    @Test
-    void findByIdShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
-        assertThatThrownBy(() -> traineeService.findById(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainee id must not be null");
-    }
 }

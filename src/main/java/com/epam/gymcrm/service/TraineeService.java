@@ -1,6 +1,5 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 
@@ -75,26 +74,14 @@ public interface TraineeService {
     List<Trainer> updateTrainers(String username, String password, List<String> trainerUsernames);
 
     /**
-     * Saves trainee profile changes, replacing the stored record with the same user id.
+     * Saves trainee profile changes after authenticating the trainee credentials.
      *
+     * @param username trainee username
+     * @param password trainee password
      * @param trainee trainee data to save
-     * @throws EntityNotFoundException when no trainee exists with the given id
+     * @throws com.epam.gymcrm.exception.AuthenticationException when credentials are invalid
+     *         or the payload does not belong to the authenticated trainee
      */
-    void update(Trainee trainee);
+    void update(String username, String password, Trainee trainee);
 
-    /**
-     * Deletes a trainee profile by user id.
-     *
-     * @param id user id to remove
-     */
-    void delete(Long id);
-
-    /**
-     * Finds a trainee profile by user id.
-     *
-     * @param id user id to look up
-     * @return trainee with the given id
-     * @throws EntityNotFoundException when no trainee exists with the given id
-     */
-    Trainee findById(Long id);
 }

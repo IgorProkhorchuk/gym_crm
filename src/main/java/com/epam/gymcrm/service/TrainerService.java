@@ -1,6 +1,5 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.model.Trainer;
 
 import java.util.List;
@@ -64,18 +63,14 @@ public interface TrainerService {
     List<Trainer> getUnassignedTrainers(String traineeUsername, String traineePassword);
 
     /**
-     * Saves trainer profile changes, replacing the stored record with the same trainer profile id.
+     * Saves trainer profile changes after authenticating the trainer credentials.
      *
+     * @param username trainer username
+     * @param password trainer password
      * @param trainer trainer data to save
+     * @throws com.epam.gymcrm.exception.AuthenticationException when credentials are invalid
+     *         or the payload does not belong to the authenticated trainer
      */
-    void update(Trainer trainer);
+    void update(String username, String password, Trainer trainer);
 
-    /**
-     * Finds a trainer profile by trainer profile id.
-     *
-     * @param id trainer profile id to look up
-     * @return trainer with the given id
-     * @throws EntityNotFoundException when no trainer exists with the given id
-     */
-    Trainer findById(Long id);
 }

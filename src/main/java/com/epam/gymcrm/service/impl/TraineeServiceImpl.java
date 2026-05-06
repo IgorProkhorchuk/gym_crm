@@ -2,6 +2,7 @@ package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainee;
@@ -37,7 +38,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void create(Trainee trainee) {
         requireNonNull(trainee, "Trainee must not be null");
-        requireNonNull(trainee.getUser(), "Trainee user must not be null");
+        validateUserForCreate(trainee.getUser(), "Trainee user must not be null");
 
         User user = trainee.getUser();
 
@@ -133,33 +134,23 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public void update(Trainee trainee) {
+    @Transactional
+    public void update(String username, String password, Trainee trainee) {
         requireNonNull(trainee, "Trainee must not be null");
         requireNonNull(trainee.getId(), TRAINEE_ID_NULL_ERROR);
+        validateUserForUpdate(trainee.getUser(), "Trainee user must not be null");
         log.info("Updating trainee profile, userId={}", trainee.getId());
-        traineeDao.findById(trainee.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Trainee profile not found"));
-        traineeDao.save(trainee);
-        log.info("Trainee profile updated, userId={}", trainee.getId());
-    }
 
-    @Override
-    public void delete(Long id) {
-        requireNonNull(id, TRAINEE_ID_NULL_ERROR);
-        log.info("Deleting trainee profile, userId={}", id);
+        Trainee authenticatedTrainee = authenticationService.authenticateTrainee(username, password);
+        assertAuthenticatedProfile(
+                authenticatedTrainee.getId(),
+                trainee.getId(),
+                "Authenticated trainee does not match updated profile"
+        );
+        applyTraineeProfileChanges(authenticatedTrainee, trainee);
+        traineeDao.save(authenticatedTrainee);
 
-        traineeDao.delete(id);
-
-        log.info("Trainee profile deleted, userId={}", id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Trainee findById(Long id) {
-        requireNonNull(id, TRAINEE_ID_NULL_ERROR);
-
-        return traineeDao.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Trainee profile not found"));
+        log.info("Trainee profile updated, userId={}", authenticatedTrainee.getId());
     }
 
     private static void requireNonNull(Object value, String message) {
@@ -172,6 +163,38 @@ public class TraineeServiceImpl implements TraineeService {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private static void validateUserForCreate(User user, String message) {
+        requireNonNull(user, message);
+        validateUserNameFields(user);
+        requireNonNull(user.getActive(), "Active must not be null");
+    }
+
+    private static void validateUserForUpdate(User user, String message) {
+        requireNonNull(user, message);
+        validateUserNameFields(user);
+    }
+
+    private static void validateUserNameFields(User user) {
+        requireNonBlank(user.getFirstName(), "First name must not be blank");
+        requireNonBlank(user.getLastName(), "Last name must not be blank");
+    }
+
+    private static void assertAuthenticatedProfile(Long authenticatedId, Long updateId, String message) {
+        if (!Objects.equals(authenticatedId, updateId)) {
+            throw new AuthenticationException(message);
+        }
+    }
+
+    private static void applyTraineeProfileChanges(Trainee target, Trainee source) {
+        User targetUser = target.getUser();
+        User sourceUser = source.getUser();
+
+        targetUser.setFirstName(sourceUser.getFirstName());
+        targetUser.setLastName(sourceUser.getLastName());
+        target.setDateOfBirth(source.getDateOfBirth());
+        target.setAddress(source.getAddress());
     }
 
     private static Set<String> normalizeTrainerUsernames(List<String> trainerUsernames) {

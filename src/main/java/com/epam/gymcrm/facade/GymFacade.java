@@ -26,10 +26,6 @@ public class GymFacade {
         traineeService.create(trainee);
     }
 
-    public Trainee findTraineeById(Long id) {
-        return traineeService.findById(id);
-    }
-
     public Trainee getTraineeProfile(String username, String password) {
         return traineeService.getProfile(username, password);
     }
@@ -58,20 +54,12 @@ public class GymFacade {
         return traineeService.updateTrainers(traineeUsername, traineePassword, trainerUsernames);
     }
 
-    public void updateTrainee(Trainee trainee) {
-        traineeService.update(trainee);
-    }
-
-    public void deleteTrainee(Long id) {
-        traineeService.delete(id);
+    public void updateTrainee(String username, String password, Trainee trainee) {
+        traineeService.update(username, password, trainee);
     }
 
     public void createTrainer(Trainer trainer) {
         trainerService.create(trainer);
-    }
-
-    public Trainer findTrainerById(Long id) {
-        return trainerService.findById(id);
     }
 
     public Trainer getTrainerProfile(String username, String password) {
@@ -94,20 +82,12 @@ public class GymFacade {
         return trainerService.getUnassignedTrainers(traineeUsername, traineePassword);
     }
 
-    public void updateTrainer(Trainer trainer) {
-        trainerService.update(trainer);
-    }
-
-    public void createTraining(Training training) {
-        trainingService.create(training);
+    public void updateTrainer(String username, String password, Trainer trainer) {
+        trainerService.update(username, password, trainer);
     }
 
     public void addTraining(String traineeUsername, String traineePassword, AddTrainingRequest request) {
         trainingService.addTraining(traineeUsername, traineePassword, request);
-    }
-
-    public Training findTrainingById(Long id) {
-        return trainingService.findById(id);
     }
 
     public List<Training> getTraineeTrainings(

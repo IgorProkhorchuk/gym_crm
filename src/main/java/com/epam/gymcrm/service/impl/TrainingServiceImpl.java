@@ -26,27 +26,10 @@ import java.util.List;
 @Transactional
 public class TrainingServiceImpl implements TrainingService {
 
-    private static final String TRAINING_ID_NULL_ERROR = "Training id must not be null";
-
-
     private final TrainingDao trainingDao;
     private final TrainerDao trainerDao;
     private final TrainingTypeDao trainingTypeDao;
     private final AuthenticationService authenticationService;
-
-    @Override
-    public void create(Training training) {
-        requireNonNull(training, "Training must not be null");
-        requireNonNull(training.getTrainee(), "Training trainee must not be null");
-        requireNonNull(training.getTrainer(), "Training trainer must not be null");
-        requireNonNull(training.getTrainingType(), "Training type must not be null");
-
-        log.info("Creating training, trainingId={}", training.getTrainingId());
-
-        trainingDao.save(training);
-
-        log.info("Training created, trainingId={}", training.getTrainingId());
-    }
 
     @Override
     public void addTraining(String traineeUsername, String traineePassword, AddTrainingRequest request) {
@@ -77,14 +60,6 @@ public class TrainingServiceImpl implements TrainingService {
         trainingDao.save(training);
 
         log.info("Training added, trainingId={}", training.getTrainingId());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Training findById(Long id) {
-        requireNonNull(id, TRAINING_ID_NULL_ERROR);
-            return trainingDao.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("Training not found"));
     }
 
     @Override

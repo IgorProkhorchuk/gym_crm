@@ -2,6 +2,7 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.model.Trainer;
@@ -25,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -139,7 +141,65 @@ class TrainerServiceImplTest {
 
         assertThatThrownBy(() -> trainerService.create(trainer))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer username must not be null");
+                .hasMessage("Trainer user must not be null");
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenFirstNameIsBlank() {
+        Trainer trainer = Trainer.builder()
+                .user(user(" ", "Snape", null))
+                .specialization(trainingType("Fitness"))
+                .build();
+
+        assertThatThrownBy(() -> trainerService.create(trainer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("First name must not be blank");
+
+        assertAll(
+                () -> verifyNoInteractions(trainingTypeDao),
+                () -> verifyNoInteractions(usernameGenerator),
+                () -> verifyNoInteractions(passwordGenerator),
+                () -> verifyNoInteractions(trainerDao)
+        );
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenLastNameIsBlank() {
+        Trainer trainer = Trainer.builder()
+                .user(user("Severus", " ", null))
+                .specialization(trainingType("Fitness"))
+                .build();
+
+        assertThatThrownBy(() -> trainerService.create(trainer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Last name must not be blank");
+
+        assertAll(
+                () -> verifyNoInteractions(trainingTypeDao),
+                () -> verifyNoInteractions(usernameGenerator),
+                () -> verifyNoInteractions(passwordGenerator),
+                () -> verifyNoInteractions(trainerDao)
+        );
+    }
+
+    @Test
+    void createShouldThrowIllegalArgumentExceptionWhenActiveIsNull() {
+        Trainer trainer = Trainer.builder()
+                .user(user("Severus", "Snape", null))
+                .specialization(trainingType("Fitness"))
+                .build();
+        trainer.getUser().setActive(null);
+
+        assertThatThrownBy(() -> trainerService.create(trainer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Active must not be null");
+
+        assertAll(
+                () -> verifyNoInteractions(trainingTypeDao),
+                () -> verifyNoInteractions(usernameGenerator),
+                () -> verifyNoInteractions(passwordGenerator),
+                () -> verifyNoInteractions(trainerDao)
+        );
     }
 
     @Test
@@ -285,46 +345,61 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void updateShouldSaveTrainerChanges() {
-        Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
-        when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
+    void updateShouldSaveAuthenticatedTrainerChanges() {
+        Trainer authenticatedTrainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        Trainer updatedTrainer = trainer(22L, "Minnie", "McGonagall", "Changed.Username", trainingType("Yoga"));
+        updatedTrainer.getUser().setPassword("changed-password");
+        updatedTrainer.getUser().setActive(false);
+        when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
+        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(trainingType("Yoga")));
 
-        trainerService.update(trainer);
+        trainerService.update("Minerva.McGonagall", "password", updatedTrainer);
 
         assertAll(
-                () -> verify(trainerDao).findById(22L),
-                () -> verify(trainerDao).save(trainer),
+                () -> assertThat(authenticatedTrainer.getUser().getFirstName()).isEqualTo("Minnie"),
+                () -> assertThat(authenticatedTrainer.getUser().getLastName()).isEqualTo("McGonagall"),
+                () -> assertThat(authenticatedTrainer.getUser().getUsername()).isEqualTo("Minerva.McGonagall"),
+                () -> assertThat(authenticatedTrainer.getUser().getPassword()).isEqualTo("password"),
+                () -> assertThat(authenticatedTrainer.getUser().getActive()).isTrue(),
+                () -> assertThat(authenticatedTrainer.getSpecialization().getTrainingTypeName()).isEqualTo("Yoga"),
+                () -> verify(authenticationService).authenticateTrainer("Minerva.McGonagall", "password"),
+                () -> verify(trainingTypeDao).findByName("Yoga"),
+                () -> verify(trainerDao).save(authenticatedTrainer),
                 () -> verifyNoMoreInteractions(trainerDao)
         );
     }
 
     @Test
-    void updateShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
+    void updateShouldThrowAuthenticationExceptionWhenTrainerDoesNotExist() {
         Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
-        when(trainerDao.findById(22L)).thenReturn(Optional.empty());
+        AuthenticationException exception = new AuthenticationException("Invalid username or password");
+        when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenThrow(exception);
 
-        assertThatThrownBy(() -> trainerService.update(trainer))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trainer profile not found");
+        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", trainer))
+                .isSameAs(exception);
+
+        assertAll(
+                () -> verifyNoInteractions(trainingTypeDao),
+                () -> verifyNoInteractions(trainerDao)
+        );
     }
 
     @Test
     void updateShouldThrowRuntimeExceptionWhenDaoFails() {
-        Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        Trainer authenticatedTrainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        Trainer updatedTrainer = trainer(22L, "Minnie", "McGonagall", "Minerva.McGonagall");
         RuntimeException exception = new RuntimeException("DAO failure");
+        when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
-        when(trainerDao.findById(22L)).thenReturn(Optional.of(trainer));
-        doThrow(exception).when(trainerDao).save(trainer);
+        doThrow(exception).when(trainerDao).save(authenticatedTrainer);
 
-        assertThatThrownBy(() -> trainerService.update(trainer))
+        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", updatedTrainer))
                 .isSameAs(exception);
     }
 
     @Test
     void updateShouldThrowIllegalArgumentExceptionWhenTrainerIsNull() {
-        assertThatThrownBy(() -> trainerService.update(null))
+        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer must not be null");
     }
@@ -333,49 +408,25 @@ class TrainerServiceImplTest {
     void updateShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
         Trainer trainer = trainer("Minerva", "McGonagall", "Minerva.McGonagall");
 
-        assertThatThrownBy(() -> trainerService.update(trainer))
+        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", trainer))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer id must not be null");
     }
 
     @Test
-    void findByIdShouldReturnTrainerWhenTrainerExists() {
-        Trainer trainer = trainer(50L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        when(trainerDao.findById(50L)).thenReturn(Optional.of(trainer));
+    void updateShouldThrowAuthenticationExceptionWhenAuthenticatedTrainerDoesNotMatchPayload() {
+        Trainer authenticatedTrainer = trainer(23L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        Trainer updatedTrainer = trainer(22L, "Minnie", "McGonagall", "Minerva.McGonagall");
+        when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
 
-        Trainer result = trainerService.findById(50L);
+        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", updatedTrainer))
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessage("Authenticated trainer does not match updated profile");
 
         assertAll(
-                () -> assertThat(result).isSameAs(trainer),
-                () -> assertThat(result.getUser().getFirstName()).isEqualTo("Minerva"),
-                () -> verify(trainerDao).findById(50L)
+                () -> verifyNoInteractions(trainingTypeDao),
+                () -> verifyNoInteractions(trainerDao)
         );
     }
 
-    @Test
-    void findByIdShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
-        when(trainerDao.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> trainerService.findById(99L))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trainer profile not found");
-
-        verify(trainerDao).findById(99L);
-    }
-
-    @Test
-    void findByIdShouldThrowRuntimeExceptionWhenDaoFails() {
-        RuntimeException exception = new RuntimeException("DAO failure");
-        when(trainerDao.findById(22L)).thenThrow(exception);
-
-        assertThatThrownBy(() -> trainerService.findById(22L))
-                .isSameAs(exception);
-    }
-
-    @Test
-    void findByIdShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
-        assertThatThrownBy(() -> trainerService.findById(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer id must not be null");
-    }
 }

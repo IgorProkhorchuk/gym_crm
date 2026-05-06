@@ -52,19 +52,6 @@ class GymFacadeTest {
     }
 
     @Test
-    void findTraineeByIdShouldReturnTraineeFromService() {
-        Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
-        when(traineeService.findById(1L)).thenReturn(trainee);
-
-        Trainee result = gymFacade.findTraineeById(1L);
-
-        assertAll(
-                () -> assertThat(result).isSameAs(trainee),
-                () -> verify(traineeService).findById(1L)
-        );
-    }
-
-    @Test
     void getTraineeProfileShouldReturnTraineeFromService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
         when(traineeService.getProfile("John.Doe", "password")).thenReturn(trainee);
@@ -126,16 +113,9 @@ class GymFacadeTest {
     void updateTraineeShouldDelegateToTraineeService() {
         Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
 
-        gymFacade.updateTrainee(trainee);
+        gymFacade.updateTrainee("John.Doe", "password", trainee);
 
-        verify(traineeService).update(trainee);
-    }
-
-    @Test
-    void deleteTraineeShouldDelegateToTraineeService() {
-        gymFacade.deleteTrainee(7L);
-
-        verify(traineeService).delete(7L);
+        verify(traineeService).update("John.Doe", "password", trainee);
     }
 
     @Test
@@ -145,19 +125,6 @@ class GymFacadeTest {
         gymFacade.createTrainer(trainer);
 
         verify(trainerService).create(trainer);
-    }
-
-    @Test
-    void findTrainerByIdShouldReturnTrainerFromService() {
-        Trainer trainer = trainer(2L, "Mike", "Stone", "Mike.Stone");
-        when(trainerService.findById(2L)).thenReturn(trainer);
-
-        Trainer result = gymFacade.findTrainerById(2L);
-
-        assertAll(
-                () -> assertThat(result).isSameAs(trainer),
-                () -> verify(trainerService).findById(2L)
-        );
     }
 
     @Test
@@ -211,20 +178,9 @@ class GymFacadeTest {
     void updateTrainerShouldDelegateToTrainerService() {
         Trainer trainer = trainer(2L, "Mike", "Stone", "Mike.Stone");
 
-        gymFacade.updateTrainer(trainer);
+        gymFacade.updateTrainer("Mike.Stone", "password", trainer);
 
-        verify(trainerService).update(trainer);
-    }
-
-    @Test
-    void createTrainingShouldDelegateToTrainingService() {
-        Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
-        Trainer trainer = trainer(2L, "Mike", "Stone", "Mike.Stone");
-        Training training = training(trainee, trainer, trainingType("Yoga"));
-
-        gymFacade.createTraining(training);
-
-        verify(trainingService).create(training);
+        verify(trainerService).update("Mike.Stone", "password", trainer);
     }
 
     @Test
@@ -240,22 +196,6 @@ class GymFacadeTest {
         gymFacade.addTraining("John.Doe", "password", request);
 
         verify(trainingService).addTraining("John.Doe", "password", request);
-    }
-
-    @Test
-    void findTrainingByIdShouldReturnTrainingFromService() {
-        Trainee trainee = trainee(1L, "John", "Doe", "John.Doe");
-        Trainer trainer = trainer(2L, "Mike", "Stone", "Mike.Stone");
-        Training training = training(trainee, trainer, trainingType("Yoga"));
-        training.setTrainingId(3L);
-        when(trainingService.findById(3L)).thenReturn(training);
-
-        Training result = gymFacade.findTrainingById(3L);
-
-        assertAll(
-                () -> assertThat(result).isSameAs(training),
-                () -> verify(trainingService).findById(3L)
-        );
     }
 
     @Test

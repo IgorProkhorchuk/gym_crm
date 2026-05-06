@@ -40,6 +40,9 @@ class TrainerServiceImplTest {
     private TrainerDao trainerDao;
 
     @Mock
+    private com.epam.gymcrm.dao.UserDao userDao;
+
+    @Mock
     private TrainingTypeDao trainingTypeDao;
 
     @Mock
@@ -60,7 +63,7 @@ class TrainerServiceImplTest {
 
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(trainerDao.findAll()).thenReturn(Collections.emptyList());
+        when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
         when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet())).thenReturn("Severus.Snape");
 
         trainerService.create(trainer);
@@ -80,24 +83,11 @@ class TrainerServiceImplTest {
                 .user(user("Severus", "Snape", null))
                 .specialization(trainingType("Fitness"))
                 .build();
-        Trainer existingBase = trainer("Jane", "Base", "Severus.Snape");
-        Trainer existing2 = trainer("Jane", "Second", "Severus.Snape2");
-        Trainer similarName = trainer("Jane", "Similar", "Severus.Snapely");
-        Trainer withoutUser = Trainer.builder().build();
-        Trainer withoutUsername = Trainer.builder()
-                .user(user("Jane", "Null", null))
-                .build();
 
         Set<String> existingUsernames = Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely");
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(trainerDao.findAll()).thenReturn(List.of(
-                existingBase,
-                existing2,
-                similarName,
-                withoutUser,
-                withoutUsername
-        ));
+        when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(existingUsernames);
         when(usernameGenerator.generate("Severus", "Snape", existingUsernames)).thenReturn("Severus.Snape1");
 
         trainerService.create(newTrainer);
@@ -118,7 +108,7 @@ class TrainerServiceImplTest {
         RuntimeException exception = new RuntimeException("DAO failure");
 
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
-        when(trainerDao.findAll()).thenReturn(Collections.emptyList());
+        when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
                 .thenReturn("Severus.Snape");

@@ -31,6 +31,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     private final TraineeDao traineeDao;
     private final TrainerDao trainerDao;
+    private final com.epam.gymcrm.dao.UserDao userDao;
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
@@ -45,15 +46,11 @@ public class TraineeServiceImpl implements TraineeService {
 
         log.info("Creating trainee profile");
 
+        String baseUsername = user.getFirstName() + "." + user.getLastName();
         user.setUsername(usernameGenerator.generate(
                 user.getFirstName(),
                 user.getLastName(),
-                traineeDao.findAll().stream()
-                        .map(Trainee::getUser)
-                        .filter(Objects::nonNull)
-                        .map(User::getUsername)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet())
+                userDao.findUsernamesByPattern(baseUsername + "%")
         ));
         user.setPassword(passwordGenerator.generate());
         traineeDao.save(trainee);

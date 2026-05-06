@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class TrainerServiceImpl implements TrainerService {
 
     private final TrainerDao trainerDao;
+    private final com.epam.gymcrm.dao.UserDao userDao;
     private final TrainingTypeDao trainingTypeDao;
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
@@ -44,15 +45,11 @@ public class TrainerServiceImpl implements TrainerService {
         User user = trainer.getUser();
 
         log.info("Creating trainer profile");
+        String baseUsername = user.getFirstName() + "." + user.getLastName();
         user.setUsername(usernameGenerator.generate(
                 user.getFirstName(),
                 user.getLastName(),
-                trainerDao.findAll().stream()
-                        .map(Trainer::getUser)
-                        .filter(Objects::nonNull)
-                        .map(User::getUsername)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet())
+                userDao.findUsernamesByPattern(baseUsername + "%")
         ));
 
         user.setPassword(passwordGenerator.generate());

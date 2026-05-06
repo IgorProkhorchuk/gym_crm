@@ -44,6 +44,9 @@ class TraineeServiceImplTest {
     private TrainerDao trainerDao;
 
     @Mock
+    private com.epam.gymcrm.dao.UserDao userDao;
+
+    @Mock
     private AuthenticationService authenticationService;
 
     @Mock
@@ -59,7 +62,7 @@ class TraineeServiceImplTest {
                 .build();
 
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(traineeDao.findAll()).thenReturn(Collections.emptyList());
+        when(userDao.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
         when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
 
         traineeService.create(trainee);
@@ -78,23 +81,10 @@ class TraineeServiceImplTest {
         Trainee newTrainee = Trainee.builder()
                 .user(user("John", "Doe", null))
                 .build();
-        Trainee existingBase = trainee("Jane", "Base", "John.Doe");
-        Trainee existing2 = trainee("Jane", "Second", "John.Doe2");
-        Trainee similarName = trainee("Jane", "Similar", "John.Doering");
-        Trainee withoutUser = Trainee.builder().build();
-        Trainee withoutUsername = Trainee.builder()
-                .user(user("Jane", "Null", null))
-                .build();
 
         Set<String> existingUsernames = Set.of("John.Doe", "John.Doe2", "John.Doering");
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-        when(traineeDao.findAll()).thenReturn(List.of(
-                existingBase,
-                existing2,
-                similarName,
-                withoutUser,
-                withoutUsername
-        ));
+        when(userDao.findUsernamesByPattern("John.Doe%")).thenReturn(existingUsernames);
         when(usernameGenerator.generate("John", "Doe", existingUsernames)).thenReturn("John.Doe1");
 
         traineeService.create(newTrainee);
@@ -113,7 +103,7 @@ class TraineeServiceImplTest {
                 .build();
         RuntimeException exception = new RuntimeException("DAO failure");
 
-        when(traineeDao.findAll()).thenReturn(Collections.emptyList());
+        when(userDao.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
         doThrow(exception).when(traineeDao).save(trainee);

@@ -6,6 +6,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 @ComponentScan("com.epam.gymcrm")
 @Configuration
 @PropertySource("classpath:application.properties")
+@PropertySource(value = "file:${user.dir}/.env", ignoreResourceNotFound = true)
 public class Main {
 
     @Bean

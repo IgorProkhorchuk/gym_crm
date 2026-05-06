@@ -1,0 +1,10 @@
+.git
+.idea
+.mvn/wrapper/maven-wrapper.jar
+target
+logs
+infra
+*.pdf
+.env
+infra/.env
+*.log

@@ -12,6 +12,7 @@ variables:
   DOCKER_HOST: "tcp://docker:2375"
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
+  DOCKER_API_VERSION: "1.43"
 
 image: maven:3.9.14-amazoncorretto-25
 
@@ -23,7 +24,7 @@ cache:
 verify:
   stage: verify
   services:
-    - name: docker:dind
+    - name: docker:24.0.9-dind
       command: ["--tls=false"]
   script:
     - mvn $MAVEN_CLI_OPTS verify

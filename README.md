@@ -1,50 +1,125 @@
 # Gym CRM
 
-Gym CRM is a backend application designed to manage the core operations of a fitness center. Built with the Spring Framework, it provides functionalities to manage trainees, trainers, and their training sessions.
+Gym CRM is a Spring-based backend application for managing gym trainees, trainers, training types, and training sessions. Persistence is implemented with Hibernate/JPA and PostgreSQL.
 
 ## Features
 
-*   **User Management:** Create and manage profiles for both Trainees and Trainers.
-*   **Automatic Credentials:** Auto-generates unique usernames (e.g., `FirstName.LastName`) and random passwords for new users.
-*   **Training Sessions:** Schedule and manage training sessions between trainees and trainers, including tracking the training type and duration.
-*   **In-Memory Storage:** Utilizes an in-memory data store for quick development and testing, pre-populated with data from a JSON file using Spring's `BeanPostProcessor`.
+* **Trainee and trainer profiles:** create, read by username, update, activate, deactivate, and authenticate profiles.
+* **Generated credentials:** usernames are generated from first and last names, and passwords are generated for new profiles.
+* **Password changes:** authenticated trainees and trainers can change their passwords.
+* **Training management:** add trainings and query trainee/trainer training lists with date and name/type criteria.
+* **Trainer assignment:** list trainers not assigned to a trainee and replace a trainee's trainer list.
+* **Hibernate persistence:** entity relationships are mapped with JPA annotations and executed through DAO/service layers.
+* **Testing and coverage:** unit and integration tests run with Maven, JUnit, Mockito, Testcontainers, and JaCoCo.
 
-## Getting Started
+## Requirements
 
-### Prerequisites
+* Java 25
+* Maven 3.9+
+* Podman or Docker for the local database stack
 
-*   Java 17 or higher
-*   Maven or Gradle
+## Build And Test
 
-### Installation
+Run the full verification lifecycle:
 
-1.  Clone the repository:
-    ```bash
-    git clone https://git.epam.com/ihor_prokhorchuk/gym_crm.git
-    cd gym_crm
-    ```
-2.  Build the project:
-    ```bash
-    ./mvnw clean install
-    ```
-3.  Run the application:
-    ```bash
-    ./mvnw spring-boot:run
-    ```
+```bash
+mvn verify
+```
 
-## Architecture & Design
+This compiles the project, runs all tests, generates the JaCoCo report, and enforces the configured coverage checks.
 
-The application follows a standard layered architecture:
-*   **Services:** Contain business logic (e.g., `TraineeService`, `TrainerService`).
-*   **DAOs (Data Access Objects):** Handle data persistence operations.
-*   **Storage:** Custom `InMemoryStorage` initialized via `StorageInitializer` reading from `data.json`.
+## Local Application Run
 
-### Class Diagram (Entity Relations)
+The application reads database settings from Spring properties. For a direct Maven run, provide a root `.env` file or equivalent environment variables with:
+
+```env
+db.url=jdbc:postgresql://localhost:5435/gym_crm
+db.username=gym_user
+db.password=password
+db.driver=org.postgresql.Driver
+```
+
+Then run:
+
+```bash
+mvn -q -DskipTests exec:java -Dexec.mainClass=com.epam.gymcrm.Main
+```
+
+The current application starts a Spring context and then exits; it is not a web server.
+
+## Containerized Database Stack
+
+The `infra` compose stack starts the database infrastructure used by local application runs:
+
+* PostgreSQL master on host port `5433`
+* PostgreSQL replica on host port `5434`
+* Pgpool on host port `5435`
+
+Create a local compose environment file:
+
+```bash
+cp infra/.env.example infra/.env
+```
+
+Start the full stack:
+
+```bash
+cd infra
+podman compose up -d
+```
+
+If old volumes were created with previous credentials or schema settings, reset them first:
+
+```bash
+podman compose down -v
+podman compose up -d
+```
+
+After the stack is running, the application can connect to Pgpool through:
+
+```env
+db.url=jdbc:postgresql://localhost:5435/gym_crm
+db.username=gym_user
+db.password=password
+db.driver=org.postgresql.Driver
+```
+
+## Optional Application Image
+
+The root `Dockerfile` can build an application image for smoke checks or future long-running entry points:
+
+```bash
+podman build -t gym-crm:local .
+```
+
+The image receives database configuration at runtime through:
+
+```env
+DB_URL
+DB_USERNAME
+DB_PASSWORD
+DB_DRIVER
+```
+
+These values are not baked into the Docker image. Since the current application only starts a Spring context and exits, it is intentionally not part of the compose stack until a long-running interface, such as REST, is added.
+
+The committed `infra/.env.example` contains local sample values only; real local secrets should stay in ignored `.env` files.
+
+## Architecture
+
+The project follows a layered structure:
+
+* **Facade:** `GymFacade` exposes application operations.
+* **Services:** business logic, validation, authentication checks, and transaction boundaries.
+* **DAOs:** Hibernate/JPA persistence operations through `EntityManager`.
+* **Models:** JPA entities for `User`, `Trainee`, `Trainer`, `Training`, and `TrainingType`.
+* **Criteria/DTOs:** request and filtering records for training queries and training creation.
+
+### Entity Relationships
 
 ```mermaid
 classDiagram
     class User {
-        <<abstract>>
         +Long userId
         +String firstName
         +String lastName
@@ -54,22 +129,20 @@ classDiagram
     }
 
     class Trainee {
+        +Long id
         +LocalDate dateOfBirth
         +String address
     }
 
     class Trainer {
-        +String specialization
+        +Long id
     }
 
     class Training {
         +Long trainingId
-        +Long traineeId
-        +Long trainerId
         +String trainingName
-        +TrainingType trainingType
         +LocalDate trainingDate
-        +Duration trainingDuration
+        +Integer trainingDuration
     }
 
     class TrainingType {
@@ -77,76 +150,24 @@ classDiagram
         +String trainingTypeName
     }
 
-    User <|-- Trainee
-    User <|-- Trainer
-    Trainer "1" --> "*" Training : conducts
-    Trainee "1" --> "*" Training : attends
-    Training "*" --> "1" TrainingType : has
+    Trainee "1" --> "1" User
+    Trainer "1" --> "1" User
+    Trainee "*" --> "*" Trainer
+    Trainee "1" --> "*" Training
+    Trainer "1" --> "*" Training
+    Trainer "*" --> "1" TrainingType : specialization
+    Training "*" --> "1" TrainingType
 ```
 
-### Component Architecture
+## Configuration Notes
 
-```mermaid
-graph TD
-    subgraph Services
-        TraineeService[Trainee Service]
-        TrainerService[Trainer Service]
-    end
+Main Hibernate settings are in `src/main/resources/application.properties`.
 
-    subgraph DAOs
-        TraineeDao[Trainee DAO]
-        TrainerDao[Trainer DAO]
-        TrainingDao[Training DAO]
-    end
+Training types are seeded from `src/main/resources/data.sql` into the `training_type` table. Hibernate is currently configured with `hibernate.hbm2ddl.auto=create-drop`, so the schema is recreated during application startup.
 
-    subgraph Storage Layer
-        InMemoryStorage[(In-Memory Storage)]
-        StorageInitializer[Storage Initializer]
-    end
-    
-    DataJSON[data.json] -->|Reads on startup| StorageInitializer
-    StorageInitializer -->|Populates| InMemoryStorage
+## GitLab CI
 
-    TraineeService --> TraineeDao
-    TrainerService --> TrainerDao
-    
-    TraineeDao --> InMemoryStorage
-    TrainerDao --> InMemoryStorage
-    TrainingDao --> InMemoryStorage
-```
+The GitLab pipeline runs for merge requests, `main`, and `devel`.
 
-### User Flow: Creating a New Trainee
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant TraineeService
-    participant TraineeDao
-    participant InMemoryStorage
-
-    Client->>TraineeService: create(Trainee)
-    activate TraineeService
-    
-    TraineeService->>TraineeDao: findAll()
-    TraineeDao-->>TraineeService: List~Trainee~
-    
-    Note over TraineeService: Generate unique username<br/>(e.g., John.Doe1)
-    TraineeService->>TraineeService: generateUsername()
-    
-    Note over TraineeService: Generate random 10-char password
-    TraineeService->>TraineeService: generateRandomPassword()
-    
-    TraineeService->>TraineeDao: save(Trainee)
-    activate TraineeDao
-    TraineeDao->>InMemoryStorage: put(userId, Trainee)
-    InMemoryStorage-->>TraineeDao: Success
-    TraineeDao-->>TraineeService: Success
-    deactivate TraineeDao
-    
-    TraineeService-->>Client: void (Success)
-    deactivate TraineeService
-```
-
-## Configuration
-
-Initial data is loaded from `src/main/resources/data.json` at application startup. The file path can be configured in `application.properties` using the `storage.file.path` property.
+* `verify`: runs `mvn verify`, publishes JUnit reports, and publishes the JaCoCo coverage report.
+Current CI does not need database credentials, because tests use Testcontainers. Credentials are only needed if a future deploy job starts the compose stack from GitLab.

@@ -1,11 +1,8 @@
 workflow:
   rules:
+    - if: $CI_COMMIT_BRANCH == "devel"
     - if: $CI_MERGE_REQUEST_ID
     - if: $CI_COMMIT_BRANCH == "main"
-
-services:
-  - name: docker:dind
-    command: ["--tls=false"]
 
 stages:
   - verify
@@ -15,6 +12,7 @@ variables:
   DOCKER_HOST: "tcp://docker:2375"
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
+  DOCKER_API_VERSION: "1.43"
 
 image: maven:3.9.14-amazoncorretto-25
 
@@ -25,5 +23,19 @@ cache:
 
 verify:
   stage: verify
+  services:
+    - name: docker:24.0.9-dind
+      command: ["--tls=false"]
   script:
     - mvn $MAVEN_CLI_OPTS verify
+  artifacts:
+    when: always
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+      coverage_report:
+        coverage_format: jacoco
+        path: target/site/jacoco/jacoco.xml
+    paths:
+      - target/site/jacoco/
+      - target/surefire-reports/
+    expire_in: 1 week

@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TraineeServiceImpl implements TraineeService {
 
     private final TraineeDao traineeDao;

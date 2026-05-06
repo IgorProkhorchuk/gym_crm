@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   #==================MASTER==============
   gym-master:
@@ -9,8 +7,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
       REPL_PASSWORD: ${REPL_PASSWORD}
       APP_DB_NAME: ${APP_DB_NAME}
-      APP_DB_USERNAME: ${POSTGRES_USER}
-      APP_DB_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      APP_DB_USERNAME: ${APP_DB_USERNAME}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
       TEST_DB_NAME: ${TEST_DB_NAME}
     ports:
       - "5433:5432"
@@ -57,8 +55,8 @@ services:
       - PGPOOL_ENABLE_LOAD_BALANCING=yes
       - PGPOOL_SR_CHECK_USER=postgres
       - PGPOOL_SR_CHECK_PASSWORD=${POSTGRES_ROOT_PASSWORD}
-      - PGPOOL_POSTGRES_USERNAME=${POSTGRES_USER}
-      - PGPOOL_POSTGRES_PASSWORD=${POSTGRES_ROOT_PASSWORD}
+      - PGPOOL_POSTGRES_USERNAME=${APP_DB_USERNAME}
+      - PGPOOL_POSTGRES_PASSWORD=${APP_DB_PASSWORD}
       - PGPOOL_ADMIN_USERNAME=${ADMIN_USERNAME}
       - PGPOOL_ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
@@ -66,6 +64,30 @@ services:
         condition: service_healthy
       gym-replica:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/5432'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  #==================APP=================
+  gym-app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: localhost/gym-crm:local
+    container_name: gym-app
+    environment:
+      DB_URL: jdbc:postgresql://gym-pgpool:5432/${APP_DB_NAME}
+      DB_USERNAME: ${APP_DB_USERNAME}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      DB_DRIVER: org.postgresql.Driver
+    networks:
+      - gym-crm-net
+    depends_on:
+      gym-pgpool:
+        condition: service_healthy
+    restart: "no"
 
 networks:
   gym-crm-net:

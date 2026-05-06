@@ -6,7 +6,6 @@ workflow:
 
 stages:
   - verify
-  - image
 
 variables:
   MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
@@ -39,16 +38,3 @@ verify:
       - target/site/jacoco/
       - target/surefire-reports/
     expire_in: 1 week
-
-build-image:
-  stage: image
-  image: docker:27
-  services:
-    - name: docker:dind
-      command: ["--tls=false"]
-  needs:
-    - verify
-  script:
-    - docker build -t gym-crm:$CI_COMMIT_SHORT_SHA .
-  rules:
-    - if: $CI_COMMIT_BRANCH == "devel"

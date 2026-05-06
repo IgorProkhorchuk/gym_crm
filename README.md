@@ -16,7 +16,7 @@ Gym CRM is a Spring-based backend application for managing gym trainees, trainer
 
 * Java 25
 * Maven 3.9+
-* Podman or Docker for the local database stack and containerized application run
+* Podman or Docker for the local database stack
 
 ## Build And Test
 
@@ -47,14 +47,13 @@ mvn -q -DskipTests exec:java -Dexec.mainClass=com.epam.gymcrm.Main
 
 The current application starts a Spring context and then exits; it is not a web server.
 
-## Containerized Run
+## Containerized Database Stack
 
-The `infra` compose stack starts:
+The `infra` compose stack starts the database infrastructure used by local application runs:
 
 * PostgreSQL master on host port `5433`
 * PostgreSQL replica on host port `5434`
 * Pgpool on host port `5435`
-* Gym CRM application container connected to Pgpool inside the compose network
 
 Create a local compose environment file:
 
@@ -66,17 +65,34 @@ Start the full stack:
 
 ```bash
 cd infra
-podman compose up -d --build
+podman compose up -d
 ```
 
 If old volumes were created with previous credentials or schema settings, reset them first:
 
 ```bash
 podman compose down -v
-podman compose up -d --build
+podman compose up -d
 ```
 
-The application container receives database configuration at runtime through:
+After the stack is running, the application can connect to Pgpool through:
+
+```env
+db.url=jdbc:postgresql://localhost:5435/gym_crm
+db.username=gym_user
+db.password=password
+db.driver=org.postgresql.Driver
+```
+
+## Optional Application Image
+
+The root `Dockerfile` can build an application image for smoke checks or future long-running entry points:
+
+```bash
+podman build -t gym-crm:local .
+```
+
+The image receives database configuration at runtime through:
 
 ```env
 DB_URL
@@ -85,7 +101,9 @@ DB_PASSWORD
 DB_DRIVER
 ```
 
-These values are not baked into the Docker image. The committed `infra/.env.example` contains local sample values only; real local secrets should stay in ignored `.env` files.
+These values are not baked into the Docker image. Since the current application only starts a Spring context and exits, it is intentionally not part of the compose stack until a long-running interface, such as REST, is added.
+
+The committed `infra/.env.example` contains local sample values only; real local secrets should stay in ignored `.env` files.
 
 ## Architecture
 
@@ -152,6 +170,4 @@ Training types are seeded from `src/main/resources/data.sql` into the `training_
 The GitLab pipeline runs for merge requests, `main`, and `devel`.
 
 * `verify`: runs `mvn verify`, publishes JUnit reports, and publishes the JaCoCo coverage report.
-* `build-image`: runs only on `devel` after `verify` succeeds and builds the application image.
-
-Current CI does not need database credentials, because tests use Testcontainers and image build does not require runtime secrets. Credentials are only needed if a future deploy job starts the compose stack from GitLab.
+Current CI does not need database credentials, because tests use Testcontainers. Credentials are only needed if a future deploy job starts the compose stack from GitLab.

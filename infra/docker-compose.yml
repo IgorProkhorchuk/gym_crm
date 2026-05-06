@@ -70,25 +70,6 @@ services:
       timeout: 5s
       retries: 10
 
-  #==================APP=================
-  gym-app:
-    build:
-      context: ..
-      dockerfile: Dockerfile
-    image: localhost/gym-crm:local
-    container_name: gym-app
-    environment:
-      DB_URL: jdbc:postgresql://gym-pgpool:5432/${APP_DB_NAME}
-      DB_USERNAME: ${APP_DB_USERNAME}
-      DB_PASSWORD: ${APP_DB_PASSWORD}
-      DB_DRIVER: org.postgresql.Driver
-    networks:
-      - gym-crm-net
-    depends_on:
-      gym-pgpool:
-        condition: service_healthy
-    restart: "no"
-
 networks:
   gym-crm-net:
     driver: bridge

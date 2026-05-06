@@ -1,14 +1,12 @@
 workflow:
   rules:
+    - if: $CI_COMMIT_BRANCH == "devel"
     - if: $CI_MERGE_REQUEST_ID
     - if: $CI_COMMIT_BRANCH == "main"
 
-services:
-  - name: docker:dind
-    command: ["--tls=false"]
-
 stages:
   - verify
+  - image
 
 variables:
   MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
@@ -25,5 +23,32 @@ cache:
 
 verify:
   stage: verify
+  services:
+    - name: docker:dind
+      command: ["--tls=false"]
   script:
     - mvn $MAVEN_CLI_OPTS verify
+  artifacts:
+    when: always
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+      coverage_report:
+        coverage_format: jacoco
+        path: target/site/jacoco/jacoco.xml
+    paths:
+      - target/site/jacoco/
+      - target/surefire-reports/
+    expire_in: 1 week
+
+build-image:
+  stage: image
+  image: docker:27
+  services:
+    - name: docker:dind
+      command: ["--tls=false"]
+  needs:
+    - verify
+  script:
+    - docker build -t gym-crm:$CI_COMMIT_SHORT_SHA .
+  rules:
+    - if: $CI_COMMIT_BRANCH == "devel"

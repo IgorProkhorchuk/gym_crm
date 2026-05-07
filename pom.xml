@@ -226,6 +226,7 @@
                             <excludes>
                                 <exclude>com/epam/gymcrm/Main.class</exclude>
                                 <exclude>com/epam/gymcrm/config/**</exclude>
+                                <exclude>com/epam/gymcrm/mapper/*Impl.class</exclude>
                                 <exclude>com/epam/gymcrm/model/**</exclude>
                             </excludes>
                         </configuration>

@@ -2,6 +2,7 @@ package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
@@ -12,16 +13,15 @@ import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.UsernameGenerator;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,13 +29,14 @@ import java.util.stream.Collectors;
 @Transactional
 public class TraineeServiceImpl implements TraineeService {
 
+    private static final String TRAINEE_ID_NULL_ERROR = "Trainee id must not be null";
+
     private final TraineeDao traineeDao;
     private final TrainerDao trainerDao;
-    private final com.epam.gymcrm.dao.UserDao userDao;
+    private final UserDao userDao;
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
-    private static final String TRAINEE_ID_NULL_ERROR = "Trainee id must not be null";
 
     @Override
     public void create(Trainee trainee) {

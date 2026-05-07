@@ -2,6 +2,7 @@ package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 @Transactional
 public class TrainerServiceImpl implements TrainerService {
 
+    private static final String TRAINER_ID_NULL_ERROR = "Trainer id must not be null";
+
     private final TrainerDao trainerDao;
-    private final com.epam.gymcrm.dao.UserDao userDao;
+    private final UserDao userDao;
     private final TrainingTypeDao trainingTypeDao;
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
-    private static final String TRAINER_ID_NULL_ERROR = "Trainer id must not be null";
-
 
     @Override
     public void create(Trainer trainer) {

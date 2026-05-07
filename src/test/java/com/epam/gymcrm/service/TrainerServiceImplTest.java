@@ -2,10 +2,19 @@ package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.dto.AuthRequest;
+import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.UsernamePasswordResponse;
+import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
+import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
+import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
+import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
+import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.service.impl.TrainerServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,23 +63,33 @@ class TrainerServiceImplTest {
     @Mock
     private UsernameGenerator usernameGenerator;
 
+    @Mock
+    private TrainerMapper trainerMapper;
+
     @Test
     void createShouldGenerateUsernameAndPassword() {
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Fitness", true);
         Trainer trainer = Trainer.builder()
                 .user(user("Severus", "Snape", null))
                 .specialization(trainingType("Fitness"))
                 .build();
+        TrainingType specialization = trainingType("Fitness");
 
-        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
+        when(trainerMapper.toEntity(request)).thenReturn(trainer);
+        when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(specialization));
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
         when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet())).thenReturn("Severus.Snape");
 
-        trainerService.create(trainer);
+        UsernamePasswordResponse result = trainerService.create(request);
 
         assertAll(
+                () -> assertThat(result.username()).isEqualTo("Severus.Snape"),
+                () -> assertThat(result.password()).isEqualTo("Passw0rd12"),
                 () -> assertThat(trainer.getUser().getUsername()).isEqualTo("Severus.Snape"),
                 () -> assertThat(trainer.getUser().getPassword()).isEqualTo("Passw0rd12"),
+                () -> assertThat(trainer.getSpecialization()).isSameAs(specialization),
+                () -> verify(trainerMapper).toEntity(request),
                 () -> verify(usernameGenerator).generate("Severus", "Snape", Collections.emptySet()),
                 () -> verify(passwordGenerator).generate(),
                 () -> verify(trainerDao).save(trainer)
@@ -79,18 +98,20 @@ class TrainerServiceImplTest {
 
     @Test
     void createShouldPassExistingUsernamesToGenerator() {
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Fitness", true);
         Trainer newTrainer = Trainer.builder()
                 .user(user("Severus", "Snape", null))
                 .specialization(trainingType("Fitness"))
                 .build();
 
         Set<String> existingUsernames = Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely");
+        when(trainerMapper.toEntity(request)).thenReturn(newTrainer);
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
         when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(existingUsernames);
         when(usernameGenerator.generate("Severus", "Snape", existingUsernames)).thenReturn("Severus.Snape1");
 
-        trainerService.create(newTrainer);
+        trainerService.create(request);
 
         assertAll(
                 () -> assertThat(newTrainer.getUser().getUsername()).isEqualTo("Severus.Snape1"),
@@ -101,12 +122,14 @@ class TrainerServiceImplTest {
 
     @Test
     void createShouldThrowRuntimeExceptionWhenDaoFails() {
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Fitness", true);
         Trainer trainer = Trainer.builder()
                 .user(user("Severus", "Snape", null))
                 .specialization(trainingType("Fitness"))
                 .build();
         RuntimeException exception = new RuntimeException("DAO failure");
 
+        when(trainerMapper.toEntity(request)).thenReturn(trainer);
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
         when(passwordGenerator.generate()).thenReturn("Passw0rd12");
@@ -114,128 +137,103 @@ class TrainerServiceImplTest {
                 .thenReturn("Severus.Snape");
         doThrow(exception).when(trainerDao).save(trainer);
 
-        assertThatThrownBy(() -> trainerService.create(trainer))
+        assertThatThrownBy(() -> trainerService.create(request))
                 .isSameAs(exception);
     }
 
     @Test
-    void createShouldThrowIllegalArgumentExceptionWhenTrainerIsNull() {
+    void createShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
         assertThatThrownBy(() -> trainerService.create(null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer must not be null");
-    }
-
-    @Test
-    void createShouldThrowIllegalArgumentExceptionWhenUserIsNull() {
-        Trainer trainer = Trainer.builder().build();
-
-        assertThatThrownBy(() -> trainerService.create(trainer))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer user must not be null");
+                .hasMessage("Trainer request must not be null");
     }
 
     @Test
     void createShouldThrowIllegalArgumentExceptionWhenFirstNameIsBlank() {
-        Trainer trainer = Trainer.builder()
-                .user(user(" ", "Snape", null))
-                .specialization(trainingType("Fitness"))
-                .build();
+        CreateTrainerRequest request = createTrainerRequest(" ", "Snape", "Fitness", true);
 
-        assertThatThrownBy(() -> trainerService.create(trainer))
+        assertThatThrownBy(() -> trainerService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("First name must not be blank");
 
-        assertAll(
-                () -> verifyNoInteractions(trainingTypeDao),
-                () -> verifyNoInteractions(usernameGenerator),
-                () -> verifyNoInteractions(passwordGenerator),
-                () -> verifyNoInteractions(trainerDao)
-        );
+        verifyNoInteractions(trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
     }
 
     @Test
     void createShouldThrowIllegalArgumentExceptionWhenLastNameIsBlank() {
-        Trainer trainer = Trainer.builder()
-                .user(user("Severus", " ", null))
-                .specialization(trainingType("Fitness"))
-                .build();
+        CreateTrainerRequest request = createTrainerRequest("Severus", " ", "Fitness", true);
 
-        assertThatThrownBy(() -> trainerService.create(trainer))
+        assertThatThrownBy(() -> trainerService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Last name must not be blank");
 
-        assertAll(
-                () -> verifyNoInteractions(trainingTypeDao),
-                () -> verifyNoInteractions(usernameGenerator),
-                () -> verifyNoInteractions(passwordGenerator),
-                () -> verifyNoInteractions(trainerDao)
-        );
+        verifyNoInteractions(trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
     }
 
     @Test
     void createShouldThrowIllegalArgumentExceptionWhenActiveIsNull() {
-        Trainer trainer = Trainer.builder()
-                .user(user("Severus", "Snape", null))
-                .specialization(trainingType("Fitness"))
-                .build();
-        trainer.getUser().setActive(null);
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Fitness", null);
 
-        assertThatThrownBy(() -> trainerService.create(trainer))
+        assertThatThrownBy(() -> trainerService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Active must not be null");
 
-        assertAll(
-                () -> verifyNoInteractions(trainingTypeDao),
-                () -> verifyNoInteractions(usernameGenerator),
-                () -> verifyNoInteractions(passwordGenerator),
-                () -> verifyNoInteractions(trainerDao)
-        );
+        verifyNoInteractions(trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
     }
 
     @Test
     void createShouldThrowIllegalArgumentExceptionWhenSpecializationIsNull() {
-        Trainer trainer = Trainer.builder()
-                .user(user("Severus", "Snape", null))
-                .build();
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", null, true);
 
-        assertThatThrownBy(() -> trainerService.create(trainer))
+        assertThatThrownBy(() -> trainerService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer specialization must not be null");
     }
 
     @Test
+    void createShouldThrowIllegalArgumentExceptionWhenSpecializationIsBlank() {
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", " ", true);
+
+        assertThatThrownBy(() -> trainerService.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Trainer specialization must not be blank");
+    }
+
+    @Test
     void createShouldThrowEntityNotFoundExceptionWhenSpecializationDoesNotExist() {
-        Trainer trainer = Trainer.builder()
-                .user(user("Severus", "Snape", null))
-                .specialization(trainingType("Unknown"))
-                .build();
+        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Unknown", true);
         when(trainingTypeDao.findByName("Unknown")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> trainerService.create(trainer))
+        assertThatThrownBy(() -> trainerService.create(request))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Training type not found");
     }
 
     @Test
-    void getProfileShouldReturnAuthenticatedTrainer() {
+    void getProfileShouldReturnMappedAuthenticatedTrainer() {
+        AuthRequest request = new AuthRequest("John.Coach", "password");
         Trainer trainer = trainer("John", "Coach", "John.Coach");
+        TrainerProfileResponse response = trainerProfileResponse(1L, "John.Coach", "John", "Coach", "Fitness");
         when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
+        when(trainerMapper.toProfileResponse(trainer)).thenReturn(response);
 
-        Trainer result = trainerService.getProfile("John.Coach", "password");
+        TrainerProfileResponse result = trainerService.getProfile(request);
 
         assertAll(
-                () -> assertThat(result).isSameAs(trainer),
+                () -> assertThat(result).isSameAs(response),
                 () -> verify(authenticationService).authenticateTrainer("John.Coach", "password"),
+                () -> verify(trainerMapper).toProfileResponse(trainer),
                 () -> verifyNoMoreInteractions(authenticationService)
         );
     }
 
     @Test
     void changePasswordShouldUpdateAuthenticatedTrainerPassword() {
+        ChangePasswordRequest request = new ChangePasswordRequest("John.Coach", "old-password", "new-password");
         Trainer trainer = trainer("John", "Coach", "John.Coach");
         when(authenticationService.authenticateTrainer("John.Coach", "old-password")).thenReturn(trainer);
 
-        trainerService.changePassword("John.Coach", "old-password", "new-password");
+        trainerService.changePassword(request);
 
         assertAll(
                 () -> assertThat(trainer.getUser().getPassword()).isEqualTo("new-password"),
@@ -245,26 +243,38 @@ class TrainerServiceImplTest {
     }
 
     @Test
+    void changePasswordShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
+        assertThatThrownBy(() -> trainerService.changePassword(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Change password request must not be null");
+    }
+
+    @Test
     void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsNull() {
-        assertThatThrownBy(() -> trainerService.changePassword("John.Coach", "old-password", null))
+        ChangePasswordRequest request = new ChangePasswordRequest("John.Coach", "old-password", null);
+
+        assertThatThrownBy(() -> trainerService.changePassword(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("New password must not be blank");
     }
 
     @Test
     void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsBlank() {
-        assertThatThrownBy(() -> trainerService.changePassword("John.Coach", "old-password", " "))
+        ChangePasswordRequest request = new ChangePasswordRequest("John.Coach", "old-password", " ");
+
+        assertThatThrownBy(() -> trainerService.changePassword(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("New password must not be blank");
     }
 
     @Test
     void activateShouldSetAuthenticatedTrainerActiveWhenCurrentlyInactive() {
+        AuthRequest request = new AuthRequest("John.Coach", "password");
         Trainer trainer = trainer("John", "Coach", "John.Coach");
         trainer.getUser().setActive(false);
         when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
 
-        trainerService.activate("John.Coach", "password");
+        trainerService.activate(request);
 
         assertAll(
                 () -> assertThat(trainer.getUser().getActive()).isTrue(),
@@ -275,10 +285,11 @@ class TrainerServiceImplTest {
 
     @Test
     void activateShouldThrowProfileStateExceptionWhenTrainerAlreadyActive() {
+        AuthRequest request = new AuthRequest("John.Coach", "password");
         Trainer trainer = trainer("John", "Coach", "John.Coach");
         when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
 
-        assertThatThrownBy(() -> trainerService.activate("John.Coach", "password"))
+        assertThatThrownBy(() -> trainerService.activate(request))
                 .isInstanceOf(ProfileStateException.class)
                 .hasMessage("Trainer profile is already active");
 
@@ -290,10 +301,11 @@ class TrainerServiceImplTest {
 
     @Test
     void deactivateShouldSetAuthenticatedTrainerInactiveWhenCurrentlyActive() {
+        AuthRequest request = new AuthRequest("John.Coach", "password");
         Trainer trainer = trainer("John", "Coach", "John.Coach");
         when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
 
-        trainerService.deactivate("John.Coach", "password");
+        trainerService.deactivate(request);
 
         assertAll(
                 () -> assertThat(trainer.getUser().getActive()).isFalse(),
@@ -304,11 +316,12 @@ class TrainerServiceImplTest {
 
     @Test
     void deactivateShouldThrowProfileStateExceptionWhenTrainerAlreadyInactive() {
+        AuthRequest request = new AuthRequest("John.Coach", "password");
         Trainer trainer = trainer("John", "Coach", "John.Coach");
         trainer.getUser().setActive(false);
         when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
 
-        assertThatThrownBy(() -> trainerService.deactivate("John.Coach", "password"))
+        assertThatThrownBy(() -> trainerService.deactivate(request))
                 .isInstanceOf(ProfileStateException.class)
                 .hasMessage("Trainer profile is already inactive");
 
@@ -319,53 +332,56 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void getUnassignedTrainersShouldAuthenticateTraineeAndReturnDaoResult() {
+    void getUnassignedTrainersShouldAuthenticateTraineeAndReturnMappedDaoResult() {
+        AuthRequest request = new AuthRequest("Jane.Doe", "password");
         Trainer trainer = trainer("Available", "Trainer", "Available.Trainer");
+        TrainerSummaryResponse response = trainerSummaryResponse(1L, "Available.Trainer", "Available", "Trainer");
         when(authenticationService.authenticateTrainee("Jane.Doe", "password"))
                 .thenReturn(com.epam.gymcrm.TestFixtures.trainee("Jane", "Doe", "Jane.Doe"));
         when(trainerDao.findNotAssignedToTrainee("Jane.Doe")).thenReturn(List.of(trainer));
+        when(trainerMapper.toSummaryResponse(trainer)).thenReturn(response);
 
-        List<Trainer> result = trainerService.getUnassignedTrainers("Jane.Doe", "password");
+        List<TrainerSummaryResponse> result = trainerService.getUnassignedTrainers(request);
 
         assertAll(
-                () -> assertThat(result).containsExactly(trainer),
+                () -> assertThat(result).containsExactly(response),
                 () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-                () -> verify(trainerDao).findNotAssignedToTrainee("Jane.Doe")
+                () -> verify(trainerDao).findNotAssignedToTrainee("Jane.Doe"),
+                () -> verify(trainerMapper).toSummaryResponse(trainer)
         );
     }
 
     @Test
     void updateShouldSaveAuthenticatedTrainerChanges() {
+        UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Yoga");
         Trainer authenticatedTrainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        Trainer updatedTrainer = trainer(22L, "Minnie", "McGonagall", "Changed.Username", trainingType("Yoga"));
-        updatedTrainer.getUser().setPassword("changed-password");
-        updatedTrainer.getUser().setActive(false);
+        TrainingType specialization = trainingType("Yoga");
+        TrainerProfileResponse response = trainerProfileResponse(22L, "Minerva.McGonagall", "Minnie", "McGonagall", "Yoga");
         when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(trainingType("Yoga")));
+        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(specialization));
+        when(trainerMapper.toProfileResponse(authenticatedTrainer)).thenReturn(response);
 
-        trainerService.update("Minerva.McGonagall", "password", updatedTrainer);
+        TrainerProfileResponse result = trainerService.update(request);
 
         assertAll(
-                () -> assertThat(authenticatedTrainer.getUser().getFirstName()).isEqualTo("Minnie"),
-                () -> assertThat(authenticatedTrainer.getUser().getLastName()).isEqualTo("McGonagall"),
-                () -> assertThat(authenticatedTrainer.getUser().getUsername()).isEqualTo("Minerva.McGonagall"),
-                () -> assertThat(authenticatedTrainer.getUser().getPassword()).isEqualTo("password"),
-                () -> assertThat(authenticatedTrainer.getUser().getActive()).isTrue(),
-                () -> assertThat(authenticatedTrainer.getSpecialization().getTrainingTypeName()).isEqualTo("Yoga"),
+                () -> assertThat(result).isSameAs(response),
+                () -> assertThat(authenticatedTrainer.getSpecialization()).isSameAs(specialization),
                 () -> verify(authenticationService).authenticateTrainer("Minerva.McGonagall", "password"),
+                () -> verify(trainerMapper).updateFromRequest(request, authenticatedTrainer),
                 () -> verify(trainingTypeDao).findByName("Yoga"),
                 () -> verify(trainerDao).save(authenticatedTrainer),
+                () -> verify(trainerMapper).toProfileResponse(authenticatedTrainer),
                 () -> verifyNoMoreInteractions(trainerDao)
         );
     }
 
     @Test
     void updateShouldThrowAuthenticationExceptionWhenTrainerDoesNotExist() {
-        Trainer trainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
+        UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Yoga");
         AuthenticationException exception = new AuthenticationException("Invalid username or password");
         when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenThrow(exception);
 
-        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", trainer))
+        assertThatThrownBy(() -> trainerService.update(request))
                 .isSameAs(exception);
 
         assertAll(
@@ -376,40 +392,40 @@ class TrainerServiceImplTest {
 
     @Test
     void updateShouldThrowRuntimeExceptionWhenDaoFails() {
+        UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Fitness");
         Trainer authenticatedTrainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        Trainer updatedTrainer = trainer(22L, "Minnie", "McGonagall", "Minerva.McGonagall");
         RuntimeException exception = new RuntimeException("DAO failure");
         when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
         when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
         doThrow(exception).when(trainerDao).save(authenticatedTrainer);
 
-        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", updatedTrainer))
+        assertThatThrownBy(() -> trainerService.update(request))
                 .isSameAs(exception);
     }
 
     @Test
-    void updateShouldThrowIllegalArgumentExceptionWhenTrainerIsNull() {
-        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", null))
+    void updateShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
+        assertThatThrownBy(() -> trainerService.update(null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer must not be null");
+                .hasMessage("Update trainer request must not be null");
     }
 
     @Test
     void updateShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
-        Trainer trainer = trainer("Minerva", "McGonagall", "Minerva.McGonagall");
+        UpdateTrainerRequest request = updateTrainerRequest(null, "Minnie", "McGonagall", "Fitness");
 
-        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", trainer))
+        assertThatThrownBy(() -> trainerService.update(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Trainer id must not be null");
     }
 
     @Test
     void updateShouldThrowAuthenticationExceptionWhenAuthenticatedTrainerDoesNotMatchPayload() {
+        UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Fitness");
         Trainer authenticatedTrainer = trainer(23L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        Trainer updatedTrainer = trainer(22L, "Minnie", "McGonagall", "Minerva.McGonagall");
         when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
 
-        assertThatThrownBy(() -> trainerService.update("Minerva.McGonagall", "password", updatedTrainer))
+        assertThatThrownBy(() -> trainerService.update(request))
                 .isInstanceOf(AuthenticationException.class)
                 .hasMessage("Authenticated trainer does not match updated profile");
 
@@ -419,4 +435,47 @@ class TrainerServiceImplTest {
         );
     }
 
+    private static CreateTrainerRequest createTrainerRequest(
+            String firstName,
+            String lastName,
+            String specialization,
+            Boolean active
+    ) {
+        return new CreateTrainerRequest(firstName, lastName, specialization, active);
+    }
+
+    private static UpdateTrainerRequest updateTrainerRequest(
+            Long id,
+            String firstName,
+            String lastName,
+            String specialization
+    ) {
+        return new UpdateTrainerRequest(
+                "Minerva.McGonagall",
+                "password",
+                id,
+                firstName,
+                lastName,
+                specialization
+        );
+    }
+
+    private static TrainerProfileResponse trainerProfileResponse(
+            Long id,
+            String username,
+            String firstName,
+            String lastName,
+            String specialization
+    ) {
+        return new TrainerProfileResponse(id, username, firstName, lastName, true, specialization);
+    }
+
+    private static TrainerSummaryResponse trainerSummaryResponse(
+            Long id,
+            String username,
+            String firstName,
+            String lastName
+    ) {
+        return new TrainerSummaryResponse(id, username, firstName, lastName, "Fitness");
+    }
 }

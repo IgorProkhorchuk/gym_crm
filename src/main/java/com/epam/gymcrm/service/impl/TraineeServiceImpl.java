@@ -3,9 +3,19 @@ package com.epam.gymcrm.service.impl;
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.UserDao;
+import com.epam.gymcrm.dto.AuthRequest;
+import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.UsernamePasswordResponse;
+import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
+import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
+import com.epam.gymcrm.mapper.TraineeMapper;
+import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.User;
@@ -37,12 +47,15 @@ public class TraineeServiceImpl implements TraineeService {
     private final AuthenticationService authenticationService;
     private final PasswordGenerator passwordGenerator;
     private final UsernameGenerator usernameGenerator;
+    private final TraineeMapper traineeMapper;
+    private final TrainerMapper trainerMapper;
 
     @Override
-    public void create(Trainee trainee) {
-        requireNonNull(trainee, "Trainee must not be null");
-        validateUserForCreate(trainee.getUser(), "Trainee user must not be null");
+    public UsernamePasswordResponse create(CreateTraineeRequest request) {
+        requireNonNull(request, "Trainee request must not be null");
+        validateCreateRequest(request);
 
+        Trainee trainee = traineeMapper.toEntity(request);
         User user = trainee.getUser();
 
         log.info("Creating trainee profile");
@@ -56,23 +69,26 @@ public class TraineeServiceImpl implements TraineeService {
         user.setPassword(passwordGenerator.generate());
         traineeDao.save(trainee);
         log.info("Trainee profile created, userId={}", trainee.getId());
+
+        return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Trainee getProfile(String username, String password) {
+    public TraineeProfileResponse getProfile(AuthRequest request) {
         log.info("Getting trainee profile");
-        return authenticationService.authenticateTrainee(username, password);
+        return traineeMapper.toProfileResponse(authenticateTrainee(request));
     }
 
     @Override
     @Transactional
-    public void changePassword(String username, String oldPassword, String newPassword) {
-        requireNonBlank(newPassword, "New password must not be blank");
+    public void changePassword(ChangePasswordRequest request) {
+        requireNonNull(request, "Change password request must not be null");
+        requireNonBlank(request.newPassword(), "New password must not be blank");
         log.info("Changing trainee password");
 
-        Trainee trainee = authenticationService.authenticateTrainee(username, oldPassword);
-        trainee.getUser().setPassword(newPassword);
+        Trainee trainee = authenticationService.authenticateTrainee(request.username(), request.oldPassword());
+        trainee.getUser().setPassword(request.newPassword());
         traineeDao.save(trainee);
 
         log.info("Trainee password changed, userId={}", trainee.getId());
@@ -80,10 +96,10 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void activate(String username, String password) {
+    public void activate(AuthRequest request) {
         log.info("Activating trainee profile");
 
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        Trainee trainee = authenticateTrainee(request);
         changeActiveStatus(trainee, true, "Trainee profile is already active");
 
         log.info("Trainee profile activated, userId={}", trainee.getId());
@@ -91,10 +107,10 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void deactivate(String username, String password) {
+    public void deactivate(AuthRequest request) {
         log.info("Deactivating trainee profile");
 
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        Trainee trainee = authenticateTrainee(request);
         changeActiveStatus(trainee, false, "Trainee profile is already inactive");
 
         log.info("Trainee profile deactivated, userId={}", trainee.getId());
@@ -102,23 +118,24 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void deleteByUsername(String username, String password) {
+    public void deleteByUsername(AuthRequest request) {
         log.info("Deleting trainee profile");
 
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        Trainee trainee = authenticateTrainee(request);
         traineeDao.delete(trainee.getId());
 
-        log.info("Trainee profile deleted, username={}", username);
+        log.info("Trainee profile deleted, username={}", request.username());
     }
 
     @Override
     @Transactional
-    public List<Trainer> updateTrainers(String username, String password, List<String> trainerUsernames) {
-        requireNonNull(trainerUsernames, "Trainer usernames must not be null");
+    public List<TrainerSummaryResponse> updateTrainers(UpdateTraineeTrainersRequest request) {
+        requireNonNull(request, "Update trainee trainers request must not be null");
+        requireNonNull(request.trainerUsernames(), "Trainer usernames must not be null");
         log.info("Updating trainee trainers list");
 
-        Set<String> uniqueTrainerUsernames = normalizeTrainerUsernames(trainerUsernames);
-        Trainee trainee = authenticationService.authenticateTrainee(username, password);
+        Set<String> uniqueTrainerUsernames = normalizeTrainerUsernames(request.trainerUsernames());
+        Trainee trainee = authenticationService.authenticateTrainee(request.username(), request.password());
         List<Trainer> trainers = uniqueTrainerUsernames.stream()
                 .map(trainerUsername -> trainerDao.findByUsername(trainerUsername)
                         .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found")))
@@ -129,27 +146,30 @@ public class TraineeServiceImpl implements TraineeService {
         traineeDao.save(trainee);
 
         log.info("Trainee trainers list updated, userId={}", trainee.getId());
-        return trainers;
+        return trainers.stream()
+                .map(trainerMapper::toSummaryResponse)
+                .toList();
     }
 
     @Override
     @Transactional
-    public void update(String username, String password, Trainee trainee) {
-        requireNonNull(trainee, "Trainee must not be null");
-        requireNonNull(trainee.getId(), TRAINEE_ID_NULL_ERROR);
-        validateUserForUpdate(trainee.getUser(), "Trainee user must not be null");
-        log.info("Updating trainee profile, userId={}", trainee.getId());
+    public TraineeProfileResponse update(UpdateTraineeRequest request) {
+        requireNonNull(request, "Update trainee request must not be null");
+        requireNonNull(request.id(), TRAINEE_ID_NULL_ERROR);
+        validateNameFields(request.firstName(), request.lastName());
+        log.info("Updating trainee profile, userId={}", request.id());
 
-        Trainee authenticatedTrainee = authenticationService.authenticateTrainee(username, password);
+        Trainee authenticatedTrainee = authenticationService.authenticateTrainee(request.username(), request.password());
         assertAuthenticatedProfile(
                 authenticatedTrainee.getId(),
-                trainee.getId(),
+                request.id(),
                 "Authenticated trainee does not match updated profile"
         );
-        applyTraineeProfileChanges(authenticatedTrainee, trainee);
+        traineeMapper.updateFromRequest(request, authenticatedTrainee);
         traineeDao.save(authenticatedTrainee);
 
         log.info("Trainee profile updated, userId={}", authenticatedTrainee.getId());
+        return traineeMapper.toProfileResponse(authenticatedTrainee);
     }
 
     private static void requireNonNull(Object value, String message) {
@@ -164,36 +184,20 @@ public class TraineeServiceImpl implements TraineeService {
         }
     }
 
-    private static void validateUserForCreate(User user, String message) {
-        requireNonNull(user, message);
-        validateUserNameFields(user);
-        requireNonNull(user.getActive(), "Active must not be null");
+    private static void validateCreateRequest(CreateTraineeRequest request) {
+        validateNameFields(request.firstName(), request.lastName());
+        requireNonNull(request.active(), "Active must not be null");
     }
 
-    private static void validateUserForUpdate(User user, String message) {
-        requireNonNull(user, message);
-        validateUserNameFields(user);
-    }
-
-    private static void validateUserNameFields(User user) {
-        requireNonBlank(user.getFirstName(), "First name must not be blank");
-        requireNonBlank(user.getLastName(), "Last name must not be blank");
+    private static void validateNameFields(String firstName, String lastName) {
+        requireNonBlank(firstName, "First name must not be blank");
+        requireNonBlank(lastName, "Last name must not be blank");
     }
 
     private static void assertAuthenticatedProfile(Long authenticatedId, Long updateId, String message) {
         if (!Objects.equals(authenticatedId, updateId)) {
             throw new AuthenticationException(message);
         }
-    }
-
-    private static void applyTraineeProfileChanges(Trainee target, Trainee source) {
-        User targetUser = target.getUser();
-        User sourceUser = source.getUser();
-
-        targetUser.setFirstName(sourceUser.getFirstName());
-        targetUser.setLastName(sourceUser.getLastName());
-        target.setDateOfBirth(source.getDateOfBirth());
-        target.setAddress(source.getAddress());
     }
 
     private static Set<String> normalizeTrainerUsernames(List<String> trainerUsernames) {
@@ -203,6 +207,11 @@ public class TraineeServiceImpl implements TraineeService {
             uniqueTrainerUsernames.add(trainerUsername);
         }
         return uniqueTrainerUsernames;
+    }
+
+    private Trainee authenticateTrainee(AuthRequest request) {
+        requireNonNull(request, "Authentication request must not be null");
+        return authenticationService.authenticateTrainee(request.username(), request.password());
     }
 
     private void changeActiveStatus(Trainee trainee, boolean active, String errorMessage) {

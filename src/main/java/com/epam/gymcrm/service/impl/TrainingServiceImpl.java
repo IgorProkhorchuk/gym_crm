@@ -6,7 +6,11 @@ import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainingResponse;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
@@ -30,10 +34,13 @@ public class TrainingServiceImpl implements TrainingService {
     private final TrainerDao trainerDao;
     private final TrainingTypeDao trainingTypeDao;
     private final AuthenticationService authenticationService;
+    private final TrainingMapper trainingMapper;
 
     @Override
-    public void addTraining(String traineeUsername, String traineePassword, AddTrainingRequest request) {
+    public void addTraining(AddTrainingRequest request) {
         requireNonNull(request, "Training request must not be null");
+        requireNonBlank(request.traineeUsername(), "Trainee username must not be blank");
+        requireNonBlank(request.traineePassword(), "Trainee password must not be blank");
         requireNonBlank(request.trainerUsername(), "Trainer username must not be blank");
         requireNonBlank(request.trainingName(), "Training name must not be blank");
         requireNonBlank(request.trainingTypeName(), "Training type must not be blank");
@@ -42,20 +49,16 @@ public class TrainingServiceImpl implements TrainingService {
 
         log.info("Adding training");
 
-        Trainee trainee = authenticationService.authenticateTrainee(traineeUsername, traineePassword);
+        Trainee trainee = authenticationService.authenticateTrainee(request.traineeUsername(), request.traineePassword());
         Trainer trainer = trainerDao.findByUsername(request.trainerUsername())
                 .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
         TrainingType trainingType = trainingTypeDao.findByName(request.trainingTypeName())
                 .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
 
-        Training training = Training.builder()
-                .trainee(trainee)
-                .trainer(trainer)
-                .trainingName(request.trainingName())
-                .trainingType(trainingType)
-                .trainingDate(request.trainingDate())
-                .trainingDuration(request.trainingDuration())
-                .build();
+        Training training = trainingMapper.toEntity(request);
+        training.setTrainee(trainee);
+        training.setTrainer(trainer);
+        training.setTrainingType(trainingType);
 
         trainingDao.save(training);
 
@@ -64,26 +67,34 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Training> getTraineeTrainings(String username, String password, TraineeTrainingCriteria criteria) {
+    public List<TrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
+        requireNonNull(request, "Trainee trainings request must not be null");
         log.info("Getting trainee trainings");
 
-        authenticationService.authenticateTrainee(username, password);
+        authenticationService.authenticateTrainee(request.username(), request.password());
+        TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
         return trainingDao.findByTraineeUsernameAndCriteria(
-                username,
+                request.username(),
                 criteria == null ? TraineeTrainingCriteria.empty() : criteria
-        );
+        ).stream()
+                .map(trainingMapper::toResponse)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Training> getTrainerTrainings(String username, String password, TrainerTrainingCriteria criteria) {
+    public List<TrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
+        requireNonNull(request, "Trainer trainings request must not be null");
         log.info("Getting trainer trainings");
 
-        authenticationService.authenticateTrainer(username, password);
+        authenticationService.authenticateTrainer(request.username(), request.password());
+        TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
         return trainingDao.findByTrainerUsernameAndCriteria(
-                username,
+                request.username(),
                 criteria == null ? TrainerTrainingCriteria.empty() : criteria
-        );
+        ).stream()
+                .map(trainingMapper::toResponse)
+                .toList();
     }
 
     private static void requireNonNull(Object value, String message) {

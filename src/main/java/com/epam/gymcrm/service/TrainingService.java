@@ -1,9 +1,9 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
-import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
-import com.epam.gymcrm.model.Training;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainingResponse;
 
 import java.util.List;
 
@@ -15,29 +15,23 @@ public interface TrainingService {
     /**
      * Adds a training for an authenticated trainee.
      *
-     * @param traineeUsername trainee username
-     * @param traineePassword trainee password
      * @param request training data
      */
-    void addTraining(String traineeUsername, String traineePassword, AddTrainingRequest request);
+    void addTraining(AddTrainingRequest request);
 
     /**
      * Returns trainee trainings after authenticating the trainee credentials.
      *
-     * @param username trainee username
-     * @param password trainee password
-     * @param criteria optional filters
+     * @param request trainee credentials and optional filters
      * @return trainee trainings matching the criteria
      */
-    List<Training> getTraineeTrainings(String username, String password, TraineeTrainingCriteria criteria);
+    List<TrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request);
 
     /**
      * Returns trainer trainings after authenticating the trainer credentials.
      *
-     * @param username trainer username
-     * @param password trainer password
-     * @param criteria optional filters
+     * @param request trainer credentials and optional filters
      * @return trainer trainings matching the criteria
      */
-    List<Training> getTrainerTrainings(String username, String password, TrainerTrainingCriteria criteria);
+    List<TrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request);
 }

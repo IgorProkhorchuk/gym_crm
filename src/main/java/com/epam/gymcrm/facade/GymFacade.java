@@ -1,11 +1,20 @@
 package com.epam.gymcrm.facade;
 
-import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
-import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
+import com.epam.gymcrm.dto.AuthRequest;
+import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.UsernamePasswordResponse;
+import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
+import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
+import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
+import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
+import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
-import com.epam.gymcrm.model.Trainee;
-import com.epam.gymcrm.model.Trainer;
-import com.epam.gymcrm.model.Training;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainingResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
@@ -22,87 +31,75 @@ public class GymFacade {
     private final TrainerService trainerService;
     private final TrainingService trainingService;
 
-    public void createTrainee(Trainee trainee) {
-        traineeService.create(trainee);
+    public UsernamePasswordResponse createTrainee(CreateTraineeRequest request) {
+        return traineeService.create(request);
     }
 
-    public Trainee getTraineeProfile(String username, String password) {
-        return traineeService.getProfile(username, password);
+    public TraineeProfileResponse getTraineeProfile(AuthRequest request) {
+        return traineeService.getProfile(request);
     }
 
-    public void changeTraineePassword(String username, String oldPassword, String newPassword) {
-        traineeService.changePassword(username, oldPassword, newPassword);
+    public void changeTraineePassword(ChangePasswordRequest request) {
+        traineeService.changePassword(request);
     }
 
-    public void activateTrainee(String username, String password) {
-        traineeService.activate(username, password);
+    public void activateTrainee(AuthRequest request) {
+        traineeService.activate(request);
     }
 
-    public void deactivateTrainee(String username, String password) {
-        traineeService.deactivate(username, password);
+    public void deactivateTrainee(AuthRequest request) {
+        traineeService.deactivate(request);
     }
 
-    public void deleteTraineeByUsername(String username, String password) {
-        traineeService.deleteByUsername(username, password);
+    public void deleteTraineeByUsername(AuthRequest request) {
+        traineeService.deleteByUsername(request);
     }
 
-    public List<Trainer> updateTraineeTrainers(
-            String traineeUsername,
-            String traineePassword,
-            List<String> trainerUsernames
-    ) {
-        return traineeService.updateTrainers(traineeUsername, traineePassword, trainerUsernames);
+    public List<TrainerSummaryResponse> updateTraineeTrainers(UpdateTraineeTrainersRequest request) {
+        return traineeService.updateTrainers(request);
     }
 
-    public void updateTrainee(String username, String password, Trainee trainee) {
-        traineeService.update(username, password, trainee);
+    public TraineeProfileResponse updateTrainee(UpdateTraineeRequest request) {
+        return traineeService.update(request);
     }
 
-    public void createTrainer(Trainer trainer) {
-        trainerService.create(trainer);
+    public UsernamePasswordResponse createTrainer(CreateTrainerRequest request) {
+        return trainerService.create(request);
     }
 
-    public Trainer getTrainerProfile(String username, String password) {
-        return trainerService.getProfile(username, password);
+    public TrainerProfileResponse getTrainerProfile(AuthRequest request) {
+        return trainerService.getProfile(request);
     }
 
-    public void changeTrainerPassword(String username, String oldPassword, String newPassword) {
-        trainerService.changePassword(username, oldPassword, newPassword);
+    public void changeTrainerPassword(ChangePasswordRequest request) {
+        trainerService.changePassword(request);
     }
 
-    public void activateTrainer(String username, String password) {
-        trainerService.activate(username, password);
+    public void activateTrainer(AuthRequest request) {
+        trainerService.activate(request);
     }
 
-    public void deactivateTrainer(String username, String password) {
-        trainerService.deactivate(username, password);
+    public void deactivateTrainer(AuthRequest request) {
+        trainerService.deactivate(request);
     }
 
-    public List<Trainer> getUnassignedTrainers(String traineeUsername, String traineePassword) {
-        return trainerService.getUnassignedTrainers(traineeUsername, traineePassword);
+    public List<TrainerSummaryResponse> getUnassignedTrainers(AuthRequest request) {
+        return trainerService.getUnassignedTrainers(request);
     }
 
-    public void updateTrainer(String username, String password, Trainer trainer) {
-        trainerService.update(username, password, trainer);
+    public TrainerProfileResponse updateTrainer(UpdateTrainerRequest request) {
+        return trainerService.update(request);
     }
 
-    public void addTraining(String traineeUsername, String traineePassword, AddTrainingRequest request) {
-        trainingService.addTraining(traineeUsername, traineePassword, request);
+    public void addTraining(AddTrainingRequest request) {
+        trainingService.addTraining(request);
     }
 
-    public List<Training> getTraineeTrainings(
-            String username,
-            String password,
-            TraineeTrainingCriteria criteria
-    ) {
-        return trainingService.getTraineeTrainings(username, password, criteria);
+    public List<TrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
+        return trainingService.getTraineeTrainings(request);
     }
 
-    public List<Training> getTrainerTrainings(
-            String username,
-            String password,
-            TrainerTrainingCriteria criteria
-    ) {
-        return trainingService.getTrainerTrainings(username, password, criteria);
+    public List<TrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
+        return trainingService.getTrainerTrainings(request);
     }
 }

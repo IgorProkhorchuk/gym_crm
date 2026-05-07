@@ -2,7 +2,7 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
-import com.epam.gymcrm.dto.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;

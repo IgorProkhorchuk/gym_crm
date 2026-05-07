@@ -1,4 +1,4 @@
-package com.epam.gymcrm.dto;
+package com.epam.gymcrm.dto.training;
 
 import java.time.LocalDate;
 
@@ -12,6 +12,8 @@ import java.time.LocalDate;
  * @param trainingDuration training duration in minutes
  */
 public record AddTrainingRequest(
+        String traineeUsername,
+        String traineePassword,
         String trainerUsername,
         String trainingName,
         String trainingTypeName,

@@ -4,7 +4,6 @@ import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.model.User;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -12,8 +11,11 @@ import java.util.Set;
 @Dao
 public class UserDaoImpl implements UserDao {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EntityManager entityManager;
+
+    public UserDaoImpl(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public Optional<User> findByUsername(String username) {

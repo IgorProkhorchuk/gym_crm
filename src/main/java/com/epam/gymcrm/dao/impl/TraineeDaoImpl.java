@@ -5,7 +5,6 @@ import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
 import java.util.Objects;
@@ -14,8 +13,11 @@ import java.util.Optional;
 @Dao
 public class TraineeDaoImpl implements TraineeDao {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EntityManager entityManager;
+
+    public TraineeDaoImpl(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public void save(Trainee trainee) {

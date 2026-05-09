@@ -4,15 +4,17 @@ import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.model.TrainingType;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import java.util.Optional;
 
 @Dao
 public class TrainingTypeDaoImpl implements TrainingTypeDao {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EntityManager entityManager;
+
+    public TrainingTypeDaoImpl(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public Optional<TrainingType> findByName(String name) {

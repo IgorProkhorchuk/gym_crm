@@ -4,13 +4,16 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.support.SharedEntityManagerBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.util.Properties;
@@ -86,5 +89,14 @@ public class HibernateConfig {
         JpaTransactionManager transactionManager = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(entityManagerFactory.getObject());
         return transactionManager;
+    }
+
+    @Bean
+    @Primary
+    public SharedEntityManagerBean entityManager(EntityManagerFactory entityManagerFactory) {
+        SharedEntityManagerBean entityManager = new SharedEntityManagerBean();
+        entityManager.setEntityManagerFactory(entityManagerFactory);
+        entityManager.setEntityManagerInterface(EntityManager.class);
+        return entityManager;
     }
 }

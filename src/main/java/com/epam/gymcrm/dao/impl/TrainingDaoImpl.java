@@ -7,7 +7,6 @@ import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Training;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 
 import java.time.LocalDate;
@@ -18,8 +17,11 @@ import java.util.Optional;
 @Dao
 public class TrainingDaoImpl implements TrainingDao {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EntityManager entityManager;
+
+    public TrainingDaoImpl(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public void save(Training training) {

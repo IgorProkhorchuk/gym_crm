@@ -1,9 +1,10 @@
 package com.epam.gymcrm.service;
 
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.dto.training.TrainingResponse;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public interface TrainingService {
      * @param request trainee credentials and optional filters
      * @return trainee trainings matching the criteria
      */
-    List<TrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request);
+    List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request);
 
     /**
      * Returns trainer trainings after authenticating the trainer credentials.
@@ -33,5 +34,5 @@ public interface TrainingService {
      * @param request trainer credentials and optional filters
      * @return trainer trainings matching the criteria
      */
-    List<TrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request);
+    List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request);
 }

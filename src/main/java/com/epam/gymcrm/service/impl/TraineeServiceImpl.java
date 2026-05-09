@@ -11,7 +11,6 @@ import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
-import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.mapper.TraineeMapper;
@@ -30,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -38,8 +36,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Transactional
 public class TraineeServiceImpl implements TraineeService {
-
-    private static final String TRAINEE_ID_NULL_ERROR = "Trainee id must not be null";
 
     private final TraineeDao traineeDao;
     private final TrainerDao trainerDao;
@@ -155,16 +151,10 @@ public class TraineeServiceImpl implements TraineeService {
     @Transactional
     public TraineeProfileResponse update(UpdateTraineeRequest request) {
         requireNonNull(request, "Update trainee request must not be null");
-        requireNonNull(request.id(), TRAINEE_ID_NULL_ERROR);
         validateNameFields(request.firstName(), request.lastName());
-        log.info("Updating trainee profile, userId={}", request.id());
+        log.info("Updating trainee profile");
 
         Trainee authenticatedTrainee = authenticationService.authenticateTrainee(request.username(), request.password());
-        assertAuthenticatedProfile(
-                authenticatedTrainee.getId(),
-                request.id(),
-                "Authenticated trainee does not match updated profile"
-        );
         traineeMapper.updateFromRequest(request, authenticatedTrainee);
         traineeDao.save(authenticatedTrainee);
 
@@ -186,18 +176,11 @@ public class TraineeServiceImpl implements TraineeService {
 
     private static void validateCreateRequest(CreateTraineeRequest request) {
         validateNameFields(request.firstName(), request.lastName());
-        requireNonNull(request.active(), "Active must not be null");
     }
 
     private static void validateNameFields(String firstName, String lastName) {
         requireNonBlank(firstName, "First name must not be blank");
         requireNonBlank(lastName, "Last name must not be blank");
-    }
-
-    private static void assertAuthenticatedProfile(Long authenticatedId, Long updateId, String message) {
-        if (!Objects.equals(authenticatedId, updateId)) {
-            throw new AuthenticationException(message);
-        }
     }
 
     private static Set<String> normalizeTrainerUsernames(List<String> trainerUsernames) {

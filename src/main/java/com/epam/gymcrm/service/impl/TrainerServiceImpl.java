@@ -10,7 +10,6 @@ import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
 import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
-import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.mapper.TrainerMapper;
@@ -27,15 +26,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class TrainerServiceImpl implements TrainerService {
-
-    private static final String TRAINER_ID_NULL_ERROR = "Trainer id must not be null";
 
     private final TrainerDao trainerDao;
     private final UserDao userDao;
@@ -128,17 +124,11 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional
     public TrainerProfileResponse update(UpdateTrainerRequest request) {
         requireNonNull(request, "Update trainer request must not be null");
-        requireNonNull(request.id(), TRAINER_ID_NULL_ERROR);
         validateNameFields(request.firstName(), request.lastName());
         validateSpecializationName(request.specialization());
-        log.info("Updating trainer profile, userId={}", request.id());
+        log.info("Updating trainer profile");
 
         Trainer authenticatedTrainer = authenticationService.authenticateTrainer(request.username(), request.password());
-        assertAuthenticatedProfile(
-                authenticatedTrainer.getId(),
-                request.id(),
-                "Authenticated trainer does not match updated profile"
-        );
         trainerMapper.updateFromRequest(request, authenticatedTrainer);
         authenticatedTrainer.setSpecialization(resolveSpecializationName(request.specialization()));
         trainerDao.save(authenticatedTrainer);
@@ -161,7 +151,6 @@ public class TrainerServiceImpl implements TrainerService {
 
     private static void validateCreateRequest(CreateTrainerRequest request) {
         validateNameFields(request.firstName(), request.lastName());
-        requireNonNull(request.active(), "Active must not be null");
         validateSpecializationName(request.specialization());
     }
 
@@ -173,12 +162,6 @@ public class TrainerServiceImpl implements TrainerService {
     private static void validateSpecializationName(String specialization) {
         requireNonNull(specialization, "Trainer specialization must not be null");
         requireNonBlank(specialization, "Trainer specialization must not be blank");
-    }
-
-    private static void assertAuthenticatedProfile(Long authenticatedId, Long updateId, String message) {
-        if (!Objects.equals(authenticatedId, updateId)) {
-            throw new AuthenticationException(message);
-        }
     }
 
     private TrainingType resolveSpecializationName(String specialization) {

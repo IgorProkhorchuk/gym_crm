@@ -20,4 +20,13 @@ public record AddTrainingRequest(
         LocalDate trainingDate,
         Integer trainingDuration
 ) {
+
+    @Override
+    public String toString() {
+        return "AddTrainingRequest[traineeUsername=[PROTECTED], traineePassword=[PROTECTED], "
+                + "trainerUsername=[PROTECTED], trainingName=" + trainingName
+                + ", trainingTypeName=" + trainingTypeName
+                + ", trainingDate=" + trainingDate
+                + ", trainingDuration=" + trainingDuration + "]";
+    }
 }

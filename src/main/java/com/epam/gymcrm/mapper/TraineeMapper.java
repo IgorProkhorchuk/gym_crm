@@ -4,6 +4,7 @@ import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.model.Trainee;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,18 +19,21 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface TraineeMapper {
 
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user.userId", ignore = true)
     @Mapping(target = "user.username", ignore = true)
     @Mapping(target = "user.password", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
-    @Mapping(target = "user.active", source = "active")
+    @Mapping(target = "user.active", constant = "true")
+    @Mapping(target = "dateOfBirth", source = "dateOfBirth")
+    @Mapping(target = "address", source = "address")
     @Mapping(target = "trainers", ignore = true)
     @Mapping(target = "trainings", ignore = true)
     Trainee toEntity(CreateTraineeRequest request);
 
-    @Mapping(target = "id", source = "id")
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "firstName", source = "user.firstName")
     @Mapping(target = "lastName", source = "user.lastName")
@@ -39,6 +43,7 @@ public interface TraineeMapper {
     @Mapping(target = "trainers", source = "trainers")
     TraineeProfileResponse toProfileResponse(Trainee trainee);
 
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user.userId", ignore = true)
     @Mapping(target = "user.username", ignore = true)

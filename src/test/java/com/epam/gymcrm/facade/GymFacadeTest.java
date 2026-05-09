@@ -12,9 +12,10 @@ import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.dto.training.TrainingResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
@@ -53,8 +54,7 @@ class GymFacadeTest {
                 "John",
                 "Doe",
                 LocalDate.of(1995, 1, 10),
-                "Main Street, 123",
-                true
+                "Main Street, 123"
         );
         UsernamePasswordResponse response = new UsernamePasswordResponse("John.Doe", "Passw0rd12");
         when(traineeService.create(request)).thenReturn(response);
@@ -71,7 +71,6 @@ class GymFacadeTest {
     void getTraineeProfileShouldReturnTraineeProfileFromService() {
         AuthRequest request = new AuthRequest("John.Doe", "password");
         TraineeProfileResponse response = new TraineeProfileResponse(
-                1L,
                 "John.Doe",
                 "John",
                 "Doe",
@@ -134,8 +133,8 @@ class GymFacadeTest {
                 List.of("First.Trainer", "Second.Trainer")
         );
         List<TrainerSummaryResponse> trainers = List.of(
-                new TrainerSummaryResponse(1L, "First.Trainer", "First", "Trainer", "Fitness"),
-                new TrainerSummaryResponse(2L, "Second.Trainer", "Second", "Trainer", "Fitness")
+                new TrainerSummaryResponse("First.Trainer", "First", "Trainer", "Fitness"),
+                new TrainerSummaryResponse("Second.Trainer", "Second", "Trainer", "Fitness")
         );
         when(traineeService.updateTrainers(request)).thenReturn(trainers);
 
@@ -152,14 +151,12 @@ class GymFacadeTest {
         UpdateTraineeRequest request = new UpdateTraineeRequest(
                 "John.Doe",
                 "password",
-                1L,
                 "John",
                 "Doe",
                 LocalDate.of(1995, 1, 10),
                 "Main Street, 123"
         );
         TraineeProfileResponse response = new TraineeProfileResponse(
-                1L,
                 "John.Doe",
                 "John",
                 "Doe",
@@ -180,7 +177,7 @@ class GymFacadeTest {
 
     @Test
     void createTrainerShouldDelegateToTrainerService() {
-        CreateTrainerRequest request = new CreateTrainerRequest("Mike", "Stone", "Fitness", true);
+        CreateTrainerRequest request = new CreateTrainerRequest("Mike", "Stone", "Fitness");
         UsernamePasswordResponse response = new UsernamePasswordResponse("Mike.Stone", "Passw0rd12");
         when(trainerService.create(request)).thenReturn(response);
 
@@ -196,7 +193,6 @@ class GymFacadeTest {
     void getTrainerProfileShouldReturnTrainerProfileFromService() {
         AuthRequest request = new AuthRequest("Mike.Stone", "password");
         TrainerProfileResponse response = new TrainerProfileResponse(
-                2L,
                 "Mike.Stone",
                 "Mike",
                 "Stone",
@@ -244,7 +240,7 @@ class GymFacadeTest {
     void getUnassignedTrainersShouldReturnTrainersFromService() {
         AuthRequest request = new AuthRequest("John.Doe", "password");
         List<TrainerSummaryResponse> trainers = List.of(
-                new TrainerSummaryResponse(2L, "Available.Trainer", "Available", "Trainer", "Fitness")
+                new TrainerSummaryResponse("Available.Trainer", "Available", "Trainer", "Fitness")
         );
         when(trainerService.getUnassignedTrainers(request)).thenReturn(trainers);
 
@@ -261,13 +257,11 @@ class GymFacadeTest {
         UpdateTrainerRequest request = new UpdateTrainerRequest(
                 "Mike.Stone",
                 "password",
-                2L,
                 "Mike",
                 "Stone",
                 "Fitness"
         );
         TrainerProfileResponse response = new TrainerProfileResponse(
-                2L,
                 "Mike.Stone",
                 "Mike",
                 "Stone",
@@ -311,10 +305,10 @@ class GymFacadeTest {
                 "Mike",
                 "Yoga"
         );
-        List<TrainingResponse> trainings = List.of(trainingResponse());
+        List<TraineeTrainingResponse> trainings = List.of(traineeTrainingResponse());
         when(trainingService.getTraineeTrainings(request)).thenReturn(trainings);
 
-        List<TrainingResponse> result = gymFacade.getTraineeTrainings(request);
+        List<TraineeTrainingResponse> result = gymFacade.getTraineeTrainings(request);
 
         assertAll(
                 () -> assertThat(result).isSameAs(trainings),
@@ -331,10 +325,10 @@ class GymFacadeTest {
                 LocalDate.of(2026, 2, 28),
                 "John"
         );
-        List<TrainingResponse> trainings = List.of(trainingResponse());
+        List<TrainerTrainingResponse> trainings = List.of(trainerTrainingResponse());
         when(trainingService.getTrainerTrainings(request)).thenReturn(trainings);
 
-        List<TrainingResponse> result = gymFacade.getTrainerTrainings(request);
+        List<TrainerTrainingResponse> result = gymFacade.getTrainerTrainings(request);
 
         assertAll(
                 () -> assertThat(result).isSameAs(trainings),
@@ -342,19 +336,23 @@ class GymFacadeTest {
         );
     }
 
-    private static TrainingResponse trainingResponse() {
-        return new TrainingResponse(
-                1L,
+    private static TraineeTrainingResponse traineeTrainingResponse() {
+        return new TraineeTrainingResponse(
                 "Yoga Basics",
                 "Yoga",
                 LocalDate.of(2026, 5, 3),
                 60,
-                "John.Doe",
-                "John",
-                "Doe",
-                "Mike.Stone",
-                "Mike",
-                "Stone"
+                "Mike Stone"
+        );
+    }
+
+    private static TrainerTrainingResponse trainerTrainingResponse() {
+        return new TrainerTrainingResponse(
+                "Yoga Basics",
+                "Yoga",
+                LocalDate.of(2026, 5, 3),
+                60,
+                "John Doe"
         );
     }
 }

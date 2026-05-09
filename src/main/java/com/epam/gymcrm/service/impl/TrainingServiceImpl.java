@@ -6,9 +6,10 @@ import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.dto.training.TrainingResponse;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -67,7 +68,7 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
+    public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
         requireNonNull(request, "Trainee trainings request must not be null");
         log.info("Getting trainee trainings");
 
@@ -77,13 +78,13 @@ public class TrainingServiceImpl implements TrainingService {
                 request.username(),
                 criteria == null ? TraineeTrainingCriteria.empty() : criteria
         ).stream()
-                .map(trainingMapper::toResponse)
+                .map(trainingMapper::toTraineeTrainingResponse)
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
+    public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
         requireNonNull(request, "Trainer trainings request must not be null");
         log.info("Getting trainer trainings");
 
@@ -93,7 +94,7 @@ public class TrainingServiceImpl implements TrainingService {
                 request.username(),
                 criteria == null ? TrainerTrainingCriteria.empty() : criteria
         ).stream()
-                .map(trainingMapper::toResponse)
+                .map(trainingMapper::toTrainerTrainingResponse)
                 .toList();
     }
 

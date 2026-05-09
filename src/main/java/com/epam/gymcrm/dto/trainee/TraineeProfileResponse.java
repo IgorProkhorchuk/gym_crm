@@ -6,7 +6,6 @@ import java.util.List;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 
 public record TraineeProfileResponse(
-        Long id,
         String username,
         String firstName,
         String lastName,
@@ -15,4 +14,10 @@ public record TraineeProfileResponse(
         String address,
         List<TrainerSummaryResponse> trainers
 ) {
+
+    @Override
+    public String toString() {
+        return "TraineeProfileResponse[username=[PROTECTED], firstName=[PROTECTED], lastName=[PROTECTED], "
+                + "active=" + active + ", dateOfBirth=[PROTECTED], address=[PROTECTED], trainers=" + trainers + "]";
+    }
 }

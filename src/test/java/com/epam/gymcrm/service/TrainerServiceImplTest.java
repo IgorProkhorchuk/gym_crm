@@ -171,17 +171,6 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    void createShouldThrowIllegalArgumentExceptionWhenActiveIsNull() {
-        CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Fitness", null);
-
-        assertThatThrownBy(() -> trainerService.create(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Active must not be null");
-
-        verifyNoInteractions(trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
-    }
-
-    @Test
     void createShouldThrowIllegalArgumentExceptionWhenSpecializationIsNull() {
         CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", null, true);
 
@@ -410,38 +399,13 @@ class TrainerServiceImplTest {
                 .hasMessage("Update trainer request must not be null");
     }
 
-    @Test
-    void updateShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
-        UpdateTrainerRequest request = updateTrainerRequest(null, "Minnie", "McGonagall", "Fitness");
-
-        assertThatThrownBy(() -> trainerService.update(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer id must not be null");
-    }
-
-    @Test
-    void updateShouldThrowAuthenticationExceptionWhenAuthenticatedTrainerDoesNotMatchPayload() {
-        UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Fitness");
-        Trainer authenticatedTrainer = trainer(23L, "Minerva", "McGonagall", "Minerva.McGonagall");
-        when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password")).thenReturn(authenticatedTrainer);
-
-        assertThatThrownBy(() -> trainerService.update(request))
-                .isInstanceOf(AuthenticationException.class)
-                .hasMessage("Authenticated trainer does not match updated profile");
-
-        assertAll(
-                () -> verifyNoInteractions(trainingTypeDao),
-                () -> verifyNoInteractions(trainerDao)
-        );
-    }
-
     private static CreateTrainerRequest createTrainerRequest(
             String firstName,
             String lastName,
             String specialization,
             Boolean active
     ) {
-        return new CreateTrainerRequest(firstName, lastName, specialization, active);
+        return new CreateTrainerRequest(firstName, lastName, specialization);
     }
 
     private static UpdateTrainerRequest updateTrainerRequest(
@@ -453,7 +417,6 @@ class TrainerServiceImplTest {
         return new UpdateTrainerRequest(
                 "Minerva.McGonagall",
                 "password",
-                id,
                 firstName,
                 lastName,
                 specialization
@@ -467,7 +430,7 @@ class TrainerServiceImplTest {
             String lastName,
             String specialization
     ) {
-        return new TrainerProfileResponse(id, username, firstName, lastName, true, specialization);
+        return new TrainerProfileResponse(username, firstName, lastName, true, specialization);
     }
 
     private static TrainerSummaryResponse trainerSummaryResponse(
@@ -476,6 +439,6 @@ class TrainerServiceImplTest {
             String firstName,
             String lastName
     ) {
-        return new TrainerSummaryResponse(id, username, firstName, lastName, "Fitness");
+        return new TrainerSummaryResponse(username, firstName, lastName, "Fitness");
     }
 }

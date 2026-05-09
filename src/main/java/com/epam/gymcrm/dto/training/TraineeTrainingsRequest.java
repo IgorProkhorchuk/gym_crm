@@ -10,4 +10,12 @@ public record TraineeTrainingsRequest(
         String trainerName,
         String trainingType
 ) {
+
+    @Override
+    public String toString() {
+        return "TraineeTrainingsRequest[username=[PROTECTED], password=[PROTECTED], "
+                + "fromDate=" + fromDate
+                + ", toDate=" + toDate
+                + ", trainerName=[PROTECTED], trainingType=" + trainingType + "]";
+    }
 }

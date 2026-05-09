@@ -1,10 +1,16 @@
 package com.epam.gymcrm.dto.trainer;
 
-public record UpdateTrainerRequest(String username,
-                                   String password,
-                                   Long id,
-                                   String firstName,
-                                   String lastName,
-                                   String specialization
+public record UpdateTrainerRequest(
+        String username,
+        String password,
+        String firstName,
+        String lastName,
+        String specialization
 ) {
+
+    @Override
+    public String toString() {
+        return "UpdateTrainerRequest[username=[PROTECTED], password=[PROTECTED], "
+                + "firstName=[PROTECTED], lastName=[PROTECTED], specialization=" + specialization + "]";
+    }
 }

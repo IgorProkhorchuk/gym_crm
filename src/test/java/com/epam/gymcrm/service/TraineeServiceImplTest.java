@@ -164,15 +164,6 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void createShouldThrowIllegalArgumentExceptionWhenActiveIsNull() {
-        assertThatThrownBy(() -> traineeService.create(createTraineeRequest("John", "Doe", null)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Active must not be null");
-
-        verifyNoInteractions(traineeMapper, usernameGenerator, passwordGenerator, traineeDao);
-    }
-
-    @Test
     void getProfileShouldReturnMappedAuthenticatedTrainee() {
         AuthRequest request = new AuthRequest("Jane.Doe", "password");
         Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
@@ -511,35 +502,12 @@ class TraineeServiceImplTest {
                 .hasMessage("Update trainee request must not be null");
     }
 
-    @Test
-    void updateShouldThrowIllegalArgumentExceptionWhenIdIsNull() {
-        UpdateTraineeRequest request = updateTraineeRequest(null, "Jean", "Granger");
-
-        assertThatThrownBy(() -> traineeService.update(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainee id must not be null");
-    }
-
-    @Test
-    void updateShouldThrowAuthenticationExceptionWhenAuthenticatedTraineeDoesNotMatchPayload() {
-        UpdateTraineeRequest request = updateTraineeRequest(10L, "Jean", "Granger");
-        Trainee authenticatedTrainee = trainee(11L, "Hermione", "Granger", "Hermione.Granger");
-        when(authenticationService.authenticateTrainee("Hermione.Granger", "password")).thenReturn(authenticatedTrainee);
-
-        assertThatThrownBy(() -> traineeService.update(request))
-                .isInstanceOf(AuthenticationException.class)
-                .hasMessage("Authenticated trainee does not match updated profile");
-
-        verifyNoInteractions(traineeDao);
-    }
-
     private static CreateTraineeRequest createTraineeRequest(String firstName, String lastName, Boolean active) {
         return new CreateTraineeRequest(
                 firstName,
                 lastName,
                 LocalDate.of(1995, 1, 10),
-                "Main Street, 123",
-                active
+                "Main Street, 123"
         );
     }
 
@@ -547,7 +515,6 @@ class TraineeServiceImplTest {
         return new UpdateTraineeRequest(
                 "Hermione.Granger",
                 "password",
-                id,
                 firstName,
                 lastName,
                 LocalDate.of(1994, 9, 19),
@@ -562,7 +529,6 @@ class TraineeServiceImplTest {
             String lastName
     ) {
         return new TraineeProfileResponse(
-                id,
                 username,
                 firstName,
                 lastName,
@@ -579,6 +545,6 @@ class TraineeServiceImplTest {
             String firstName,
             String lastName
     ) {
-        return new TrainerSummaryResponse(id, username, firstName, lastName, "Fitness");
+        return new TrainerSummaryResponse(username, firstName, lastName, "Fitness");
     }
 }

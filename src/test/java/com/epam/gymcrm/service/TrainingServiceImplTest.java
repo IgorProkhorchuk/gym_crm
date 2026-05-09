@@ -6,9 +6,10 @@ import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.dto.training.TrainingResponse;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -246,19 +247,19 @@ class TrainingServiceImplTest {
                 "Yoga"
         );
         Training training = validTraining();
-        TrainingResponse response = trainingResponse();
+        TraineeTrainingResponse response = traineeTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(criteria);
         when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", criteria)).thenReturn(List.of(training));
-        when(trainingMapper.toResponse(training)).thenReturn(response);
+        when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
 
-        List<TrainingResponse> result = trainingService.getTraineeTrainings(request);
+        List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
 
         assertAll(
                 () -> assertThat(result).containsExactly(response),
                 () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
                 () -> verify(trainingMapper).toCriteria(request),
                 () -> verify(trainingDao).findByTraineeUsernameAndCriteria("Training.Trainee", criteria),
-                () -> verify(trainingMapper).toResponse(training)
+                () -> verify(trainingMapper).toTraineeTrainingResponse(training)
         );
     }
 
@@ -273,13 +274,13 @@ class TrainingServiceImplTest {
                 null
         );
         Training training = validTraining();
-        TrainingResponse response = trainingResponse();
+        TraineeTrainingResponse response = traineeTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(null);
         when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", TraineeTrainingCriteria.empty()))
                 .thenReturn(List.of(training));
-        when(trainingMapper.toResponse(training)).thenReturn(response);
+        when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
 
-        List<TrainingResponse> result = trainingService.getTraineeTrainings(request);
+        List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
 
         assertAll(
                 () -> assertThat(result).containsExactly(response),
@@ -306,19 +307,19 @@ class TrainingServiceImplTest {
                 "Trainee"
         );
         Training training = validTraining();
-        TrainingResponse response = trainingResponse();
+        TrainerTrainingResponse response = trainerTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(criteria);
         when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", criteria)).thenReturn(List.of(training));
-        when(trainingMapper.toResponse(training)).thenReturn(response);
+        when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
 
-        List<TrainingResponse> result = trainingService.getTrainerTrainings(request);
+        List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
 
         assertAll(
                 () -> assertThat(result).containsExactly(response),
                 () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
                 () -> verify(trainingMapper).toCriteria(request),
                 () -> verify(trainingDao).findByTrainerUsernameAndCriteria("Training.Trainer", criteria),
-                () -> verify(trainingMapper).toResponse(training)
+                () -> verify(trainingMapper).toTrainerTrainingResponse(training)
         );
     }
 
@@ -332,13 +333,13 @@ class TrainingServiceImplTest {
                 null
         );
         Training training = validTraining();
-        TrainingResponse response = trainingResponse();
+        TrainerTrainingResponse response = trainerTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(null);
         when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", TrainerTrainingCriteria.empty()))
                 .thenReturn(List.of(training));
-        when(trainingMapper.toResponse(training)).thenReturn(response);
+        when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
 
-        List<TrainingResponse> result = trainingService.getTrainerTrainings(request);
+        List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
 
         assertAll(
                 () -> assertThat(result).containsExactly(response),
@@ -378,19 +379,23 @@ class TrainingServiceImplTest {
         );
     }
 
-    private static TrainingResponse trainingResponse() {
-        return new TrainingResponse(
-                1L,
+    private static TraineeTrainingResponse traineeTrainingResponse() {
+        return new TraineeTrainingResponse(
                 "Yoga Basics",
                 "Yoga",
                 LocalDate.of(2026, 5, 3),
                 60,
-                "Training.Trainee",
-                "Training",
-                "Trainee",
-                "Training.Trainer",
-                "Training",
-                "Trainer"
+                "Training Trainer"
+        );
+    }
+
+    private static TrainerTrainingResponse trainerTrainingResponse() {
+        return new TrainerTrainingResponse(
+                "Yoga Basics",
+                "Yoga",
+                LocalDate.of(2026, 5, 3),
+                60,
+                "Training Trainee"
         );
     }
 }

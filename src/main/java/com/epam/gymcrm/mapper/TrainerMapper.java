@@ -5,6 +5,7 @@ import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.model.Trainer;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,19 +19,20 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface TrainerMapper {
 
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user.userId", ignore = true)
     @Mapping(target = "user.username", ignore = true)
     @Mapping(target = "user.password", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
-    @Mapping(target = "user.active", source = "active")
+    @Mapping(target = "user.active", constant = "true")
     @Mapping(target = "specialization.trainingTypeId", ignore = true)
     @Mapping(target = "specialization.trainingTypeName", source = "specialization")
     @Mapping(target = "trainees", ignore = true)
     Trainer toEntity(CreateTrainerRequest request);
 
-    @Mapping(target = "id", source = "id")
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "firstName", source = "user.firstName")
     @Mapping(target = "lastName", source = "user.lastName")
@@ -38,13 +40,14 @@ public interface TrainerMapper {
     @Mapping(target = "specialization", source = "specialization.trainingTypeName")
     TrainerProfileResponse toProfileResponse(Trainer trainer);
 
-    @Mapping(target = "id", source = "id")
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "firstName", source = "user.firstName")
     @Mapping(target = "lastName", source = "user.lastName")
     @Mapping(target = "specialization", source = "specialization.trainingTypeName")
     TrainerSummaryResponse toSummaryResponse(Trainer trainer);
 
+    @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user.userId", ignore = true)
     @Mapping(target = "user.username", ignore = true)

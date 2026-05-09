@@ -12,9 +12,10 @@ import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.dto.training.TrainingResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
@@ -95,11 +96,11 @@ public class GymFacade {
         trainingService.addTraining(request);
     }
 
-    public List<TrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
+    public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
         return trainingService.getTraineeTrainings(request);
     }
 
-    public List<TrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
+    public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
         return trainingService.getTrainerTrainings(request);
     }
 }

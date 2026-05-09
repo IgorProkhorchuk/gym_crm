@@ -9,4 +9,12 @@ public record TrainerTrainingsRequest(
         LocalDate toDate,
         String traineeName
 ) {
+
+    @Override
+    public String toString() {
+        return "TrainerTrainingsRequest[username=[PROTECTED], password=[PROTECTED], "
+                + "fromDate=" + fromDate
+                + ", toDate=" + toDate
+                + ", traineeName=[PROTECTED]]";
+    }
 }

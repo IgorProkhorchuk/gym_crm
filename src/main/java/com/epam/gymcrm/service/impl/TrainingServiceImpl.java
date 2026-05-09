@@ -5,6 +5,7 @@ import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
@@ -76,7 +77,8 @@ public class TrainingServiceImpl implements TrainingService {
         TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
         return trainingDao.findByTraineeUsernameAndCriteria(
                 request.username(),
-                criteria == null ? TraineeTrainingCriteria.empty() : criteria
+                criteria == null ? TraineeTrainingCriteria.empty() : criteria,
+                page(request.pageRequest())
         ).stream()
                 .map(trainingMapper::toTraineeTrainingResponse)
                 .toList();
@@ -92,7 +94,8 @@ public class TrainingServiceImpl implements TrainingService {
         TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
         return trainingDao.findByTrainerUsernameAndCriteria(
                 request.username(),
-                criteria == null ? TrainerTrainingCriteria.empty() : criteria
+                criteria == null ? TrainerTrainingCriteria.empty() : criteria,
+                page(request.pageRequest())
         ).stream()
                 .map(trainingMapper::toTrainerTrainingResponse)
                 .toList();
@@ -114,5 +117,9 @@ public class TrainingServiceImpl implements TrainingService {
         if (value == null || value <= 0) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private static PageRequest page(PageRequest pageRequest) {
+        return pageRequest == null ? PageRequest.firstPage() : pageRequest;
     }
 }

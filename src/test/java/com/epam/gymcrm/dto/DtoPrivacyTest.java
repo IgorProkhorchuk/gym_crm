@@ -106,14 +106,16 @@ class DtoPrivacyTest {
                         LocalDate.of(2026, 1, 1),
                         LocalDate.of(2026, 1, 31),
                         "Mike",
-                        "Yoga"
+                        "Yoga",
+                        PageRequest.firstPage()
                 ).toString(),
                 new TrainerTrainingsRequest(
                         "Mike.Stone",
                         "secret",
                         LocalDate.of(2026, 2, 1),
                         LocalDate.of(2026, 2, 28),
-                        "John"
+                        "John",
+                        PageRequest.firstPage()
                 ).toString(),
                 new TraineeTrainingResponse(
                         "Yoga Basics",

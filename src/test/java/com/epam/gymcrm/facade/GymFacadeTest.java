@@ -2,6 +2,7 @@ package com.epam.gymcrm.facade;
 
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
@@ -303,7 +304,8 @@ class GymFacadeTest {
                 LocalDate.of(2026, 1, 1),
                 LocalDate.of(2026, 1, 31),
                 "Mike",
-                "Yoga"
+                "Yoga",
+                PageRequest.firstPage()
         );
         List<TraineeTrainingResponse> trainings = List.of(traineeTrainingResponse());
         when(trainingService.getTraineeTrainings(request)).thenReturn(trainings);
@@ -323,7 +325,8 @@ class GymFacadeTest {
                 "password",
                 LocalDate.of(2026, 2, 1),
                 LocalDate.of(2026, 2, 28),
-                "John"
+                "John",
+                PageRequest.firstPage()
         );
         List<TrainerTrainingResponse> trainings = List.of(trainerTrainingResponse());
         when(trainingService.getTrainerTrainings(request)).thenReturn(trainings);

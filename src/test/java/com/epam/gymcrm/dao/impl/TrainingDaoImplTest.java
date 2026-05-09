@@ -4,6 +4,7 @@ import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.TrainingDao;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
@@ -111,7 +112,8 @@ class TrainingDaoImplTest extends PostgresContainerTest {
                         LocalDate.of(2026, 1, 31),
                         "john",
                         "Yoga"
-                )
+                ),
+                PageRequest.firstPage()
         );
 
         assertAll(
@@ -137,11 +139,39 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         entityManager.flush();
         entityManager.clear();
 
-        List<Training> result = trainingDao.findByTraineeUsernameAndCriteria("Null.Criteria", null);
+        List<Training> result = trainingDao.findByTraineeUsernameAndCriteria(
+                "Null.Criteria",
+                null,
+                PageRequest.firstPage()
+        );
 
         assertThat(result)
                 .extracting(Training::getTrainingId)
                 .containsExactly(first.getTrainingId(), second.getTrainingId());
+    }
+
+    @Test
+    void findByTraineeUsernameAndCriteriaShouldApplyPagination() {
+        Trainee trainee = trainee("Paged", "Trainee", "Paged.Trainee");
+        Trainer trainer = trainer("Paged", "Trainer", "Paged.Trainer");
+        TrainingType trainingType = findTrainingType("Yoga");
+        persistAll(trainee, trainer, trainingType);
+
+        Training first = persistTraining(trainee, trainer, trainingType, LocalDate.of(2026, 1, 10));
+        Training second = persistTraining(trainee, trainer, trainingType, LocalDate.of(2026, 2, 10));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Training> result = trainingDao.findByTraineeUsernameAndCriteria(
+                "Paged.Trainee",
+                null,
+                new PageRequest(1, 1)
+        );
+
+        assertThat(result)
+                .extracting(Training::getTrainingId)
+                .containsExactly(second.getTrainingId())
+                .doesNotContain(first.getTrainingId());
     }
 
     @Test
@@ -160,7 +190,8 @@ class TrainingDaoImplTest extends PostgresContainerTest {
 
         List<Training> result = trainingDao.findByTraineeUsernameAndCriteria(
                 "Blank.Criteria",
-                new TraineeTrainingCriteria(null, null, " ", " ")
+                new TraineeTrainingCriteria(null, null, " ", " "),
+                PageRequest.firstPage()
         );
 
         assertThat(result)
@@ -195,7 +226,8 @@ class TrainingDaoImplTest extends PostgresContainerTest {
                         LocalDate.of(2026, 2, 1),
                         LocalDate.of(2026, 2, 28),
                         "alice"
-                )
+                ),
+                PageRequest.firstPage()
         );
 
         assertAll(
@@ -222,11 +254,40 @@ class TrainingDaoImplTest extends PostgresContainerTest {
         entityManager.flush();
         entityManager.clear();
 
-        List<Training> result = trainingDao.findByTrainerUsernameAndCriteria("Null.Criteria.Trainer", null);
+        List<Training> result = trainingDao.findByTrainerUsernameAndCriteria(
+                "Null.Criteria.Trainer",
+                null,
+                PageRequest.firstPage()
+        );
 
         assertThat(result)
                 .extracting(Training::getTrainingId)
                 .containsExactly(first.getTrainingId(), second.getTrainingId());
+    }
+
+    @Test
+    void findByTrainerUsernameAndCriteriaShouldApplyPagination() {
+        Trainee firstTrainee = trainee("Paged", "First", "Paged.First");
+        Trainee secondTrainee = trainee("Paged", "Second", "Paged.Second");
+        Trainer trainer = trainer("Paged", "Coach", "Paged.Coach");
+        TrainingType trainingType = findTrainingType("Yoga");
+        persistAll(firstTrainee, secondTrainee, trainer, trainingType);
+
+        Training first = persistTraining(firstTrainee, trainer, trainingType, LocalDate.of(2026, 1, 10));
+        Training second = persistTraining(secondTrainee, trainer, trainingType, LocalDate.of(2026, 2, 10));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Training> result = trainingDao.findByTrainerUsernameAndCriteria(
+                "Paged.Coach",
+                null,
+                new PageRequest(1, 1)
+        );
+
+        assertThat(result)
+                .extracting(Training::getTrainingId)
+                .containsExactly(second.getTrainingId())
+                .doesNotContain(first.getTrainingId());
     }
 
     private Training persistedTrainingGraph() {

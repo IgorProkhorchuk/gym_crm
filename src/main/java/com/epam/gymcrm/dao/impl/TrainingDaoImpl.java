@@ -4,6 +4,7 @@ import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.TrainingDao;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Training;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -11,6 +12,7 @@ import jakarta.persistence.TypedQuery;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Dao
@@ -35,8 +37,13 @@ public class TrainingDaoImpl implements TrainingDao {
     }
 
     @Override
-    public List<Training> findByTraineeUsernameAndCriteria(String traineeUsername, TraineeTrainingCriteria criteria) {
+    public List<Training> findByTraineeUsernameAndCriteria(
+            String traineeUsername,
+            TraineeTrainingCriteria criteria,
+            PageRequest pageRequest
+    ) {
         TraineeTrainingCriteria effectiveCriteria = criteria == null ? TraineeTrainingCriteria.empty() : criteria;
+        PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
         StringBuilder jpql = new StringBuilder("""
                 select tr
                 from Training tr
@@ -71,12 +78,20 @@ public class TrainingDaoImpl implements TrainingDao {
         if (isNotBlank(effectiveCriteria.trainingType())) {
             query.setParameter("trainingType", effectiveCriteria.trainingType());
         }
-        return query.getResultList();
+        return query
+                .setFirstResult(page.offset())
+                .setMaxResults(page.limit())
+                .getResultList();
     }
 
     @Override
-    public List<Training> findByTrainerUsernameAndCriteria(String trainerUsername, TrainerTrainingCriteria criteria) {
+    public List<Training> findByTrainerUsernameAndCriteria(
+            String trainerUsername,
+            TrainerTrainingCriteria criteria,
+            PageRequest pageRequest
+    ) {
         TrainerTrainingCriteria effectiveCriteria = criteria == null ? TrainerTrainingCriteria.empty() : criteria;
+        PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
         StringBuilder jpql = new StringBuilder("""
                 select tr
                 from Training tr
@@ -105,7 +120,10 @@ public class TrainingDaoImpl implements TrainingDao {
         if (isNotBlank(effectiveCriteria.traineeName())) {
             query.setParameter("traineeName", toLikePattern(effectiveCriteria.traineeName()));
         }
-        return query.getResultList();
+        return query
+                .setFirstResult(page.offset())
+                .setMaxResults(page.limit())
+                .getResultList();
     }
 
     private static void appendDateCriteria(StringBuilder jpql, LocalDate fromDate, LocalDate toDate) {
@@ -133,4 +151,5 @@ public class TrainingDaoImpl implements TrainingDao {
     private static String toLikePattern(String value) {
         return "%" + value.toLowerCase() + "%";
     }
+
 }

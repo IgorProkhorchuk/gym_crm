@@ -2,11 +2,13 @@ package com.epam.gymcrm.dao.impl;
 
 import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Dao
@@ -75,9 +77,12 @@ public class TrainerDaoImpl implements TrainerDao {
     }
 
     @Override
-    public List<Trainer> findAll() {
+    public List<Trainer> findAll(PageRequest pageRequest) {
+        PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
         return entityManager
                 .createQuery("select t from Trainer t", Trainer.class)
+                .setFirstResult(page.offset())
+                .setMaxResults(page.limit())
                 .getResultList();
     }
 

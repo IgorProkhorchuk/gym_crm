@@ -1,7 +1,7 @@
 package com.epam.gymcrm.dao;
 
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainer;
-
 
 import java.util.List;
 import java.util.Optional;
@@ -50,9 +50,10 @@ public interface TrainerDao {
     void delete(Long id);
 
     /**
-     * Returns a snapshot of all stored trainers.
+     * Returns a page of stored trainers.
      *
-     * @return all trainers present when the method is called
+     * @param pageRequest pagination settings
+     * @return trainers present on the requested page
      */
-    List<Trainer> findAll();
+    List<Trainer> findAll(PageRequest pageRequest);
 }

@@ -1,5 +1,7 @@
 package com.epam.gymcrm.dto.training;
 
+import com.epam.gymcrm.dto.PageRequest;
+
 import java.time.LocalDate;
 
 public record TrainerTrainingsRequest(
@@ -7,7 +9,8 @@ public record TrainerTrainingsRequest(
         String password,
         LocalDate fromDate,
         LocalDate toDate,
-        String traineeName
+        String traineeName,
+        PageRequest pageRequest
 ) {
 
     @Override
@@ -15,6 +18,6 @@ public record TrainerTrainingsRequest(
         return "TrainerTrainingsRequest[username=[PROTECTED], password=[PROTECTED], "
                 + "fromDate=" + fromDate
                 + ", toDate=" + toDate
-                + ", traineeName=[PROTECTED]]";
+                + ", traineeName=[PROTECTED], pageRequest=" + pageRequest + "]";
     }
 }

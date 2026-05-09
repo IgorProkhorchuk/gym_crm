@@ -5,6 +5,7 @@ import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
@@ -238,7 +239,8 @@ class TrainingServiceImplTest {
                 LocalDate.of(2026, 1, 1),
                 LocalDate.of(2026, 1, 31),
                 "Coach",
-                "Yoga"
+                "Yoga",
+                PageRequest.firstPage()
         );
         TraineeTrainingCriteria criteria = new TraineeTrainingCriteria(
                 LocalDate.of(2026, 1, 1),
@@ -249,7 +251,8 @@ class TrainingServiceImplTest {
         Training training = validTraining();
         TraineeTrainingResponse response = traineeTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(criteria);
-        when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", criteria)).thenReturn(List.of(training));
+        when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", criteria, PageRequest.firstPage()))
+                .thenReturn(List.of(training));
         when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
 
         List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
@@ -258,7 +261,11 @@ class TrainingServiceImplTest {
                 () -> assertThat(result).containsExactly(response),
                 () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
                 () -> verify(trainingMapper).toCriteria(request),
-                () -> verify(trainingDao).findByTraineeUsernameAndCriteria("Training.Trainee", criteria),
+                () -> verify(trainingDao).findByTraineeUsernameAndCriteria(
+                        "Training.Trainee",
+                        criteria,
+                        PageRequest.firstPage()
+                ),
                 () -> verify(trainingMapper).toTraineeTrainingResponse(training)
         );
     }
@@ -271,12 +278,17 @@ class TrainingServiceImplTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
         Training training = validTraining();
         TraineeTrainingResponse response = traineeTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(null);
-        when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", TraineeTrainingCriteria.empty()))
+        when(trainingDao.findByTraineeUsernameAndCriteria(
+                "Training.Trainee",
+                TraineeTrainingCriteria.empty(),
+                PageRequest.firstPage()
+        ))
                 .thenReturn(List.of(training));
         when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
 
@@ -287,7 +299,8 @@ class TrainingServiceImplTest {
                 () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
                 () -> verify(trainingDao).findByTraineeUsernameAndCriteria(
                         "Training.Trainee",
-                        TraineeTrainingCriteria.empty()
+                        TraineeTrainingCriteria.empty(),
+                        PageRequest.firstPage()
                 )
         );
     }
@@ -299,7 +312,8 @@ class TrainingServiceImplTest {
                 "password",
                 LocalDate.of(2026, 2, 1),
                 LocalDate.of(2026, 2, 28),
-                "Trainee"
+                "Trainee",
+                PageRequest.firstPage()
         );
         TrainerTrainingCriteria criteria = new TrainerTrainingCriteria(
                 LocalDate.of(2026, 2, 1),
@@ -309,7 +323,8 @@ class TrainingServiceImplTest {
         Training training = validTraining();
         TrainerTrainingResponse response = trainerTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(criteria);
-        when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", criteria)).thenReturn(List.of(training));
+        when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", criteria, PageRequest.firstPage()))
+                .thenReturn(List.of(training));
         when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
 
         List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
@@ -318,7 +333,11 @@ class TrainingServiceImplTest {
                 () -> assertThat(result).containsExactly(response),
                 () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
                 () -> verify(trainingMapper).toCriteria(request),
-                () -> verify(trainingDao).findByTrainerUsernameAndCriteria("Training.Trainer", criteria),
+                () -> verify(trainingDao).findByTrainerUsernameAndCriteria(
+                        "Training.Trainer",
+                        criteria,
+                        PageRequest.firstPage()
+                ),
                 () -> verify(trainingMapper).toTrainerTrainingResponse(training)
         );
     }
@@ -330,12 +349,17 @@ class TrainingServiceImplTest {
                 "password",
                 null,
                 null,
+                null,
                 null
         );
         Training training = validTraining();
         TrainerTrainingResponse response = trainerTrainingResponse();
         when(trainingMapper.toCriteria(request)).thenReturn(null);
-        when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", TrainerTrainingCriteria.empty()))
+        when(trainingDao.findByTrainerUsernameAndCriteria(
+                "Training.Trainer",
+                TrainerTrainingCriteria.empty(),
+                PageRequest.firstPage()
+        ))
                 .thenReturn(List.of(training));
         when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
 
@@ -346,7 +370,8 @@ class TrainingServiceImplTest {
                 () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
                 () -> verify(trainingDao).findByTrainerUsernameAndCriteria(
                         "Training.Trainer",
-                        TrainerTrainingCriteria.empty()
+                        TrainerTrainingCriteria.empty(),
+                        PageRequest.firstPage()
                 )
         );
     }

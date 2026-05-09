@@ -2,6 +2,7 @@ package com.epam.gymcrm.dao.impl;
 
 import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
@@ -197,11 +198,27 @@ class TrainerDaoImplTest extends PostgresContainerTest {
         entityManager.flush();
         entityManager.clear();
 
-        List<Trainer> all = trainerDao.findAll();
+        List<Trainer> all = trainerDao.findAll(PageRequest.firstPage());
 
         assertThat(all)
                 .extracting(trainer -> trainer.getUser().getUsername())
                 .contains("Diana.Green", "Ethan.Black");
+    }
+
+    @Test
+    void findAllShouldApplyPageLimit() {
+        Trainer first = trainer("Paged", "One", "Paged.One");
+        Trainer second = trainer("Paged", "Two", "Paged.Two");
+        persistSpecialization(first);
+        persistSpecialization(second);
+        entityManager.persist(first);
+        entityManager.persist(second);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Trainer> all = trainerDao.findAll(new PageRequest(0, 1));
+
+        assertThat(all).hasSize(1);
     }
 
     private void persistSpecialization(Trainer trainer) {

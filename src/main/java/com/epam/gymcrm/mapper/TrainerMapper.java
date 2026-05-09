@@ -20,16 +20,10 @@ import org.mapstruct.ReportingPolicy;
 public interface TrainerMapper {
 
     @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user.userId", ignore = true)
-    @Mapping(target = "user.username", ignore = true)
-    @Mapping(target = "user.password", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
     @Mapping(target = "user.active", constant = "true")
-    @Mapping(target = "specialization.trainingTypeId", ignore = true)
     @Mapping(target = "specialization.trainingTypeName", source = "specialization")
-    @Mapping(target = "trainees", ignore = true)
     Trainer toEntity(CreateTrainerRequest request);
 
     @BeanMapping(ignoreByDefault = true)
@@ -48,14 +42,7 @@ public interface TrainerMapper {
     TrainerSummaryResponse toSummaryResponse(Trainer trainer);
 
     @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user.userId", ignore = true)
-    @Mapping(target = "user.username", ignore = true)
-    @Mapping(target = "user.password", ignore = true)
-    @Mapping(target = "user.active", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
-    @Mapping(target = "specialization", ignore = true)
-    @Mapping(target = "trainees", ignore = true)
     void updateFromRequest(UpdateTrainerRequest request, @MappingTarget Trainer trainer);
 }

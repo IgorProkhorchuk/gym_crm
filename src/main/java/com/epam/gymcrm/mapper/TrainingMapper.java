@@ -22,10 +22,6 @@ import org.mapstruct.ReportingPolicy;
 public interface TrainingMapper {
 
     @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "trainingId", ignore = true)
-    @Mapping(target = "trainee", ignore = true)
-    @Mapping(target = "trainer", ignore = true)
-    @Mapping(target = "trainingType", ignore = true)
     @Mapping(target = "trainingName", source = "trainingName")
     @Mapping(target = "trainingDate", source = "trainingDate")
     @Mapping(target = "trainingDuration", source = "trainingDuration")

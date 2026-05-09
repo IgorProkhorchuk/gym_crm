@@ -20,17 +20,11 @@ import org.mapstruct.ReportingPolicy;
 public interface TraineeMapper {
 
     @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user.userId", ignore = true)
-    @Mapping(target = "user.username", ignore = true)
-    @Mapping(target = "user.password", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
     @Mapping(target = "user.active", constant = "true")
     @Mapping(target = "dateOfBirth", source = "dateOfBirth")
     @Mapping(target = "address", source = "address")
-    @Mapping(target = "trainers", ignore = true)
-    @Mapping(target = "trainings", ignore = true)
     Trainee toEntity(CreateTraineeRequest request);
 
     @BeanMapping(ignoreByDefault = true)
@@ -44,16 +38,9 @@ public interface TraineeMapper {
     TraineeProfileResponse toProfileResponse(Trainee trainee);
 
     @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user.userId", ignore = true)
-    @Mapping(target = "user.username", ignore = true)
-    @Mapping(target = "user.password", ignore = true)
-    @Mapping(target = "user.active", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
     @Mapping(target = "dateOfBirth", source = "dateOfBirth")
     @Mapping(target = "address", source = "address")
-    @Mapping(target = "trainers", ignore = true)
-    @Mapping(target = "trainings", ignore = true)
     void updateFromRequest(UpdateTraineeRequest request, @MappingTarget Trainee trainee);
 }

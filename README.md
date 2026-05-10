@@ -4,7 +4,7 @@ Gym CRM is a Spring-based backend application for managing gym trainees, trainer
 
 ## Features
 
-* **Trainee and trainer profiles:** create, read by username, update, activate, deactivate, and authenticate profiles.
+* **Trainee and trainer profiles:** create, read by username, update, switch active status, and authenticate profiles.
 * **Generated credentials:** usernames are generated from first and last names, and passwords are generated for new profiles.
 * **Password changes:** authenticated trainees and trainers can change their passwords.
 * **Training management:** add trainings and query trainee/trainer training lists with date and name/type criteria.

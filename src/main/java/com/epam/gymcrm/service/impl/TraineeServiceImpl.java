@@ -12,7 +12,6 @@ import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.EntityNotFoundException;
-import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -92,24 +91,14 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional
-    public void activate(AuthRequest request) {
-        log.info("Activating trainee profile");
+    public void switchActiveStatus(AuthRequest request) {
+        log.info("Switching trainee active status");
 
         Trainee trainee = authenticateTrainee(request);
-        changeActiveStatus(trainee, true, "Trainee profile is already active");
+        trainee.getUser().switchActiveStatus();
+        traineeDao.save(trainee);
 
-        log.info("Trainee profile activated, userId={}", trainee.getId());
-    }
-
-    @Override
-    @Transactional
-    public void deactivate(AuthRequest request) {
-        log.info("Deactivating trainee profile");
-
-        Trainee trainee = authenticateTrainee(request);
-        changeActiveStatus(trainee, false, "Trainee profile is already inactive");
-
-        log.info("Trainee profile deactivated, userId={}", trainee.getId());
+        log.info("Trainee active status switched, userId={}", trainee.getId());
     }
 
     @Override
@@ -197,13 +186,4 @@ public class TraineeServiceImpl implements TraineeService {
         return authenticationService.authenticateTrainee(request.username(), request.password());
     }
 
-    private void changeActiveStatus(Trainee trainee, boolean active, String errorMessage) {
-        User user = trainee.getUser();
-        if (Boolean.valueOf(active).equals(user.getActive())) {
-            throw new ProfileStateException(errorMessage);
-        }
-
-        user.setActive(active);
-        traineeDao.save(trainee);
-    }
 }

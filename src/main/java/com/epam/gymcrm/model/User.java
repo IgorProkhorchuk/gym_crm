@@ -42,4 +42,8 @@ public class User {
     @Column(nullable = false, unique = true)
     @EqualsAndHashCode.Include
     private String username;
+
+    public void switchActiveStatus() {
+        active = !Boolean.TRUE.equals(active);
+    }
 }

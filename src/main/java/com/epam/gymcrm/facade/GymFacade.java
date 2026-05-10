@@ -44,12 +44,8 @@ public class GymFacade {
         traineeService.changePassword(request);
     }
 
-    public void activateTrainee(AuthRequest request) {
-        traineeService.activate(request);
-    }
-
-    public void deactivateTrainee(AuthRequest request) {
-        traineeService.deactivate(request);
+    public void switchTraineeActiveStatus(AuthRequest request) {
+        traineeService.switchActiveStatus(request);
     }
 
     public void deleteTraineeByUsername(AuthRequest request) {
@@ -76,12 +72,8 @@ public class GymFacade {
         trainerService.changePassword(request);
     }
 
-    public void activateTrainer(AuthRequest request) {
-        trainerService.activate(request);
-    }
-
-    public void deactivateTrainer(AuthRequest request) {
-        trainerService.deactivate(request);
+    public void switchTrainerActiveStatus(AuthRequest request) {
+        trainerService.switchActiveStatus(request);
     }
 
     public List<TrainerSummaryResponse> getUnassignedTrainers(AuthRequest request) {

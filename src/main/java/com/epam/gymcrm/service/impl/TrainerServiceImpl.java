@@ -11,7 +11,6 @@ import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.exception.EntityNotFoundException;
-import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
@@ -88,24 +87,14 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     @Transactional
-    public void activate(AuthRequest request) {
-        log.info("Activating trainer profile");
+    public void switchActiveStatus(AuthRequest request) {
+        log.info("Switching trainer active status");
 
         Trainer trainer = authenticateTrainer(request);
-        changeActiveStatus(trainer, true, "Trainer profile is already active");
+        trainer.getUser().switchActiveStatus();
+        trainerDao.save(trainer);
 
-        log.info("Trainer profile activated, userId={}", trainer.getId());
-    }
-
-    @Override
-    @Transactional
-    public void deactivate(AuthRequest request) {
-        log.info("Deactivating trainer profile");
-
-        Trainer trainer = authenticateTrainer(request);
-        changeActiveStatus(trainer, false, "Trainer profile is already inactive");
-
-        log.info("Trainer profile deactivated, userId={}", trainer.getId());
+        log.info("Trainer active status switched, userId={}", trainer.getId());
     }
 
     @Override
@@ -175,13 +164,4 @@ public class TrainerServiceImpl implements TrainerService {
         return authenticationService.authenticateTrainer(request.username(), request.password());
     }
 
-    private void changeActiveStatus(Trainer trainer, boolean active, String errorMessage) {
-        User user = trainer.getUser();
-        if (Boolean.valueOf(active).equals(user.getActive())) {
-            throw new ProfileStateException(errorMessage);
-        }
-
-        user.setActive(active);
-        trainerDao.save(trainer);
-    }
 }

@@ -40,20 +40,12 @@ public interface TraineeService {
     void changePassword(ChangePasswordRequest request);
 
     /**
-     * Activates a trainee profile after authenticating the trainee credentials.
-     * This operation is not idempotent and fails when the profile is already active.
+     * Switches a trainee profile active status after authenticating the trainee credentials.
+     * This operation is not idempotent: each successful call flips the current status.
      *
      * @param request trainee credentials
      */
-    void activate(AuthRequest request);
-
-    /**
-     * Deactivates a trainee profile after authenticating the trainee credentials.
-     * This operation is not idempotent and fails when the profile is already inactive.
-     *
-     * @param request trainee credentials
-     */
-    void deactivate(AuthRequest request);
+    void switchActiveStatus(AuthRequest request);
 
     /**
      * Hard deletes a trainee profile by username after authenticating the trainee credentials.

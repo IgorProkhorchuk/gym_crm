@@ -12,7 +12,6 @@ import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
-import com.epam.gymcrm.exception.ProfileStateException;
 import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -222,13 +221,13 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void activateShouldSetAuthenticatedTraineeActiveWhenCurrentlyInactive() {
+    void switchActiveStatusShouldSetAuthenticatedTraineeActiveWhenCurrentlyInactive() {
         AuthRequest request = new AuthRequest("Jane.Doe", "password");
         Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
         trainee.getUser().setActive(false);
         when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
 
-        traineeService.activate(request);
+        traineeService.switchActiveStatus(request);
 
         assertAll(
                 () -> assertThat(trainee.getUser().getActive()).isTrue(),
@@ -238,28 +237,12 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void activateShouldThrowProfileStateExceptionWhenTraineeAlreadyActive() {
+    void switchActiveStatusShouldSetAuthenticatedTraineeInactiveWhenCurrentlyActive() {
         AuthRequest request = new AuthRequest("Jane.Doe", "password");
         Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
         when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
 
-        assertThatThrownBy(() -> traineeService.activate(request))
-                .isInstanceOf(ProfileStateException.class)
-                .hasMessage("Trainee profile is already active");
-
-        assertAll(
-                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-                () -> verifyNoMoreInteractions(traineeDao)
-        );
-    }
-
-    @Test
-    void deactivateShouldSetAuthenticatedTraineeInactiveWhenCurrentlyActive() {
-        AuthRequest request = new AuthRequest("Jane.Doe", "password");
-        Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
-        when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
-
-        traineeService.deactivate(request);
+        traineeService.switchActiveStatus(request);
 
         assertAll(
                 () -> assertThat(trainee.getUser().getActive()).isFalse(),
@@ -269,19 +252,19 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    void deactivateShouldThrowProfileStateExceptionWhenTraineeAlreadyInactive() {
+    void switchActiveStatusShouldFlipStatusOnEveryCall() {
         AuthRequest request = new AuthRequest("Jane.Doe", "password");
         Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
-        trainee.getUser().setActive(false);
         when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
 
-        assertThatThrownBy(() -> traineeService.deactivate(request))
-                .isInstanceOf(ProfileStateException.class)
-                .hasMessage("Trainee profile is already inactive");
+        traineeService.switchActiveStatus(request);
+        traineeService.switchActiveStatus(request);
 
         assertAll(
-                () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-                () -> verifyNoMoreInteractions(traineeDao)
+                () -> assertThat(trainee.getUser().getActive()).isTrue(),
+                () -> verify(authenticationService, org.mockito.Mockito.times(2))
+                        .authenticateTrainee("Jane.Doe", "password"),
+                () -> verify(traineeDao, org.mockito.Mockito.times(2)).save(trainee)
         );
     }
 

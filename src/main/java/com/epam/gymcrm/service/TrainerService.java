@@ -39,20 +39,12 @@ public interface TrainerService {
     void changePassword(ChangePasswordRequest request);
 
     /**
-     * Activates a trainer profile after authenticating the trainer credentials.
-     * This operation is not idempotent and fails when the profile is already active.
+     * Switches a trainer profile active status after authenticating the trainer credentials.
+     * This operation is not idempotent: each successful call flips the current status.
      *
      * @param request trainer credentials
      */
-    void activate(AuthRequest request);
-
-    /**
-     * Deactivates a trainer profile after authenticating the trainer credentials.
-     * This operation is not idempotent and fails when the profile is already inactive.
-     *
-     * @param request trainer credentials
-     */
-    void deactivate(AuthRequest request);
+    void switchActiveStatus(AuthRequest request);
 
     /**
      * Returns active trainers that are not assigned to an authenticated trainee profile.

@@ -100,21 +100,12 @@ class GymFacadeTest {
     }
 
     @Test
-    void activateTraineeShouldDelegateToTraineeService() {
+    void switchTraineeActiveStatusShouldDelegateToTraineeService() {
         AuthRequest request = new AuthRequest("John.Doe", "password");
 
-        gymFacade.activateTrainee(request);
+        gymFacade.switchTraineeActiveStatus(request);
 
-        verify(traineeService).activate(request);
-    }
-
-    @Test
-    void deactivateTraineeShouldDelegateToTraineeService() {
-        AuthRequest request = new AuthRequest("John.Doe", "password");
-
-        gymFacade.deactivateTrainee(request);
-
-        verify(traineeService).deactivate(request);
+        verify(traineeService).switchActiveStatus(request);
     }
 
     @Test
@@ -220,21 +211,12 @@ class GymFacadeTest {
     }
 
     @Test
-    void activateTrainerShouldDelegateToTrainerService() {
+    void switchTrainerActiveStatusShouldDelegateToTrainerService() {
         AuthRequest request = new AuthRequest("Mike.Stone", "password");
 
-        gymFacade.activateTrainer(request);
+        gymFacade.switchTrainerActiveStatus(request);
 
-        verify(trainerService).activate(request);
-    }
-
-    @Test
-    void deactivateTrainerShouldDelegateToTrainerService() {
-        AuthRequest request = new AuthRequest("Mike.Stone", "password");
-
-        gymFacade.deactivateTrainer(request);
-
-        verify(trainerService).deactivate(request);
+        verify(trainerService).switchActiveStatus(request);
     }
 
     @Test

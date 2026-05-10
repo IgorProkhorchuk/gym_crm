@@ -4,12 +4,12 @@ services:
     image: docker.io/library/postgres:16
     container_name: gym-master
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
-      REPL_PASSWORD: ${REPL_PASSWORD}
-      APP_DB_NAME: ${APP_DB_NAME}
-      APP_DB_USERNAME: ${APP_DB_USERNAME}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
-      TEST_DB_NAME: ${TEST_DB_NAME}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:-password}
+      REPL_PASSWORD: ${REPL_PASSWORD:-repl_password}
+      APP_DB_NAME: ${APP_DB_NAME:-gym_crm}
+      APP_DB_USERNAME: ${APP_DB_USERNAME:-gym_user}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-password}
+      TEST_DB_NAME: ${TEST_DB_NAME:-gym_crm_test}
     ports:
       - "5433:5432"
     networks:
@@ -22,14 +22,16 @@ services:
     volumes:
       - master_data:/var/lib/postgresql/data
       - ./init-master.sh:/docker-entrypoint-initdb.d/init-master.sh:ro
+      - ./schema.sql:/schema.sql:ro
+      - ./data.sql:/data.sql:ro
 
   #==================REPLICA==============
   gym-replica:
     image: docker.io/library/postgres:16
     container_name: gym-replica
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
-      REPL_PASSWORD: ${REPL_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:-password}
+      REPL_PASSWORD: ${REPL_PASSWORD:-repl_password}
     ports:
       - "5434:5432"
     networks:
@@ -54,11 +56,11 @@ services:
       - PGPOOL_BACKEND_NODES=0:gym-master:5432,1:gym-replica:5432
       - PGPOOL_ENABLE_LOAD_BALANCING=yes
       - PGPOOL_SR_CHECK_USER=postgres
-      - PGPOOL_SR_CHECK_PASSWORD=${POSTGRES_ROOT_PASSWORD}
-      - PGPOOL_POSTGRES_USERNAME=${APP_DB_USERNAME}
-      - PGPOOL_POSTGRES_PASSWORD=${APP_DB_PASSWORD}
-      - PGPOOL_ADMIN_USERNAME=${ADMIN_USERNAME}
-      - PGPOOL_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - PGPOOL_SR_CHECK_PASSWORD=${POSTGRES_ROOT_PASSWORD:-password}
+      - PGPOOL_POSTGRES_USERNAME=${APP_DB_USERNAME:-gym_user}
+      - PGPOOL_POSTGRES_PASSWORD=${APP_DB_PASSWORD:-password}
+      - PGPOOL_ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - PGPOOL_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
     depends_on:
       gym-master:
         condition: service_healthy

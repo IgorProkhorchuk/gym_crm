@@ -18,20 +18,31 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
+@Table(name = "trainer")
 public class Trainer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     @ToString.Include
+    @Column(name = "id")
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true,
+            foreignKey = @ForeignKey(name = "fk_trainer_user")
+    )
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "specialization_id", nullable = false)
+    @JoinColumn(
+            name = "specialization_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_trainer_specialization")
+    )
     private TrainingType specialization;
 
     @Builder.Default

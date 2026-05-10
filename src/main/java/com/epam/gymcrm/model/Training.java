@@ -17,6 +17,7 @@ import java.time.LocalDate;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
+@Table(name = "training")
 public class Training {
 
     @Id
@@ -27,23 +28,35 @@ public class Training {
     private Long trainingId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "trainee_id", nullable = false)
+    @JoinColumn(
+            name = "trainee_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_training_trainee")
+    )
     private Trainee trainee;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "trainer_id", nullable = false)
+    @JoinColumn(
+            name = "trainer_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_training_trainer")
+    )
     private Trainer trainer;
 
-    @Column(nullable = false)
+    @Column(name = "training_name", nullable = false)
     private String trainingName;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "training_type_id", nullable = false)
+    @JoinColumn(
+            name = "training_type_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_training_type")
+    )
     private TrainingType trainingType;
 
-    @Column(nullable = false)
+    @Column(name = "training_date", nullable = false)
     private LocalDate trainingDate;
 
-    @Column(nullable = false)
+    @Column(name = "training_duration", nullable = false)
     private Integer trainingDuration;
 }

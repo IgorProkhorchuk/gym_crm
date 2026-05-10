@@ -163,7 +163,7 @@ classDiagram
 
 Main Hibernate settings are in `src/main/resources/application.properties`.
 
-Training types are seeded from `src/main/resources/data.sql` into the `training_type` table. Hibernate is currently configured with `hibernate.hbm2ddl.auto=create-drop`, so the schema is recreated during application startup.
+The containerized PostgreSQL database is initialized from `infra/schema.sql` and `infra/data.sql` during the first `docker compose` startup. The application uses `hibernate.hbm2ddl.auto=validate`, so Hibernate validates the existing schema instead of creating or updating it. Testcontainers-based tests still use the test `create-drop` configuration from `src/test/resources/application.properties`.
 
 ## GitLab CI
 

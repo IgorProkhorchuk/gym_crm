@@ -15,27 +15,45 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
+@Table(name = "trainee")
 public class Trainee {
 
     @Id
     @EqualsAndHashCode.Include
     @ToString.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true,
+            foreignKey = @ForeignKey(name = "fk_trainee_user")
+    )
     private User user;
 
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Column(name = "address")
     private String address;
 
     @Builder.Default
     @ManyToMany
     @JoinTable(
             name = "trainee_trainer",
-            joinColumns = @JoinColumn(name = "trainee_id"),
-            inverseJoinColumns = @JoinColumn(name = "trainer_id")
+            joinColumns = @JoinColumn(
+                    name = "trainee_id",
+                    nullable = false,
+                    foreignKey = @ForeignKey(name = "fk_trainee_trainer_trainee")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "trainer_id",
+                    nullable = false,
+                    foreignKey = @ForeignKey(name = "fk_trainee_trainer_trainer")
+            )
     )
     private Set<Trainer> trainers = new HashSet<>();
 

@@ -30,6 +30,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireEachNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -48,7 +52,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public UsernamePasswordResponse create(CreateTraineeRequest request) {
         requireNonNull(request, "Trainee request must not be null");
-        validateCreateRequest(request);
+        validateNameFields(request.firstName(), request.lastName());
 
         Trainee trainee = traineeMapper.toEntity(request);
         User user = trainee.getUser();
@@ -151,22 +155,6 @@ public class TraineeServiceImpl implements TraineeService {
         return traineeMapper.toProfileResponse(authenticatedTrainee);
     }
 
-    private static void requireNonNull(Object value, String message) {
-        if (value == null) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void requireNonBlank(String value, String message) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void validateCreateRequest(CreateTraineeRequest request) {
-        validateNameFields(request.firstName(), request.lastName());
-    }
-
     private static void validateNameFields(String firstName, String lastName) {
         requireNonBlank(firstName, "First name must not be blank");
         requireNonBlank(lastName, "Last name must not be blank");
@@ -174,10 +162,8 @@ public class TraineeServiceImpl implements TraineeService {
 
     private static Set<String> normalizeTrainerUsernames(List<String> trainerUsernames) {
         Set<String> uniqueTrainerUsernames = new LinkedHashSet<>();
-        for (String trainerUsername : trainerUsernames) {
-            requireNonBlank(trainerUsername, "Trainer username must not be blank");
-            uniqueTrainerUsernames.add(trainerUsername);
-        }
+        requireEachNonBlank(trainerUsernames, "Trainer username must not be blank");
+        uniqueTrainerUsernames.addAll(trainerUsernames);
         return uniqueTrainerUsernames;
     }
 

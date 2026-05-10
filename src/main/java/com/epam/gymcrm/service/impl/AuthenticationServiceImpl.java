@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,11 +47,5 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return trainerDao.findByUsername(username)
                 .filter(trainer -> password.equals(trainer.getUser().getPassword()))
                 .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));
-    }
-
-    private static void requireNonBlank(String value, String message) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(message);
-        }
     }
 }

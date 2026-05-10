@@ -26,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,7 +46,8 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public UsernamePasswordResponse create(CreateTrainerRequest request) {
         requireNonNull(request, "Trainer request must not be null");
-        validateCreateRequest(request);
+        validateNameFields(request.firstName(), request.lastName());
+        validateSpecializationName(request.specialization());
 
         Trainer trainer = trainerMapper.toEntity(request);
         trainer.setSpecialization(resolveSpecializationName(request.specialization()));
@@ -124,23 +128,6 @@ public class TrainerServiceImpl implements TrainerService {
 
         log.info("Trainer profile updated, userId={}", authenticatedTrainer.getId());
         return trainerMapper.toProfileResponse(authenticatedTrainer);
-    }
-
-    private static void requireNonNull(Object value, String message) {
-        if (value == null) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void requireNonBlank(String value, String message) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void validateCreateRequest(CreateTrainerRequest request) {
-        validateNameFields(request.firstName(), request.lastName());
-        validateSpecializationName(request.specialization());
     }
 
     private static void validateNameFields(String firstName, String lastName) {

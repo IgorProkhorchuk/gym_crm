@@ -26,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requirePositive;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -99,24 +103,6 @@ public class TrainingServiceImpl implements TrainingService {
         ).stream()
                 .map(trainingMapper::toTrainerTrainingResponse)
                 .toList();
-    }
-
-    private static void requireNonNull(Object value, String message) {
-        if (value == null) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void requireNonBlank(String value, String message) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private static void requirePositive(Integer value, String message) {
-        if (value == null || value <= 0) {
-            throw new IllegalArgumentException(message);
-        }
     }
 
     private static PageRequest page(PageRequest pageRequest) {

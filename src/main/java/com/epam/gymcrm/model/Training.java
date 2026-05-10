@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.LocalDate;
 
 
@@ -17,7 +20,7 @@ import java.time.LocalDate;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "training")
+@Table(name = "trainings")
 public class Training {
 
     @Id
@@ -31,15 +34,16 @@ public class Training {
     @JoinColumn(
             name = "trainee_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_training_trainee")
+            foreignKey = @ForeignKey(name = "fk_trainings_trainee")
     )
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Trainee trainee;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "trainer_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_training_trainer")
+            foreignKey = @ForeignKey(name = "fk_trainings_trainer")
     )
     private Trainer trainer;
 
@@ -50,7 +54,7 @@ public class Training {
     @JoinColumn(
             name = "training_type_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_training_type")
+            foreignKey = @ForeignKey(name = "fk_trainings_type")
     )
     private TrainingType trainingType;
 

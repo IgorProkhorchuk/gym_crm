@@ -18,7 +18,6 @@ import java.util.Optional;
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
 import static com.epam.gymcrm.TestFixtures.training;
-import static com.epam.gymcrm.TestFixtures.trainingType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
@@ -197,7 +196,7 @@ class TraineeDaoImplTest extends PostgresContainerTest {
 
         Number traineeTrainerCount = (Number) entityManager.createNativeQuery("""
                         select count(*)
-                        from trainee_trainer
+                        from trainees_trainers
                         where trainee_id = :traineeId
                         """)
                 .setParameter("traineeId", traineeId)

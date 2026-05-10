@@ -18,7 +18,7 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "trainer")
+@Table(name = "trainers")
 public class Trainer {
 
     @Id
@@ -33,7 +33,7 @@ public class Trainer {
             name = "user_id",
             nullable = false,
             unique = true,
-            foreignKey = @ForeignKey(name = "fk_trainer_user")
+            foreignKey = @ForeignKey(name = "fk_trainers_user")
     )
     private User user;
 
@@ -41,7 +41,7 @@ public class Trainer {
     @JoinColumn(
             name = "specialization_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_trainer_specialization")
+            foreignKey = @ForeignKey(name = "fk_trainers_specialization")
     )
     private TrainingType specialization;
 

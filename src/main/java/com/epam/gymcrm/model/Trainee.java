@@ -15,7 +15,7 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "trainee")
+@Table(name = "trainees")
 public class Trainee {
 
     @Id
@@ -30,7 +30,7 @@ public class Trainee {
             name = "user_id",
             nullable = false,
             unique = true,
-            foreignKey = @ForeignKey(name = "fk_trainee_user")
+            foreignKey = @ForeignKey(name = "fk_trainees_user")
     )
     private User user;
 
@@ -43,16 +43,16 @@ public class Trainee {
     @Builder.Default
     @ManyToMany
     @JoinTable(
-            name = "trainee_trainer",
+            name = "trainees_trainers",
             joinColumns = @JoinColumn(
                     name = "trainee_id",
                     nullable = false,
-                    foreignKey = @ForeignKey(name = "fk_trainee_trainer_trainee")
+                    foreignKey = @ForeignKey(name = "fk_trainees_trainers_trainee")
             ),
             inverseJoinColumns = @JoinColumn(
                     name = "trainer_id",
                     nullable = false,
-                    foreignKey = @ForeignKey(name = "fk_trainee_trainer_trainer")
+                    foreignKey = @ForeignKey(name = "fk_trainees_trainers_trainer")
             )
     )
     private Set<Trainer> trainers = new HashSet<>();

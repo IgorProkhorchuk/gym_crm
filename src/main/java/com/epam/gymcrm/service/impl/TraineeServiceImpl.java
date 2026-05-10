@@ -113,7 +113,7 @@ public class TraineeServiceImpl implements TraineeService {
         Trainee trainee = authenticateTrainee(request);
         traineeDao.delete(trainee.getId());
 
-        log.info("Trainee profile deleted, username={}", request.username());
+        log.info("Trainee profile deleted, userId={}", trainee.getId());
     }
 
     @Override

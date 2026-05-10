@@ -21,7 +21,6 @@
         <logback.version>1.5.6</logback.version>
         <mockito.version>5.23.0</mockito.version>
         <assertj.version>3.27.3</assertj.version>
-        <jackson.version>2.18.2</jackson.version>
         <jakarta.annotation.version>3.0.0</jakarta.annotation.version>
         <jacoco.version>0.8.14</jacoco.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
@@ -85,16 +84,6 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>

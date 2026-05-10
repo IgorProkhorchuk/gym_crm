@@ -1,6 +1,5 @@
 package com.epam.gymcrm.model;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,6 @@ public class Training {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonAlias("id")
     @EqualsAndHashCode.Include
     @ToString.Include
     @Column(name = "id")
@@ -34,7 +32,6 @@ public class Training {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "trainer_id", nullable = false)
-    @JsonAlias("id")
     private Trainer trainer;
 
     @Column(nullable = false)

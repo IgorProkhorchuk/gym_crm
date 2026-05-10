@@ -1,6 +1,5 @@
 package com.epam.gymcrm.model;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +13,6 @@ import lombok.*;
 @ToString(onlyExplicitlyIncluded = true)
 public class TrainingType {
 
-    @JsonAlias("id")
     @EqualsAndHashCode.Include
     @ToString.Include
     @Id

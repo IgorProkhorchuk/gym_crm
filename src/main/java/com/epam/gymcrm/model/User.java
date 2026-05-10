@@ -1,6 +1,5 @@
 package com.epam.gymcrm.model;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -20,7 +19,6 @@ import lombok.EqualsAndHashCode;
 @Table(name = "users")
 public class User {
     @ToString.Include
-    @JsonAlias("id")
     @Id
     @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)

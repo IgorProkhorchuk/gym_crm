@@ -1,7 +1,12 @@
 package com.epam.gymcrm.service;
 
-import com.epam.gymcrm.exception.EntityNotFoundException;
-import com.epam.gymcrm.model.Training;
+import com.epam.gymcrm.dto.training.AddTrainingRequest;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
+import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+
+import java.util.List;
 
 /**
  * Business operations for training sessions.
@@ -9,18 +14,25 @@ import com.epam.gymcrm.model.Training;
 public interface TrainingService {
 
     /**
-     * Saves a training session, replacing any stored session with the same training id.
+     * Adds a training for an authenticated trainee.
      *
-     * @param training training session to save
+     * @param request training data
      */
-    void create(Training training);
+    void addTraining(AddTrainingRequest request);
 
     /**
-     * Finds a training session by training id.
+     * Returns trainee trainings after authenticating the trainee credentials.
      *
-     * @param id training id to look up
-     * @return training session with the given id
-     * @throws EntityNotFoundException when no training session exists with the given id
+     * @param request trainee credentials and optional filters
+     * @return trainee trainings matching the criteria
      */
-    Training findById(Long id);
+    List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request);
+
+    /**
+     * Returns trainer trainings after authenticating the trainer credentials.
+     *
+     * @param request trainer credentials and optional filters
+     * @return trainer trainings matching the criteria
+     */
+    List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request);
 }

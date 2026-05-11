@@ -1,17 +1,25 @@
 package com.epam.gymcrm.model;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Data
-@SuperBuilder
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
+@Table(name = "training_type")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 public class TrainingType {
-    @JsonAlias("id")
+
+    @EqualsAndHashCode.Include
+    @ToString.Include
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long trainingTypeId;
+
+    @Column(name = "training_type_name", nullable = false, unique = true)
     private String trainingTypeName;
 }

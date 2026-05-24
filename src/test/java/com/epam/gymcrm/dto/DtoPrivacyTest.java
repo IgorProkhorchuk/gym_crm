@@ -4,6 +4,9 @@ import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
+import com.epam.gymcrm.dto.auth.LoginRequest;
+import com.epam.gymcrm.dto.auth.LoginResponse;
+import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
 import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
@@ -13,6 +16,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;
@@ -57,6 +61,9 @@ class DtoPrivacyTest {
     void dtoToStringShouldRedactSensitiveValues() {
         List<String> representations = List.of(
                 new AuthRequest("John.Doe", "secret").toString(),
+                new LoginRequest("John.Doe", "secret").toString(),
+                new LoginResponse("auth-token", ProfileType.TRAINEE).toString(),
+                new AuthenticatedUser("John.Doe", "secret", ProfileType.TRAINEE).toString(),
                 new ChangePasswordRequest("John.Doe", "old-secret", "new-secret").toString(),
                 new UsernamePasswordResponse("John.Doe", "generated-secret").toString(),
                 new CreateTraineeRequest(
@@ -141,6 +148,7 @@ class DtoPrivacyTest {
                         "old-secret",
                         "new-secret",
                         "generated-secret",
+                        "auth-token",
                         "Main Street, 123",
                         "1995-01-10",
                         "Trainer.User",

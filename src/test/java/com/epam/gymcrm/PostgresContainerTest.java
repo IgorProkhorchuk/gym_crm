@@ -1,5 +1,6 @@
 package com.epam.gymcrm;
 
+import com.epam.gymcrm.config.RootConfig;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -9,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = Main.class)
+@ContextConfiguration(classes = RootConfig.class)
 @Transactional
 public abstract class PostgresContainerTest {
 

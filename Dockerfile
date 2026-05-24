@@ -7,6 +7,8 @@ WORKDIR /workspace
 
 COPY pom.xml .
 
+RUN mvn --batch-mode --no-transfer-progress dependency:go-offline -q
+
 COPY src ./src
 
 RUN mvn --batch-mode --no-transfer-progress -DskipTests package

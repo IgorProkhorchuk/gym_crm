@@ -4,8 +4,8 @@ import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
-import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
-import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
+import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
+import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -19,9 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.util.List;
-
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.reset;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.standaloneSetup;
@@ -31,10 +28,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TraineeControllerTest {
+class TrainerControllerTest {
 
     private static final String TOKEN = "token";
-    private static final String USERNAME = "John.Doe";
+    private static final String USERNAME = "Mike.Stone";
     private static final String PASSWORD = "password";
 
     @Mock
@@ -45,7 +42,7 @@ class TraineeControllerTest {
 
     @BeforeEach
     void setUp() {
-        standaloneSetup(new TraineeController(gymFacade, fakeTokenService), new RestExceptionHandler());
+        standaloneSetup(new TrainerController(gymFacade, fakeTokenService), new RestExceptionHandler());
     }
 
     @AfterEach
@@ -54,40 +51,34 @@ class TraineeControllerTest {
     }
 
     @Test
-    void createTraineeShouldReturnCreatedCredentials() {
-        CreateTraineeRequest request = new CreateTraineeRequest(
-                "John",
-                "Doe",
-                LocalDate.of(1995, 1, 10),
-                "Main Street, 123"
-        );
+    void createTrainerShouldReturnCreatedCredentials() {
+        CreateTrainerRequest request = new CreateTrainerRequest("Mike", "Stone", "Fitness");
         UsernamePasswordResponse response = new UsernamePasswordResponse(USERNAME, PASSWORD);
-        when(gymFacade.createTrainee(request)).thenReturn(response);
+        when(gymFacade.createTrainer(request)).thenReturn(response);
 
         given()
                 .contentType(ContentType.JSON)
                 .body("""
                         {
-                          "firstName": "John",
-                          "lastName": "Doe",
-                          "dateOfBirth": "1995-01-10",
-                          "address": "Main Street, 123"
+                          "firstName": "Mike",
+                          "lastName": "Stone",
+                          "specialization": "Fitness"
                         }
                         """)
                 .when()
-                .post("/v1/trainees")
+                .post("/v1/trainers")
                 .then()
                 .statusCode(201)
                 .body("username", equalTo(USERNAME))
                 .body("password", equalTo(PASSWORD));
 
-        verify(gymFacade).createTrainee(request);
+        verify(gymFacade).createTrainer(request);
     }
 
     @Test
-    void createTraineeShouldReturnBadRequestWhenRequestIsInvalid() {
-        CreateTraineeRequest request = new CreateTraineeRequest("", "Doe", null, null);
-        when(gymFacade.createTrainee(request))
+    void createTrainerShouldReturnBadRequestWhenRequestIsInvalid() {
+        CreateTrainerRequest request = new CreateTrainerRequest("", "Stone", "Fitness");
+        when(gymFacade.createTrainer(request))
                 .thenThrow(new IllegalArgumentException("First name must not be blank"));
 
         given()
@@ -95,59 +86,58 @@ class TraineeControllerTest {
                 .body("""
                         {
                           "firstName": "",
-                          "lastName": "Doe"
+                          "lastName": "Stone",
+                          "specialization": "Fitness"
                         }
                         """)
                 .when()
-                .post("/v1/trainees")
+                .post("/v1/trainers")
                 .then()
                 .statusCode(400)
                 .body("message", equalTo("First name must not be blank"));
 
-        verify(gymFacade).createTrainee(request);
+        verify(gymFacade).createTrainer(request);
     }
 
     @Test
-    void getTraineeProfileShouldReturnProfileForTraineeToken() {
-        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    void getTrainerProfileShouldReturnProfileForTrainerToken() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
         AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
-        TraineeProfileResponse response = new TraineeProfileResponse(
+        TrainerProfileResponse response = new TrainerProfileResponse(
                 USERNAME,
-                "John",
-                "Doe",
+                "Mike",
+                "Stone",
                 true,
-                LocalDate.of(1995, 1, 10),
-                "Main Street, 123",
-                List.of()
+                "Fitness"
         );
         when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-        when(gymFacade.getTraineeProfile(request)).thenReturn(response);
+        when(gymFacade.getTrainerProfile(request)).thenReturn(response);
 
         given()
                 .header("X-Auth-Token", TOKEN)
                 .when()
-                .get("/v1/trainees/profile")
+                .get("/v1/trainers/profile")
                 .then()
                 .statusCode(200)
                 .body("username", equalTo(USERNAME))
-                .body("firstName", equalTo("John"))
-                .body("lastName", equalTo("Doe"))
+                .body("firstName", equalTo("Mike"))
+                .body("lastName", equalTo("Stone"))
                 .body("active", equalTo(true))
-                .body("address", equalTo("Main Street, 123"));
+                .body("specialization", equalTo("Fitness"));
 
         verify(fakeTokenService).getUserByToken(TOKEN);
-        verify(gymFacade).getTraineeProfile(request);
+        verify(gymFacade).getTrainerProfile(request);
     }
 
     @Test
-    void getTraineeProfileShouldRejectTrainerToken() {
-        AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
+    void getTrainerProfileShouldRejectTraineeToken() {
+        AuthenticatedUser user = new AuthenticatedUser("John.Doe", PASSWORD, ProfileType.TRAINEE);
         when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
 
         given()
                 .header("X-Auth-Token", TOKEN)
                 .when()
-                .get("/v1/trainees/profile")
+                .get("/v1/trainers/profile")
                 .then()
                 .statusCode(401)
                 .body("message", equalTo("Access denied"));
@@ -156,14 +146,14 @@ class TraineeControllerTest {
     }
 
     @Test
-    void getTraineeProfileShouldRejectInvalidToken() {
+    void getTrainerProfileShouldRejectInvalidToken() {
         when(fakeTokenService.getUserByToken("invalid-token"))
                 .thenThrow(new AuthenticationException("Invalid authentication token"));
 
         given()
                 .header("X-Auth-Token", "invalid-token")
                 .when()
-                .get("/v1/trainees/profile")
+                .get("/v1/trainers/profile")
                 .then()
                 .statusCode(401)
                 .body("message", equalTo("Invalid authentication token"));
@@ -172,33 +162,9 @@ class TraineeControllerTest {
     }
 
     @Test
-    void changePasswordShouldReturnOkForTraineeToken() {
-        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    void changePasswordShouldReturnOkForTrainerToken() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
         ChangePasswordRequest request = new ChangePasswordRequest(USERNAME, PASSWORD, "new-password");
-        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-
-        given()
-                .contentType(ContentType.JSON)
-                .header("X-Auth-Token", TOKEN)
-                .body("""
-                        {
-                          "username": "John.Doe",
-                          "oldPassword": "password",
-                          "newPassword": "new-password"
-                        }
-                        """)
-                .when()
-                .put("/v1/trainees/password")
-                .then()
-                .statusCode(200);
-
-        verify(gymFacade).changeTraineePassword(request);
-        verify(fakeTokenService).updatePassword(TOKEN, "new-password");
-    }
-
-    @Test
-    void changePasswordShouldRejectTrainerToken() {
-        AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
         when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
 
         given()
@@ -212,7 +178,31 @@ class TraineeControllerTest {
                         }
                         """)
                 .when()
-                .put("/v1/trainees/password")
+                .put("/v1/trainers/password")
+                .then()
+                .statusCode(200);
+
+        verify(gymFacade).changeTrainerPassword(request);
+        verify(fakeTokenService).updatePassword(TOKEN, "new-password");
+    }
+
+    @Test
+    void changePasswordShouldRejectTraineeToken() {
+        AuthenticatedUser user = new AuthenticatedUser("John.Doe", PASSWORD, ProfileType.TRAINEE);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "John.Doe",
+                          "oldPassword": "password",
+                          "newPassword": "new-password"
+                        }
+                        """)
+                .when()
+                .put("/v1/trainers/password")
                 .then()
                 .statusCode(401)
                 .body("message", equalTo("Access denied"));
@@ -222,7 +212,7 @@ class TraineeControllerTest {
 
     @Test
     void changePasswordShouldRejectAnotherUsername() {
-        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
         when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
 
         given()
@@ -236,7 +226,7 @@ class TraineeControllerTest {
                         }
                         """)
                 .when()
-                .put("/v1/trainees/password")
+                .put("/v1/trainers/password")
                 .then()
                 .statusCode(401)
                 .body("message", equalTo("Access denied"));

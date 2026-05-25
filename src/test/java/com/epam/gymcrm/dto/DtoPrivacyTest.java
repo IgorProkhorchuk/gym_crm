@@ -17,6 +17,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
+import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;
@@ -65,6 +66,7 @@ class DtoPrivacyTest {
                 new LoginResponse("auth-token", ProfileType.TRAINEE).toString(),
                 new AuthenticatedUser("John.Doe", "secret", ProfileType.TRAINEE).toString(),
                 new ChangePasswordRequest("John.Doe", "old-secret", "new-secret").toString(),
+                new ChangePasswordRestRequest("John.Doe", "old-secret", "new-secret").toString(),
                 new UsernamePasswordResponse("John.Doe", "generated-secret").toString(),
                 new CreateTraineeRequest(
                         "John",

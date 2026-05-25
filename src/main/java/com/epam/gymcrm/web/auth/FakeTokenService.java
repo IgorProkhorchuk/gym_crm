@@ -30,5 +30,11 @@ public class FakeTokenService {
     }
     return user;
   }
+
+  public void updatePassword(String token, String newPassword) {
+    requireNonBlank(newPassword, "New password must not be blank");
+    AuthenticatedUser user = getUserByToken(token);
+    authenticatedUsers.put(token, new AuthenticatedUser(user.username(), newPassword, user.profileType()));
+  }
 }
 

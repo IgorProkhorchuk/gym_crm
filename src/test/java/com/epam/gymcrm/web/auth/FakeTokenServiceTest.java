@@ -57,4 +57,25 @@ class FakeTokenServiceTest {
                 .isInstanceOf(AuthenticationException.class)
                 .hasMessage("Invalid authentication token");
     }
+
+    @Test
+    void updatePasswordShouldReplacePasswordForExistingToken() {
+        AuthenticatedUser user = new AuthenticatedUser("John.Doe", "old-password", ProfileType.TRAINEE);
+        String token = fakeTokenService.createToken(user);
+
+        fakeTokenService.updatePassword(token, "new-password");
+
+        assertThat(fakeTokenService.getUserByToken(token))
+                .isEqualTo(new AuthenticatedUser("John.Doe", "new-password", ProfileType.TRAINEE));
+    }
+
+    @Test
+    void updatePasswordShouldThrowWhenNewPasswordIsBlank() {
+        AuthenticatedUser user = new AuthenticatedUser("John.Doe", "old-password", ProfileType.TRAINEE);
+        String token = fakeTokenService.createToken(user);
+
+        assertThatThrownBy(() -> fakeTokenService.updatePassword(token, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("New password must not be blank");
+    }
 }

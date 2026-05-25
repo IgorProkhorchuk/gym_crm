@@ -8,12 +8,14 @@ public record UpdateTraineeRequest(
         String firstName,
         String lastName,
         LocalDate dateOfBirth,
-        String address
+        String address,
+        Boolean active
 ) {
 
     @Override
     public String toString() {
         return "UpdateTraineeRequest[username=[PROTECTED], password=[PROTECTED], "
-                + "firstName=[PROTECTED], lastName=[PROTECTED], dateOfBirth=[PROTECTED], address=[PROTECTED]]";
+                + "firstName=[PROTECTED], lastName=[PROTECTED], dateOfBirth=[PROTECTED], "
+                + "address=[PROTECTED], active=" + active + "]";
     }
 }

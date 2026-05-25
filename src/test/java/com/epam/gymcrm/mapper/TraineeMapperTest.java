@@ -95,7 +95,8 @@ class TraineeMapperTest {
                 "Janet",
                 "Done",
                 LocalDate.of(1996, 2, 11),
-                "Updated Street"
+                "Updated Street",
+                true
         );
 
         traineeMapper.updateFromRequest(request, trainee);
@@ -103,7 +104,7 @@ class TraineeMapperTest {
         assertThat(trainee.getUser().getUserId()).isEqualTo(12L);
         assertThat(trainee.getUser().getUsername()).isEqualTo("Jane.Doe");
         assertThat(trainee.getUser().getPassword()).isEqualTo("old-password");
-        assertThat(trainee.getUser().getActive()).isFalse();
+        assertThat(trainee.getUser().getActive()).isTrue();
         assertThat(trainee.getUser().getFirstName()).isEqualTo("Janet");
         assertThat(trainee.getUser().getLastName()).isEqualTo("Done");
         assertThat(trainee.getDateOfBirth()).isEqualTo(LocalDate.of(1996, 2, 11));
@@ -119,7 +120,8 @@ class TraineeMapperTest {
                 "Jane",
                 "Doe",
                 LocalDate.of(1995, 1, 10),
-                "Main Street"
+                "Main Street",
+                true
         );
 
         traineeMapper.updateFromRequest(null, trainee);
@@ -128,6 +130,7 @@ class TraineeMapperTest {
         traineeMapper.updateFromRequest(request, trainee);
         assertThat(trainee.getUser().getFirstName()).isEqualTo("Jane");
         assertThat(trainee.getUser().getLastName()).isEqualTo("Doe");
+        assertThat(trainee.getUser().getActive()).isTrue();
 
         User user = new User();
         traineeMapper.updateTraineeRequestToUser(null, user);

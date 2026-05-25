@@ -98,7 +98,8 @@ class TrainerMapperTest {
                 "ignored-password",
                 "Johnny",
                 "Done",
-                "Yoga"
+                "Yoga",
+                true
         );
 
         trainerMapper.updateFromRequest(request, trainer);
@@ -106,7 +107,7 @@ class TrainerMapperTest {
         assertThat(trainer.getUser().getUserId()).isEqualTo(22L);
         assertThat(trainer.getUser().getUsername()).isEqualTo("John.Smith");
         assertThat(trainer.getUser().getPassword()).isEqualTo("old-password");
-        assertThat(trainer.getUser().getActive()).isFalse();
+        assertThat(trainer.getUser().getActive()).isTrue();
         assertThat(trainer.getUser().getFirstName()).isEqualTo("Johnny");
         assertThat(trainer.getUser().getLastName()).isEqualTo("Done");
         assertThat(trainer.getSpecialization().getTrainingTypeName()).isEqualTo("Fitness");
@@ -120,7 +121,8 @@ class TrainerMapperTest {
                 "ignored-password",
                 "John",
                 "Smith",
-                "Fitness"
+                "Fitness",
+                true
         );
 
         trainerMapper.updateFromRequest(null, trainer);
@@ -129,6 +131,7 @@ class TrainerMapperTest {
         trainerMapper.updateFromRequest(request, trainer);
         assertThat(trainer.getUser().getFirstName()).isEqualTo("John");
         assertThat(trainer.getUser().getLastName()).isEqualTo("Smith");
+        assertThat(trainer.getUser().getActive()).isTrue();
 
         User user = new User();
         trainerMapper.updateTrainerRequestToUser(null, user);

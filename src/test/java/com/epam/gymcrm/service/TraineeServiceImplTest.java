@@ -501,7 +501,8 @@ class TraineeServiceImplTest {
                 firstName,
                 lastName,
                 LocalDate.of(1994, 9, 19),
-                "Updated Address"
+                "Updated Address",
+                true
         );
     }
 

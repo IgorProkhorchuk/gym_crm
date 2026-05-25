@@ -145,6 +145,7 @@ public class TraineeServiceImpl implements TraineeService {
     public TraineeProfileResponse update(UpdateTraineeRequest request) {
         requireNonNull(request, "Update trainee request must not be null");
         validateNameFields(request.firstName(), request.lastName());
+        requireNonNull(request.active(), "Active status must not be null");
         log.info("Updating trainee profile");
 
         Trainee authenticatedTrainee = authenticationService.authenticateTrainee(request.username(), request.password());

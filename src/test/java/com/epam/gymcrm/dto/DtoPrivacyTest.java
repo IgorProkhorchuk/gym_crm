@@ -18,6 +18,8 @@ import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
+import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
+import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;
@@ -80,7 +82,16 @@ class DtoPrivacyTest {
                         "John",
                         "Doe",
                         LocalDate.of(1995, 1, 10),
-                        "Main Street, 123"
+                        "Main Street, 123",
+                        true
+                ).toString(),
+                new UpdateTraineeProfileRestRequest(
+                        "John.Doe",
+                        "John",
+                        "Doe",
+                        LocalDate.of(1995, 1, 10),
+                        "Main Street, 123",
+                        true
                 ).toString(),
                 new UpdateTraineeTrainersRequest(
                         "John.Doe",
@@ -97,7 +108,8 @@ class DtoPrivacyTest {
                         List.of()
                 ).toString(),
                 new CreateTrainerRequest("Mike", "Stone", "Fitness").toString(),
-                new UpdateTrainerRequest("Mike.Stone", "secret", "Mike", "Stone", "Fitness").toString(),
+                new UpdateTrainerRequest("Mike.Stone", "secret", "Mike", "Stone", "Fitness", true).toString(),
+                new UpdateTrainerProfileRestRequest("Mike.Stone", "Mike", "Stone", "Fitness", true).toString(),
                 new TrainerProfileResponse("Mike.Stone", "Mike", "Stone", true, "Fitness").toString(),
                 new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness").toString(),
                 new AddTrainingRequest(

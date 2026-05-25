@@ -6,11 +6,13 @@ import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
+import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,6 +54,30 @@ public class TraineeController {
 
     AuthRequest request = new AuthRequest(user.username(), user.password());
     return gymFacade.getTraineeProfile(request);
+  }
+
+  @PutMapping("/profile")
+  @ResponseStatus(HttpStatus.OK)
+  public TraineeProfileResponse updateTraineeProfile(@RequestHeader("X-Auth-Token") String token,
+                                                     @RequestBody UpdateTraineeProfileRestRequest traineeRequest) {
+    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    if (user.profileType() != ProfileType.TRAINEE) {
+      throw new AuthenticationException("Access denied");
+    }
+    if (!user.username().equals(traineeRequest.username())) {
+      throw new AuthenticationException("Access denied");
+    }
+
+    UpdateTraineeRequest request = new UpdateTraineeRequest(
+        traineeRequest.username(),
+        user.password(),
+        traineeRequest.firstName(),
+        traineeRequest.lastName(),
+        traineeRequest.dateOfBirth(),
+        traineeRequest.address(),
+        traineeRequest.active()
+    );
+    return gymFacade.updateTrainee(request);
   }
 
   @PutMapping("/password")

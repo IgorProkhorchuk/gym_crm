@@ -119,6 +119,7 @@ public class TrainerServiceImpl implements TrainerService {
         requireNonNull(request, "Update trainer request must not be null");
         validateNameFields(request.firstName(), request.lastName());
         validateSpecializationName(request.specialization());
+        requireNonNull(request.active(), "Active status must not be null");
         log.info("Updating trainer profile");
 
         Trainer authenticatedTrainer = authenticationService.authenticateTrainer(request.username(), request.password());

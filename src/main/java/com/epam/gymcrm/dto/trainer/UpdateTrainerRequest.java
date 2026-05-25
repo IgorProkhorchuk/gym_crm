@@ -5,12 +5,14 @@ public record UpdateTrainerRequest(
         String password,
         String firstName,
         String lastName,
-        String specialization
+        String specialization,
+        Boolean active
 ) {
 
     @Override
     public String toString() {
         return "UpdateTrainerRequest[username=[PROTECTED], password=[PROTECTED], "
-                + "firstName=[PROTECTED], lastName=[PROTECTED], specialization=" + specialization + "]";
+                + "firstName=[PROTECTED], lastName=[PROTECTED], specialization=" + specialization
+                + ", active=" + active + "]";
     }
 }

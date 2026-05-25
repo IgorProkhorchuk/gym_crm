@@ -402,7 +402,8 @@ class TrainerServiceImplTest {
                 "password",
                 firstName,
                 lastName,
-                specialization
+                specialization,
+                true
         );
     }
 

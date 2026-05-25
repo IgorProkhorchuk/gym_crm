@@ -40,6 +40,7 @@ public interface TraineeMapper {
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
+    @Mapping(target = "user.active", source = "active")
     @Mapping(target = "dateOfBirth", source = "dateOfBirth")
     @Mapping(target = "address", source = "address")
     void updateFromRequest(UpdateTraineeRequest request, @MappingTarget Trainee trainee);

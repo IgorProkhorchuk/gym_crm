@@ -146,7 +146,8 @@ class GymFacadeTest {
                 "John",
                 "Doe",
                 LocalDate.of(1995, 1, 10),
-                "Main Street, 123"
+                "Main Street, 123",
+                true
         );
         TraineeProfileResponse response = new TraineeProfileResponse(
                 "John.Doe",
@@ -242,7 +243,8 @@ class GymFacadeTest {
                 "password",
                 "Mike",
                 "Stone",
-                "Fitness"
+                "Fitness",
+                true
         );
         TrainerProfileResponse response = new TrainerProfileResponse(
                 "Mike.Stone",

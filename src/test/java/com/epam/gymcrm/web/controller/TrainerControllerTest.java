@@ -6,6 +6,7 @@ import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
 import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
+import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -157,6 +158,105 @@ class TrainerControllerTest {
                 .then()
                 .statusCode(401)
                 .body("message", equalTo("Invalid authentication token"));
+
+        verifyNoInteractions(gymFacade);
+    }
+
+    @Test
+    void updateTrainerProfileShouldReturnUpdatedProfile() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+        UpdateTrainerRequest request = new UpdateTrainerRequest(
+                USERNAME,
+                PASSWORD,
+                "Michael",
+                "Stone",
+                "Yoga",
+                false
+        );
+        TrainerProfileResponse response = new TrainerProfileResponse(
+                USERNAME,
+                "Michael",
+                "Stone",
+                false,
+                "Yoga"
+        );
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+        when(gymFacade.updateTrainer(request)).thenReturn(response);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "Mike.Stone",
+                          "firstName": "Michael",
+                          "lastName": "Stone",
+                          "specialization": "Yoga",
+                          "active": false
+                        }
+                        """)
+                .when()
+                .put("/v1/trainers/profile")
+                .then()
+                .statusCode(200)
+                .body("username", equalTo(USERNAME))
+                .body("firstName", equalTo("Michael"))
+                .body("lastName", equalTo("Stone"))
+                .body("active", equalTo(false))
+                .body("specialization", equalTo("Yoga"));
+
+        verify(fakeTokenService).getUserByToken(TOKEN);
+        verify(gymFacade).updateTrainer(request);
+    }
+
+    @Test
+    void updateTrainerProfileShouldRejectTraineeToken() {
+        AuthenticatedUser user = new AuthenticatedUser("John.Doe", PASSWORD, ProfileType.TRAINEE);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "John.Doe",
+                          "firstName": "John",
+                          "lastName": "Doe",
+                          "specialization": "Yoga",
+                          "active": true
+                        }
+                        """)
+                .when()
+                .put("/v1/trainers/profile")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Access denied"));
+
+        verifyNoInteractions(gymFacade);
+    }
+
+    @Test
+    void updateTrainerProfileShouldRejectAnotherUsername() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "Another.User",
+                          "firstName": "Michael",
+                          "lastName": "Stone",
+                          "specialization": "Yoga",
+                          "active": true
+                        }
+                        """)
+                .when()
+                .put("/v1/trainers/profile")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Access denied"));
 
         verifyNoInteractions(gymFacade);
     }

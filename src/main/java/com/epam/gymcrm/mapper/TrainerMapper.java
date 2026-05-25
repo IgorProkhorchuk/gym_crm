@@ -44,5 +44,6 @@ public interface TrainerMapper {
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "user.firstName", source = "firstName")
     @Mapping(target = "user.lastName", source = "lastName")
+    @Mapping(target = "user.active", source = "active")
     void updateFromRequest(UpdateTrainerRequest request, @MappingTarget Trainer trainer);
 }

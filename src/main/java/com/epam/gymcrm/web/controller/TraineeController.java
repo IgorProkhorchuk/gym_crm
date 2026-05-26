@@ -7,6 +7,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -25,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/v1/trainees")
@@ -108,8 +111,21 @@ public class TraineeController {
       throw new AuthenticationException("Access denied");
     }
 
-    ChangePasswordRequest request = new ChangePasswordRequest(body.username(), body.oldPassword(), body.newPassword());
+    ChangePasswordRequest request = new ChangePasswordRequest(
+        body.username(),
+        body.oldPassword(),
+        body.newPassword());
     gymFacade.changeTraineePassword(request);
     fakeTokenService.updatePassword(token, body.newPassword());
+  }
+
+  @GetMapping("/unassigned-trainers")
+  @ResponseStatus(HttpStatus.OK)
+  public List<TrainerSummaryResponse> getUnassignedTrainers(@RequestHeader("X-Auth-Token") String token) {
+    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    if (user.profileType() != ProfileType.TRAINEE) {
+      throw new AuthenticationException("Access denied");
+    }
+    return gymFacade.getUnassignedTrainers(new AuthRequest(user.username(), user.password()));
   }
 }

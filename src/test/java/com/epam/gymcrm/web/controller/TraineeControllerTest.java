@@ -7,6 +7,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -433,6 +434,69 @@ class TraineeControllerTest {
                         """)
                 .when()
                 .delete("/v1/trainees/profile")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Invalid authentication token"));
+
+        verifyNoInteractions(gymFacade);
+    }
+
+    @Test
+    void getUnassignedTrainersShouldReturnTrainersForTraineeToken() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+        AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
+        List<TrainerSummaryResponse> response = List.of(
+                new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
+                new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga")
+        );
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+        when(gymFacade.getUnassignedTrainers(request)).thenReturn(response);
+
+        given()
+                .header("X-Auth-Token", TOKEN)
+                .when()
+                .get("/v1/trainees/unassigned-trainers")
+                .then()
+                .statusCode(200)
+                .body("size()", equalTo(2))
+                .body("[0].username", equalTo("Mike.Stone"))
+                .body("[0].firstName", equalTo("Mike"))
+                .body("[0].lastName", equalTo("Stone"))
+                .body("[0].specialization", equalTo("Fitness"))
+                .body("[1].username", equalTo("Kate.Yoga"))
+                .body("[1].firstName", equalTo("Kate"))
+                .body("[1].lastName", equalTo("Yoga"))
+                .body("[1].specialization", equalTo("Yoga"));
+
+        verify(fakeTokenService).getUserByToken(TOKEN);
+        verify(gymFacade).getUnassignedTrainers(request);
+    }
+
+    @Test
+    void getUnassignedTrainersShouldRejectTrainerToken() {
+        AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .header("X-Auth-Token", TOKEN)
+                .when()
+                .get("/v1/trainees/unassigned-trainers")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Access denied"));
+
+        verifyNoInteractions(gymFacade);
+    }
+
+    @Test
+    void getUnassignedTrainersShouldRejectInvalidToken() {
+        when(fakeTokenService.getUserByToken("invalid-token"))
+                .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+        given()
+                .header("X-Auth-Token", "invalid-token")
+                .when()
+                .get("/v1/trainees/unassigned-trainers")
                 .then()
                 .statusCode(401)
                 .body("message", equalTo("Invalid authentication token"));

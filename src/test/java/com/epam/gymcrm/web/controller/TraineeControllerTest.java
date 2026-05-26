@@ -350,4 +350,93 @@ class TraineeControllerTest {
 
         verifyNoInteractions(gymFacade);
     }
+
+    @Test
+    void deleteTraineeProfileShouldReturnOk() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+        AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "John.Doe"
+                        }
+                        """)
+                .when()
+                .delete("/v1/trainees/profile")
+                .then()
+                .statusCode(200);
+
+        verify(fakeTokenService).getUserByToken(TOKEN);
+        verify(gymFacade).deleteTraineeByUsername(request);
+    }
+
+    @Test
+    void deleteTraineeProfileShouldRejectTrainerToken() {
+        AuthenticatedUser user = new AuthenticatedUser("Petryk.Pjatochkyn", PASSWORD, ProfileType.TRAINER);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "Petryk.Pjatochkyn"
+                        }
+                        """)
+                .when()
+                .delete("/v1/trainees/profile")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Access denied"));
+
+        verifyNoInteractions(gymFacade);
+    }
+
+    @Test
+    void deleteTraineeProfileShouldRejectAnotherUsername() {
+        AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+        when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", TOKEN)
+                .body("""
+                        {
+                          "username": "Another.User"
+                        }
+                        """)
+                .when()
+                .delete("/v1/trainees/profile")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Access denied"));
+
+        verifyNoInteractions(gymFacade);
+    }
+
+    @Test
+    void deleteTraineeProfileShouldRejectInvalidToken() {
+        when(fakeTokenService.getUserByToken("invalid-token"))
+                .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Auth-Token", "invalid-token")
+                .body("""
+                        {
+                          "username": "John.Doe"
+                        }
+                        """)
+                .when()
+                .delete("/v1/trainees/profile")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("Invalid authentication token"));
+
+        verifyNoInteractions(gymFacade);
+    }
 }

@@ -18,6 +18,7 @@ import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
+import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
 import org.junit.jupiter.api.Test;
@@ -69,6 +70,7 @@ class DtoPrivacyTest {
                 new AuthenticatedUser("John.Doe", "secret", ProfileType.TRAINEE).toString(),
                 new ChangePasswordRequest("John.Doe", "old-secret", "new-secret").toString(),
                 new ChangePasswordRestRequest("John.Doe", "old-secret", "new-secret").toString(),
+                new DeleteProfileRestRequest("John.Doe").toString(),
                 new UsernamePasswordResponse("John.Doe", "generated-secret").toString(),
                 new CreateTraineeRequest(
                         "John",

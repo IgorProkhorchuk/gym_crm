@@ -18,32 +18,28 @@ public class AuthController {
   private final AuthenticationService authenticationService;
   private final FakeTokenService tokenService;
 
-  public AuthController(AuthenticationService authenticationService, FakeTokenService tokenService) {
+  public AuthController(
+      AuthenticationService authenticationService, FakeTokenService tokenService) {
     this.authenticationService = authenticationService;
     this.tokenService = tokenService;
   }
-
 
   @PostMapping
   public LoginResponse loginUser(@RequestBody LoginRequest loginRequest) {
     try {
       authenticationService.authenticateTrainee(loginRequest.username(), loginRequest.password());
-      AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-          loginRequest.username(),
-          loginRequest.password(),
-          ProfileType.TRAINEE
-      );
+      AuthenticatedUser authenticatedUser =
+          new AuthenticatedUser(
+              loginRequest.username(), loginRequest.password(), ProfileType.TRAINEE);
       String token = tokenService.createToken(authenticatedUser);
 
       return new LoginResponse(token, ProfileType.TRAINEE);
     } catch (AuthenticationException exception) {
       authenticationService.authenticateTrainer(loginRequest.username(), loginRequest.password());
 
-      AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-          loginRequest.username(),
-          loginRequest.password(),
-          ProfileType.TRAINER
-      );
+      AuthenticatedUser authenticatedUser =
+          new AuthenticatedUser(
+              loginRequest.username(), loginRequest.password(), ProfileType.TRAINER);
       String token = tokenService.createToken(authenticatedUser);
 
       return new LoginResponse(token, ProfileType.TRAINER);

@@ -5,7 +5,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 public class Main {
 
-    public static void main(String[] args) {
-        new AnnotationConfigApplicationContext(RootConfig.class);
-    }
+  public static void main(String[] args) {
+    new AnnotationConfigApplicationContext(RootConfig.class);
+  }
 }

@@ -56,8 +56,9 @@ public class TrainerController {
 
   @PutMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
-  public TrainerProfileResponse updateTrainerProfile(@RequestHeader("X-Auth-Token") String token,
-                                                     @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
+  public TrainerProfileResponse updateTrainerProfile(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
@@ -66,21 +67,21 @@ public class TrainerController {
       throw new AuthenticationException("Access denied");
     }
 
-    UpdateTrainerRequest request = new UpdateTrainerRequest(
-        trainerRequest.username(),
-        user.password(),
-        trainerRequest.firstName(),
-        trainerRequest.lastName(),
-        trainerRequest.specialization(),
-        trainerRequest.active()
-    );
+    UpdateTrainerRequest request =
+        new UpdateTrainerRequest(
+            trainerRequest.username(),
+            user.password(),
+            trainerRequest.firstName(),
+            trainerRequest.lastName(),
+            trainerRequest.specialization(),
+            trainerRequest.active());
     return gymFacade.updateTrainer(request);
   }
 
   @PutMapping("/password")
   @ResponseStatus(HttpStatus.OK)
-  public void changePassword(@RequestHeader("X-Auth-Token") String token,
-                             @RequestBody ChangePasswordRestRequest body) {
+  public void changePassword(
+      @RequestHeader("X-Auth-Token") String token, @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
@@ -89,7 +90,8 @@ public class TrainerController {
       throw new AuthenticationException("Access denied");
     }
 
-    ChangePasswordRequest request = new ChangePasswordRequest(body.username(), body.oldPassword(), body.newPassword());
+    ChangePasswordRequest request =
+        new ChangePasswordRequest(body.username(), body.oldPassword(), body.newPassword());
     gymFacade.changeTrainerPassword(request);
     fakeTokenService.updatePassword(token, body.newPassword());
   }

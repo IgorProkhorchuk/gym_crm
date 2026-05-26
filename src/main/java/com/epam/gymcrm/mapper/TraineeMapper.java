@@ -12,36 +12,35 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(
-        componentModel = "spring",
-        uses = TrainerMapper.class,
-        unmappedTargetPolicy = ReportingPolicy.ERROR,
-        builder = @Builder(disableBuilder = true)
-)
+    componentModel = "spring",
+    uses = TrainerMapper.class,
+    unmappedTargetPolicy = ReportingPolicy.ERROR,
+    builder = @Builder(disableBuilder = true))
 public interface TraineeMapper {
 
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "user.firstName", source = "firstName")
-    @Mapping(target = "user.lastName", source = "lastName")
-    @Mapping(target = "user.active", constant = "true")
-    @Mapping(target = "dateOfBirth", source = "dateOfBirth")
-    @Mapping(target = "address", source = "address")
-    Trainee toEntity(CreateTraineeRequest request);
+  @BeanMapping(ignoreByDefault = true)
+  @Mapping(target = "user.firstName", source = "firstName")
+  @Mapping(target = "user.lastName", source = "lastName")
+  @Mapping(target = "user.active", constant = "true")
+  @Mapping(target = "dateOfBirth", source = "dateOfBirth")
+  @Mapping(target = "address", source = "address")
+  Trainee toEntity(CreateTraineeRequest request);
 
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "username", source = "user.username")
-    @Mapping(target = "firstName", source = "user.firstName")
-    @Mapping(target = "lastName", source = "user.lastName")
-    @Mapping(target = "active", source = "user.active")
-    @Mapping(target = "dateOfBirth", source = "dateOfBirth")
-    @Mapping(target = "address", source = "address")
-    @Mapping(target = "trainers", source = "trainers")
-    TraineeProfileResponse toProfileResponse(Trainee trainee);
+  @BeanMapping(ignoreByDefault = true)
+  @Mapping(target = "username", source = "user.username")
+  @Mapping(target = "firstName", source = "user.firstName")
+  @Mapping(target = "lastName", source = "user.lastName")
+  @Mapping(target = "active", source = "user.active")
+  @Mapping(target = "dateOfBirth", source = "dateOfBirth")
+  @Mapping(target = "address", source = "address")
+  @Mapping(target = "trainers", source = "trainers")
+  TraineeProfileResponse toProfileResponse(Trainee trainee);
 
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "user.firstName", source = "firstName")
-    @Mapping(target = "user.lastName", source = "lastName")
-    @Mapping(target = "user.active", source = "active")
-    @Mapping(target = "dateOfBirth", source = "dateOfBirth")
-    @Mapping(target = "address", source = "address")
-    void updateFromRequest(UpdateTraineeRequest request, @MappingTarget Trainee trainee);
+  @BeanMapping(ignoreByDefault = true)
+  @Mapping(target = "user.firstName", source = "firstName")
+  @Mapping(target = "user.lastName", source = "lastName")
+  @Mapping(target = "user.active", source = "active")
+  @Mapping(target = "dateOfBirth", source = "dateOfBirth")
+  @Mapping(target = "address", source = "address")
+  void updateFromRequest(UpdateTraineeRequest request, @MappingTarget Trainee trainee);
 }

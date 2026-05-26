@@ -1,14 +1,13 @@
 package com.epam.gymcrm.web.auth;
 
-import com.epam.gymcrm.exception.AuthenticationException;
-import org.springframework.stereotype.Service;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
 
+import com.epam.gymcrm.exception.AuthenticationException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+import org.springframework.stereotype.Service;
 
 @Service
 public class FakeTokenService {
@@ -34,7 +33,7 @@ public class FakeTokenService {
   public void updatePassword(String token, String newPassword) {
     requireNonBlank(newPassword, "New password must not be blank");
     AuthenticatedUser user = getUserByToken(token);
-    authenticatedUsers.put(token, new AuthenticatedUser(user.username(), newPassword, user.profileType()));
+    authenticatedUsers.put(
+        token, new AuthenticatedUser(user.username(), newPassword, user.profileType()));
   }
 }
-

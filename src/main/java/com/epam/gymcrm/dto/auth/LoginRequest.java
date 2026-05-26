@@ -1,6 +1,5 @@
 package com.epam.gymcrm.dto.auth;
 
-
 public record LoginRequest(String username, String password) {
 
   @Override

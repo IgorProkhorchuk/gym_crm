@@ -19,80 +19,79 @@ import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class GymFacade {
 
-    private final TraineeService traineeService;
-    private final TrainerService trainerService;
-    private final TrainingService trainingService;
+  private final TraineeService traineeService;
+  private final TrainerService trainerService;
+  private final TrainingService trainingService;
 
-    public UsernamePasswordResponse createTrainee(CreateTraineeRequest request) {
-        return traineeService.create(request);
-    }
+  public UsernamePasswordResponse createTrainee(CreateTraineeRequest request) {
+    return traineeService.create(request);
+  }
 
-    public TraineeProfileResponse getTraineeProfile(AuthRequest request) {
-        return traineeService.getProfile(request);
-    }
+  public TraineeProfileResponse getTraineeProfile(AuthRequest request) {
+    return traineeService.getProfile(request);
+  }
 
-    public void changeTraineePassword(ChangePasswordRequest request) {
-        traineeService.changePassword(request);
-    }
+  public void changeTraineePassword(ChangePasswordRequest request) {
+    traineeService.changePassword(request);
+  }
 
-    public void switchTraineeActiveStatus(AuthRequest request) {
-        traineeService.switchActiveStatus(request);
-    }
+  public void switchTraineeActiveStatus(AuthRequest request) {
+    traineeService.switchActiveStatus(request);
+  }
 
-    public void deleteTraineeByUsername(AuthRequest request) {
-        traineeService.deleteByUsername(request);
-    }
+  public void deleteTraineeByUsername(AuthRequest request) {
+    traineeService.deleteByUsername(request);
+  }
 
-    public List<TrainerSummaryResponse> updateTraineeTrainers(UpdateTraineeTrainersRequest request) {
-        return traineeService.updateTrainers(request);
-    }
+  public List<TrainerSummaryResponse> updateTraineeTrainers(UpdateTraineeTrainersRequest request) {
+    return traineeService.updateTrainers(request);
+  }
 
-    public TraineeProfileResponse updateTrainee(UpdateTraineeRequest request) {
-        return traineeService.update(request);
-    }
+  public TraineeProfileResponse updateTrainee(UpdateTraineeRequest request) {
+    return traineeService.update(request);
+  }
 
-    public UsernamePasswordResponse createTrainer(CreateTrainerRequest request) {
-        return trainerService.create(request);
-    }
+  public UsernamePasswordResponse createTrainer(CreateTrainerRequest request) {
+    return trainerService.create(request);
+  }
 
-    public TrainerProfileResponse getTrainerProfile(AuthRequest request) {
-        return trainerService.getProfile(request);
-    }
+  public TrainerProfileResponse getTrainerProfile(AuthRequest request) {
+    return trainerService.getProfile(request);
+  }
 
-    public void changeTrainerPassword(ChangePasswordRequest request) {
-        trainerService.changePassword(request);
-    }
+  public void changeTrainerPassword(ChangePasswordRequest request) {
+    trainerService.changePassword(request);
+  }
 
-    public void switchTrainerActiveStatus(AuthRequest request) {
-        trainerService.switchActiveStatus(request);
-    }
+  public void switchTrainerActiveStatus(AuthRequest request) {
+    trainerService.switchActiveStatus(request);
+  }
 
-    public List<TrainerSummaryResponse> getUnassignedTrainers(AuthRequest request) {
-        return trainerService.getUnassignedTrainers(request);
-    }
+  public List<TrainerSummaryResponse> getUnassignedTrainers(AuthRequest request) {
+    return trainerService.getUnassignedTrainers(request);
+  }
 
-    public TrainerProfileResponse updateTrainer(UpdateTrainerRequest request) {
-        return trainerService.update(request);
-    }
+  public TrainerProfileResponse updateTrainer(UpdateTrainerRequest request) {
+    return trainerService.update(request);
+  }
 
-    public void addTraining(AddTrainingRequest request) {
-        trainingService.addTraining(request);
-    }
+  public void addTraining(AddTrainingRequest request) {
+    trainingService.addTraining(request);
+  }
 
-    public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
-        return trainingService.getTraineeTrainings(request);
-    }
+  public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
+    return trainingService.getTraineeTrainings(request);
+  }
 
-    public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
-        return trainingService.getTrainerTrainings(request);
-    }
+  public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
+    return trainingService.getTrainerTrainings(request);
+  }
 }

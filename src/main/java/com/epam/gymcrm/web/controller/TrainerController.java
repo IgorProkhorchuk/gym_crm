@@ -12,10 +12,12 @@ import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
+import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -94,5 +96,27 @@ public class TrainerController {
         new ChangePasswordRequest(body.username(), body.oldPassword(), body.newPassword());
     gymFacade.changeTrainerPassword(request);
     fakeTokenService.updatePassword(token, body.newPassword());
+  }
+
+  @PatchMapping("/profile/status")
+  @ResponseStatus(HttpStatus.OK)
+  public void switchActiveStatus(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestBody SwitchProfileStatusRestRequest request) {
+    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    if (user.profileType() != ProfileType.TRAINER) {
+      throw new AuthenticationException("Access denied");
+    }
+    if (request.username() == null || request.username().isBlank()) {
+      throw new IllegalArgumentException("Username must not be blank");
+    }
+    if (request.active() == null) {
+      throw new IllegalArgumentException("Active status must not be null");
+    }
+    if (!user.username().equals(request.username())) {
+      throw new AuthenticationException("Access denied");
+    }
+
+    gymFacade.switchTrainerActiveStatus(new AuthRequest(user.username(), user.password()));
   }
 }

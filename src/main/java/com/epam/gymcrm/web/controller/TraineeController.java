@@ -14,12 +14,14 @@ import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
+import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -117,7 +119,29 @@ public class TraineeController {
     fakeTokenService.updatePassword(token, body.newPassword());
   }
 
-  @GetMapping("/unassigned-trainers")
+  @PatchMapping("/profile/status")
+  @ResponseStatus(HttpStatus.OK)
+  public void switchActiveStatus(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestBody SwitchProfileStatusRestRequest request) {
+    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    if (user.profileType() != ProfileType.TRAINEE) {
+      throw new AuthenticationException("Access denied");
+    }
+    if (request.username() == null || request.username().isBlank()) {
+      throw new IllegalArgumentException("Username must not be blank");
+    }
+    if (request.active() == null) {
+      throw new IllegalArgumentException("Active status must not be null");
+    }
+    if (!user.username().equals(request.username())) {
+      throw new AuthenticationException("Access denied");
+    }
+
+    gymFacade.switchTraineeActiveStatus(new AuthRequest(user.username(), user.password()));
+  }
+
+  @GetMapping("/trainers/unassigned")
   @ResponseStatus(HttpStatus.OK)
   public List<TrainerSummaryResponse> getUnassignedTrainers(
       @RequestHeader("X-Auth-Token") String token) {

@@ -323,4 +323,124 @@ class TrainerControllerTest {
 
     verifyNoInteractions(gymFacade);
   }
+
+  @Test
+  void switchActiveStatusShouldReturnOkForTrainerToken() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+    AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "Mike.Stone",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainers/profile/status")
+        .then()
+        .statusCode(200);
+
+    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(gymFacade).switchTrainerActiveStatus(request);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectTraineeToken() {
+    AuthenticatedUser user = new AuthenticatedUser("John.Doe", PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainers/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "Another.User",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainers/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectInvalidToken() {
+    when(fakeTokenService.getUserByToken("invalid-token"))
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", "invalid-token")
+        .body(
+            """
+                        {
+                          "username": "Mike.Stone",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainers/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldReturnBadRequestWhenActiveIsMissing() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "Mike.Stone"
+                        }
+            """)
+        .when()
+        .patch("/v1/trainers/profile/status")
+        .then()
+        .statusCode(400)
+        .body("message", equalTo("Active status must not be null"));
+
+    verifyNoInteractions(gymFacade);
+  }
 }

@@ -354,6 +354,126 @@ class TraineeControllerTest {
   }
 
   @Test
+  void switchActiveStatusShouldReturnOkForTraineeToken() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(200);
+
+    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(gymFacade).switchTraineeActiveStatus(request);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectTrainerToken() {
+    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "Mike.Stone",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "Another.User",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectInvalidToken() {
+    when(fakeTokenService.getUserByToken("invalid-token"))
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", "invalid-token")
+        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldReturnBadRequestWhenActiveIsMissing() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "username": "John.Doe"
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(400)
+        .body("message", equalTo("Active status must not be null"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
   void deleteTraineeProfileShouldReturnOk() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
     AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
@@ -461,7 +581,7 @@ class TraineeControllerTest {
     given()
         .header("X-Auth-Token", TOKEN)
         .when()
-        .get("/v1/trainees/unassigned-trainers")
+        .get("/v1/trainees/trainers/unassigned")
         .then()
         .statusCode(200)
         .body("size()", equalTo(2))
@@ -486,7 +606,7 @@ class TraineeControllerTest {
     given()
         .header("X-Auth-Token", TOKEN)
         .when()
-        .get("/v1/trainees/unassigned-trainers")
+        .get("/v1/trainees/trainers/unassigned")
         .then()
         .statusCode(401)
         .body("message", equalTo("Access denied"));
@@ -502,7 +622,7 @@ class TraineeControllerTest {
     given()
         .header("X-Auth-Token", "invalid-token")
         .when()
-        .get("/v1/trainees/unassigned-trainers")
+        .get("/v1/trainees/trainers/unassigned")
         .then()
         .statusCode(401)
         .body("message", equalTo("Invalid authentication token"));

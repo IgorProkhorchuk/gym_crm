@@ -12,7 +12,9 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
     basePackages = "com.epam.gymcrm",
     excludeFilters = {
       @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.epam\\.gymcrm\\.web\\..*"),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
+      @ComponentScan.Filter(
+          type = FilterType.ASSIGNABLE_TYPE,
+          classes = {OpenApiDocumentationConfig.class, WebConfig.class})
     })
 @PropertySource("classpath:application.properties")
 @PropertySource(value = "file:${user.dir}/.env", ignoreResourceNotFound = true)

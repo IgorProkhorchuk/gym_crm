@@ -15,6 +15,7 @@ import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.web.api.TrainerApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
@@ -38,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/trainers")
-public class TrainerController {
+public class TrainerController implements TrainerApi {
   private final GymFacade gymFacade;
   private final FakeTokenService fakeTokenService;
 
@@ -50,12 +51,14 @@ public class TrainerController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @Override
   public UsernamePasswordResponse createTrainer(@RequestBody CreateTrainerRequest request) {
     return gymFacade.createTrainer(request);
   }
 
   @GetMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public TrainerProfileResponse getTrainerProfile(
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
@@ -74,6 +77,7 @@ public class TrainerController {
 
   @PutMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public TrainerProfileResponse updateTrainerProfile(
       @RequestHeader("X-Auth-Token") String token,
       @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
@@ -98,6 +102,7 @@ public class TrainerController {
 
   @PutMapping("/password")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public void changePassword(
       @RequestHeader("X-Auth-Token") String token, @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
@@ -116,6 +121,7 @@ public class TrainerController {
 
   @PatchMapping("/profile/status")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public void switchActiveStatus(
       @RequestHeader("X-Auth-Token") String token,
       @RequestBody SwitchProfileStatusRestRequest request) {
@@ -134,6 +140,7 @@ public class TrainerController {
 
   @GetMapping("/trainings")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public List<TrainerTrainingResponse> getTrainerTrainings(
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username,

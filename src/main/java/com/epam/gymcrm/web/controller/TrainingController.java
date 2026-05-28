@@ -8,6 +8,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.web.api.TrainingApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.AddTrainingRestRequest;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/trainings")
-public class TrainingController {
+public class TrainingController implements TrainingApi {
 
   private final GymFacade gymFacade;
   private final FakeTokenService fakeTokenService;
@@ -35,6 +36,7 @@ public class TrainingController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public void addTraining(
       @RequestHeader("X-Auth-Token") String token, @RequestBody AddTrainingRestRequest request) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);

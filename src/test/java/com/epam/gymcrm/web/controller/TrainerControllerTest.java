@@ -500,7 +500,7 @@ class TrainerControllerTest {
         .body("size()", equalTo(1))
         .body("[0].trainingName", equalTo("Evening Training"))
         .body("[0].trainingType", equalTo("Fitness"))
-        .body("[0].trainingDate", equalTo(List.of(2026, 2, 15)))
+        .body("[0].trainingDate", equalTo("2026-02-15"))
         .body("[0].trainingDuration", equalTo(45))
         .body("[0].traineeName", equalTo("John Doe"));
 

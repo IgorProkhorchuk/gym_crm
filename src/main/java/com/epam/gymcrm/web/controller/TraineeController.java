@@ -18,6 +18,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.web.api.TraineeApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
@@ -44,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/trainees")
-public class TraineeController {
+public class TraineeController implements TraineeApi {
 
   private final GymFacade gymFacade;
   private final FakeTokenService fakeTokenService;
@@ -57,12 +58,14 @@ public class TraineeController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @Override
   public UsernamePasswordResponse createTrainee(@RequestBody CreateTraineeRequest request) {
     return gymFacade.createTrainee(request);
   }
 
   @GetMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public TraineeProfileResponse getTraineeProfile(
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
@@ -81,6 +84,7 @@ public class TraineeController {
 
   @PutMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public TraineeProfileResponse updateTraineeProfile(
       @RequestHeader("X-Auth-Token") String token,
       @RequestBody UpdateTraineeProfileRestRequest traineeRequest) {
@@ -106,6 +110,7 @@ public class TraineeController {
 
   @DeleteMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public void deleteProfile(
       @RequestHeader("X-Auth-Token") String token, @RequestBody DeleteProfileRestRequest request) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
@@ -121,6 +126,7 @@ public class TraineeController {
 
   @PutMapping("/password")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public void changePassword(
       @RequestHeader("X-Auth-Token") String token, @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
@@ -139,6 +145,7 @@ public class TraineeController {
 
   @PatchMapping("/profile/status")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public void switchActiveStatus(
       @RequestHeader("X-Auth-Token") String token,
       @RequestBody SwitchProfileStatusRestRequest request) {
@@ -157,6 +164,7 @@ public class TraineeController {
 
   @GetMapping("/trainers/unassigned")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public List<TrainerSummaryResponse> getUnassignedTrainers(
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
@@ -173,6 +181,7 @@ public class TraineeController {
 
   @PutMapping("/trainers")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public List<TrainerSummaryResponse> updateTraineeTrainers(
       @RequestHeader("X-Auth-Token") String token,
       @RequestBody UpdateTraineeTrainersRestRequest request) {
@@ -194,6 +203,7 @@ public class TraineeController {
 
   @GetMapping("/trainings")
   @ResponseStatus(HttpStatus.OK)
+  @Override
   public List<TraineeTrainingResponse> getTraineeTrainings(
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username,

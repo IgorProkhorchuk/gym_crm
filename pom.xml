@@ -39,6 +39,8 @@
         <jackson-databind.version>2.21.3</jackson-databind.version>
         <jackson-datatype.version>2.21.3</jackson-datatype.version>
         <rest-assured.version>5.5.7</rest-assured.version>
+        <springdoc-openapi.version>3.0.3</springdoc-openapi.version>
+        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
     </properties>
 
     <dependencies>
@@ -175,6 +177,16 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikari.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <version>${jboss-logging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi.version}</version>
         </dependency>
     </dependencies>
     <build>

@@ -238,7 +238,7 @@ class TraineeControllerTest {
         .body("firstName", equalTo("Johnny"))
         .body("lastName", equalTo("Doe"))
         .body("active", equalTo(false))
-        .body("dateOfBirth", equalTo(List.of(1996, 2, 20)))
+        .body("dateOfBirth", equalTo("1996-02-20"))
         .body("address", equalTo("Updated Street, 7"));
 
     verify(fakeTokenService).getUserByToken(TOKEN);
@@ -877,7 +877,7 @@ class TraineeControllerTest {
         .body("size()", equalTo(1))
         .body("[0].trainingName", equalTo("Morning Training"))
         .body("[0].trainingType", equalTo("Fitness"))
-        .body("[0].trainingDate", equalTo(List.of(2026, 1, 10)))
+        .body("[0].trainingDate", equalTo("2026-01-10"))
         .body("[0].trainingDuration", equalTo(60))
         .body("[0].trainerName", equalTo("Mike Stone"));
 

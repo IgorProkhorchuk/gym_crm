@@ -2,6 +2,7 @@ package com.epam.gymcrm.web.controller;
 
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
@@ -9,6 +10,8 @@ import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -18,8 +21,10 @@ import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
 import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTraineeTrainersRestRequest;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -169,7 +175,8 @@ public class TraineeController {
     if (request.trainerUsernames() == null) {
       throw new IllegalArgumentException("Trainer usernames must not be null");
     }
-    if (request.trainerUsernames().stream().anyMatch(username -> username == null || username.isBlank())) {
+    if (request.trainerUsernames().stream()
+        .anyMatch(username -> username == null || username.isBlank())) {
       throw new IllegalArgumentException("Trainer username must not be blank");
     }
     if (!user.username().equals(request.traineeUsername())) {
@@ -179,5 +186,40 @@ public class TraineeController {
     return gymFacade.updateTraineeTrainers(
         new UpdateTraineeTrainersRequest(
             request.traineeUsername(), user.password(), request.trainerUsernames()));
+  }
+
+  @GetMapping("/trainings")
+  @ResponseStatus(HttpStatus.OK)
+  public List<TraineeTrainingResponse> getTraineeTrainings(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestParam(name = "username") String username,
+      @RequestParam(name = "fromDate", required = false)
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate fromDate,
+      @RequestParam(name = "toDate", required = false)
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate toDate,
+      @RequestParam(name = "trainerName", required = false) String trainerName,
+      @RequestParam(name = "trainingType", required = false) String trainingType) {
+    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    if (user.profileType() != ProfileType.TRAINEE) {
+      throw new AuthenticationException("Access denied");
+    }
+    if (username == null || username.isBlank()) {
+      throw new IllegalArgumentException("Username must not be blank");
+    }
+    if (!user.username().equals(username)) {
+      throw new AuthenticationException("Access denied");
+    }
+
+    return gymFacade.getTraineeTrainings(
+        new TraineeTrainingsRequest(
+            username,
+            user.password(),
+            fromDate,
+            toDate,
+            trainerName,
+            trainingType,
+            PageRequest.firstPage()));
   }
 }

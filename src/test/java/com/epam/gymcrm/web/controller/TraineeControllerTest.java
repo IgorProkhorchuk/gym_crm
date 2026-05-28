@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
@@ -17,6 +18,8 @@ import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -797,6 +800,98 @@ class TraineeControllerTest {
         .then()
         .statusCode(400)
         .body("message", equalTo("Trainer username must not be blank"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldReturnFilteredTrainingsForTraineeToken() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    TraineeTrainingsRequest request =
+        new TraineeTrainingsRequest(
+            USERNAME,
+            PASSWORD,
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 1, 31),
+            "Mike Stone",
+            "Fitness",
+            PageRequest.firstPage());
+    List<TraineeTrainingResponse> response =
+        List.of(
+            new TraineeTrainingResponse(
+                "Morning Training", "Fitness", LocalDate.of(2026, 1, 10), 60, "Mike Stone"));
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(gymFacade.getTraineeTrainings(request)).thenReturn(response);
+
+    given()
+        .header("X-Auth-Token", TOKEN)
+        .queryParam("username", USERNAME)
+        .queryParam("fromDate", "2026-01-01")
+        .queryParam("toDate", "2026-01-31")
+        .queryParam("trainerName", "Mike Stone")
+        .queryParam("trainingType", "Fitness")
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(200)
+        .body("size()", equalTo(1))
+        .body("[0].trainingName", equalTo("Morning Training"))
+        .body("[0].trainingType", equalTo("Fitness"))
+        .body("[0].trainingDate", equalTo(List.of(2026, 1, 10)))
+        .body("[0].trainingDuration", equalTo(60))
+        .body("[0].trainerName", equalTo("Mike Stone"));
+
+    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(gymFacade).getTraineeTrainings(request);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldRejectTrainerToken() {
+    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Mike.Stone")
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Another.User")
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldRejectInvalidToken() {
+    when(fakeTokenService.getUserByToken("invalid-token"))
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .header("X-Auth-Token", "invalid-token")
+        .queryParam("username", USERNAME)
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
 
     verifyNoInteractions(gymFacade);
   }

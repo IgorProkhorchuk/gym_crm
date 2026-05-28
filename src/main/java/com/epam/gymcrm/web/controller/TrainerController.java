@@ -56,13 +56,19 @@ public class TrainerController {
 
   @GetMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
-  public TrainerProfileResponse getTrainerProfile(@RequestHeader("X-Auth-Token") String token) {
+  public TrainerProfileResponse getTrainerProfile(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestParam(name = "username") String username) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
+    requireNonBlank(username, "Username must not be blank");
+    if (!user.username().equals(username)) {
+      throw new AuthenticationException("Access denied");
+    }
 
-    AuthRequest request = new AuthRequest(user.username(), user.password());
+    AuthRequest request = new AuthRequest(username, user.password());
     return gymFacade.getTrainerProfile(request);
   }
 

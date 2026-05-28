@@ -63,13 +63,19 @@ public class TraineeController {
 
   @GetMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
-  public TraineeProfileResponse getTraineeProfile(@RequestHeader("X-Auth-Token") String token) {
+  public TraineeProfileResponse getTraineeProfile(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestParam(name = "username") String username) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
+    requireNonBlank(username, "Username must not be blank");
+    if (!user.username().equals(username)) {
+      throw new AuthenticationException("Access denied");
+    }
 
-    AuthRequest request = new AuthRequest(user.username(), user.password());
+    AuthRequest request = new AuthRequest(username, user.password());
     return gymFacade.getTraineeProfile(request);
   }
 
@@ -152,12 +158,17 @@ public class TraineeController {
   @GetMapping("/trainers/unassigned")
   @ResponseStatus(HttpStatus.OK)
   public List<TrainerSummaryResponse> getUnassignedTrainers(
-      @RequestHeader("X-Auth-Token") String token) {
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestParam(name = "username") String username) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
-    return gymFacade.getUnassignedTrainers(new AuthRequest(user.username(), user.password()));
+    requireNonBlank(username, "Username must not be blank");
+    if (!user.username().equals(username)) {
+      throw new AuthenticationException("Access denied");
+    }
+    return gymFacade.getUnassignedTrainers(new AuthRequest(username, user.password()));
   }
 
   @PutMapping("/trainers")

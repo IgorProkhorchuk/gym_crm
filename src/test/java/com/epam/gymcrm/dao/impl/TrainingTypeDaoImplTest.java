@@ -6,6 +6,7 @@ import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.model.TrainingType;
 import jakarta.annotation.Resource;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -29,5 +30,14 @@ class TrainingTypeDaoImplTest extends PostgresContainerTest {
     Optional<TrainingType> found = trainingTypeDao.findByName("Unknown");
 
     assertThat(found).isEmpty();
+  }
+
+  @Test
+  void findAllShouldReturnSeededTrainingTypesOrderedById() {
+    List<TrainingType> found = trainingTypeDao.findAll();
+
+    assertThat(found)
+        .extracting(TrainingType::getTrainingTypeName)
+        .containsExactly("Fitness", "Yoga", "Zumba", "Stretching", "Resistance", "Cardio", "Boxing");
   }
 }

@@ -4,6 +4,7 @@ import com.epam.gymcrm.dao.Dao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.model.TrainingType;
 import jakarta.persistence.EntityManager;
+import java.util.List;
 import java.util.Optional;
 
 @Dao
@@ -28,5 +29,18 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
         .setParameter("name", name)
         .getResultStream()
         .findFirst();
+  }
+
+  @Override
+  public List<TrainingType> findAll() {
+    return entityManager
+        .createQuery(
+            """
+                        select tt
+                        from TrainingType tt
+                        order by tt.trainingTypeId
+            """,
+            TrainingType.class)
+        .getResultList();
   }
 }

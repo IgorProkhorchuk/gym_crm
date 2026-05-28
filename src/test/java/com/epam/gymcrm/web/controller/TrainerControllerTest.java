@@ -116,6 +116,7 @@ class TrainerControllerTest {
 
     given()
         .header("X-Auth-Token", TOKEN)
+        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainers/profile")
         .then()
@@ -137,6 +138,24 @@ class TrainerControllerTest {
 
     given()
         .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "John.Doe")
+        .when()
+        .get("/v1/trainers/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTrainerProfileShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Another.User")
         .when()
         .get("/v1/trainers/profile")
         .then()
@@ -153,6 +172,7 @@ class TrainerControllerTest {
 
     given()
         .header("X-Auth-Token", "invalid-token")
+        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainers/profile")
         .then()

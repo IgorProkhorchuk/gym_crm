@@ -126,6 +126,7 @@ class TraineeControllerTest {
 
     given()
         .header("X-Auth-Token", TOKEN)
+        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -147,6 +148,24 @@ class TraineeControllerTest {
 
     given()
         .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Mike.Stone")
+        .when()
+        .get("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeProfileShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Another.User")
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -163,6 +182,7 @@ class TraineeControllerTest {
 
     given()
         .header("X-Auth-Token", "invalid-token")
+        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -584,6 +604,7 @@ class TraineeControllerTest {
 
     given()
         .header("X-Auth-Token", TOKEN)
+        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()
@@ -609,6 +630,24 @@ class TraineeControllerTest {
 
     given()
         .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Mike.Stone")
+        .when()
+        .get("/v1/trainees/trainers/unassigned")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getUnassignedTrainersShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .header("X-Auth-Token", TOKEN)
+        .queryParam("username", "Another.User")
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()
@@ -625,6 +664,7 @@ class TraineeControllerTest {
 
     given()
         .header("X-Auth-Token", "invalid-token")
+        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()

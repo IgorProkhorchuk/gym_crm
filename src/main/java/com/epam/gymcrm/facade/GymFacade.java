@@ -16,9 +16,11 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
+import com.epam.gymcrm.service.TrainingTypeService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,6 +32,7 @@ public class GymFacade {
   private final TraineeService traineeService;
   private final TrainerService trainerService;
   private final TrainingService trainingService;
+  private final TrainingTypeService trainingTypeService;
 
   public UsernamePasswordResponse createTrainee(CreateTraineeRequest request) {
     return traineeService.create(request);
@@ -93,5 +96,9 @@ public class GymFacade {
 
   public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
     return trainingService.getTrainerTrainings(request);
+  }
+
+  public List<TrainingTypeResponse> getTrainingTypes() {
+    return trainingTypeService.getTrainingTypes();
   }
 }

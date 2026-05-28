@@ -22,9 +22,11 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
+import com.epam.gymcrm.service.TrainingTypeService;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,8 @@ class GymFacadeTest {
   @Mock private TrainerService trainerService;
 
   @Mock private TrainingService trainingService;
+
+  @Mock private TrainingTypeService trainingTypeService;
 
   @Test
   void createTraineeShouldDelegateToTraineeService() {
@@ -281,6 +285,19 @@ class GymFacadeTest {
     assertAll(
         () -> assertThat(result).isSameAs(trainings),
         () -> verify(trainingService).getTrainerTrainings(request));
+  }
+
+  @Test
+  void getTrainingTypesShouldReturnTrainingTypesFromService() {
+    List<TrainingTypeResponse> trainingTypes =
+        List.of(new TrainingTypeResponse(1L, "Fitness"), new TrainingTypeResponse(2L, "Yoga"));
+    when(trainingTypeService.getTrainingTypes()).thenReturn(trainingTypes);
+
+    List<TrainingTypeResponse> result = gymFacade.getTrainingTypes();
+
+    assertAll(
+        () -> assertThat(result).isSameAs(trainingTypes),
+        () -> verify(trainingTypeService).getTrainingTypes());
   }
 
   private static TraineeTrainingResponse traineeTrainingResponse() {

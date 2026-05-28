@@ -15,6 +15,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
@@ -626,6 +627,176 @@ class TraineeControllerTest {
         .then()
         .statusCode(401)
         .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldReturnUpdatedTrainerList() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    UpdateTraineeTrainersRequest request =
+        new UpdateTraineeTrainersRequest(USERNAME, PASSWORD, List.of("Mike.Stone", "Kate.Yoga"));
+    List<TrainerSummaryResponse> response =
+        List.of(
+            new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
+            new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(gymFacade.updateTraineeTrainers(request)).thenReturn(response);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe",
+                          "trainerUsernames": [
+                            "Mike.Stone",
+                            "Kate.Yoga"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(200)
+        .body("size()", equalTo(2))
+        .body("[0].username", equalTo("Mike.Stone"))
+        .body("[0].firstName", equalTo("Mike"))
+        .body("[0].lastName", equalTo("Stone"))
+        .body("[0].specialization", equalTo("Fitness"))
+        .body("[1].username", equalTo("Kate.Yoga"))
+        .body("[1].firstName", equalTo("Kate"))
+        .body("[1].lastName", equalTo("Yoga"))
+        .body("[1].specialization", equalTo("Yoga"));
+
+    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(gymFacade).updateTraineeTrainers(request);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldRejectTrainerToken() {
+    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "traineeUsername": "Mike.Stone",
+                          "trainerUsernames": [
+                            "Kate.Yoga"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldRejectAnotherUsername() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "traineeUsername": "Another.User",
+                          "trainerUsernames": [
+                            "Mike.Stone"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Access denied"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldRejectInvalidToken() {
+    when(fakeTokenService.getUserByToken("invalid-token"))
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", "invalid-token")
+        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe",
+                          "trainerUsernames": [
+                            "Mike.Stone"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernamesAreMissing() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe"
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(400)
+        .body("message", equalTo("Trainer usernames must not be null"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernameIsBlank() {
+    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)
+        .header("X-Auth-Token", TOKEN)
+        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe",
+                          "trainerUsernames": [
+                            ""
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(400)
+        .body("message", equalTo("Trainer username must not be blank"));
 
     verifyNoInteractions(gymFacade);
   }

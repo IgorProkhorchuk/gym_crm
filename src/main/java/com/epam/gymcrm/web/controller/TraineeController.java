@@ -7,6 +7,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
@@ -16,6 +17,7 @@ import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
 import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
+import com.epam.gymcrm.web.dto.UpdateTraineeTrainersRestRequest;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -150,5 +152,32 @@ public class TraineeController {
       throw new AuthenticationException("Access denied");
     }
     return gymFacade.getUnassignedTrainers(new AuthRequest(user.username(), user.password()));
+  }
+
+  @PutMapping("/trainers")
+  @ResponseStatus(HttpStatus.OK)
+  public List<TrainerSummaryResponse> updateTraineeTrainers(
+      @RequestHeader("X-Auth-Token") String token,
+      @RequestBody UpdateTraineeTrainersRestRequest request) {
+    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    if (user.profileType() != ProfileType.TRAINEE) {
+      throw new AuthenticationException("Access denied");
+    }
+    if (request.traineeUsername() == null || request.traineeUsername().isBlank()) {
+      throw new IllegalArgumentException("Trainee username must not be blank");
+    }
+    if (request.trainerUsernames() == null) {
+      throw new IllegalArgumentException("Trainer usernames must not be null");
+    }
+    if (request.trainerUsernames().stream().anyMatch(username -> username == null || username.isBlank())) {
+      throw new IllegalArgumentException("Trainer username must not be blank");
+    }
+    if (!user.username().equals(request.traineeUsername())) {
+      throw new AuthenticationException("Access denied");
+    }
+
+    return gymFacade.updateTraineeTrainers(
+        new UpdateTraineeTrainersRequest(
+            request.traineeUsername(), user.password(), request.trainerUsernames()));
   }
 }

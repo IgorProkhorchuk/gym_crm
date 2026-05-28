@@ -20,9 +20,12 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
+import com.epam.gymcrm.web.dto.AddTrainingRestRequest;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
+import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTraineeProfileRestRequest;
+import com.epam.gymcrm.web.dto.UpdateTraineeTrainersRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
 import java.lang.reflect.RecordComponent;
 import java.time.LocalDate;
@@ -101,6 +104,7 @@ class DtoPrivacyTest {
                 .toString(),
             new UpdateTraineeTrainersRequest("John.Doe", "secret", List.of("Trainer.User"))
                 .toString(),
+            new UpdateTraineeTrainersRestRequest("John.Doe", List.of("Trainer.User")).toString(),
             new TraineeProfileResponse(
                     "John.Doe",
                     "John",
@@ -115,11 +119,20 @@ class DtoPrivacyTest {
                 .toString(),
             new UpdateTrainerProfileRestRequest("Mike.Stone", "Mike", "Stone", "Fitness", true)
                 .toString(),
+            new SwitchProfileStatusRestRequest("Mike.Stone", true).toString(),
             new TrainerProfileResponse("Mike.Stone", "Mike", "Stone", true, "Fitness").toString(),
             new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness").toString(),
             new AddTrainingRequest(
                     "John.Doe",
                     "secret",
+                    "Mike.Stone",
+                    "Yoga Basics",
+                    "Yoga",
+                    LocalDate.of(2026, 5, 3),
+                    60)
+                .toString(),
+            new AddTrainingRestRequest(
+                    "John.Doe",
                     "Mike.Stone",
                     "Yoga Basics",
                     "Yoga",

@@ -1,5 +1,9 @@
 package com.epam.gymcrm.web.controller;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireEachNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.PageRequest;
@@ -136,12 +140,8 @@ public class TraineeController {
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
-    if (request.username() == null || request.username().isBlank()) {
-      throw new IllegalArgumentException("Username must not be blank");
-    }
-    if (request.active() == null) {
-      throw new IllegalArgumentException("Active status must not be null");
-    }
+    requireNonBlank(request.username(), "Username must not be blank");
+    requireNonNull(request.active(), "Active status must not be null");
     if (!user.username().equals(request.username())) {
       throw new AuthenticationException("Access denied");
     }
@@ -169,16 +169,9 @@ public class TraineeController {
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
-    if (request.traineeUsername() == null || request.traineeUsername().isBlank()) {
-      throw new IllegalArgumentException("Trainee username must not be blank");
-    }
-    if (request.trainerUsernames() == null) {
-      throw new IllegalArgumentException("Trainer usernames must not be null");
-    }
-    if (request.trainerUsernames().stream()
-        .anyMatch(username -> username == null || username.isBlank())) {
-      throw new IllegalArgumentException("Trainer username must not be blank");
-    }
+    requireNonBlank(request.traineeUsername(), "Trainee username must not be blank");
+    requireNonNull(request.trainerUsernames(), "Trainer usernames must not be null");
+    requireEachNonBlank(request.trainerUsernames(), "Trainer username must not be blank");
     if (!user.username().equals(request.traineeUsername())) {
       throw new AuthenticationException("Access denied");
     }
@@ -205,9 +198,7 @@ public class TraineeController {
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
-    if (username == null || username.isBlank()) {
-      throw new IllegalArgumentException("Username must not be blank");
-    }
+    requireNonBlank(username, "Username must not be blank");
     if (!user.username().equals(username)) {
       throw new AuthenticationException("Access denied");
     }

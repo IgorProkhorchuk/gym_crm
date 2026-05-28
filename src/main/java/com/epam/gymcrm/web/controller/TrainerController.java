@@ -1,5 +1,8 @@
 package com.epam.gymcrm.web.controller;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.PageRequest;
@@ -114,12 +117,8 @@ public class TrainerController {
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
-    if (request.username() == null || request.username().isBlank()) {
-      throw new IllegalArgumentException("Username must not be blank");
-    }
-    if (request.active() == null) {
-      throw new IllegalArgumentException("Active status must not be null");
-    }
+    requireNonBlank(request.username(), "Username must not be blank");
+    requireNonNull(request.active(), "Active status must not be null");
     if (!user.username().equals(request.username())) {
       throw new AuthenticationException("Access denied");
     }
@@ -143,9 +142,7 @@ public class TrainerController {
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
-    if (username == null || username.isBlank()) {
-      throw new IllegalArgumentException("Username must not be blank");
-    }
+    requireNonBlank(username, "Username must not be blank");
     if (!user.username().equals(username)) {
       throw new AuthenticationException("Access denied");
     }

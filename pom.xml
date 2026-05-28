@@ -33,7 +33,7 @@
         <hikari.version>5.1.0</hikari.version>
         <dotenv-java.version>3.0.0</dotenv-java.version>
         <jakarta.persistence.version>3.2.0</jakarta.persistence.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <spring-webmvc.version>7.0.6</spring-webmvc.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jackson-databind.version>2.21.3</jackson-databind.version>
@@ -158,13 +158,13 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>

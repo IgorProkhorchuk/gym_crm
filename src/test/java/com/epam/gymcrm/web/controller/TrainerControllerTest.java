@@ -82,10 +82,6 @@ class TrainerControllerTest {
 
   @Test
   void createTrainerShouldReturnBadRequestWhenRequestIsInvalid() {
-    CreateTrainerRequest request = new CreateTrainerRequest("", "Stone", "Fitness");
-    when(gymFacade.createTrainer(request))
-        .thenThrow(new IllegalArgumentException("First name must not be blank"));
-
     given()
         .contentType(ContentType.JSON)
         .body(
@@ -100,9 +96,9 @@ class TrainerControllerTest {
         .post("/v1/trainers")
         .then()
         .statusCode(400)
-        .body("message", equalTo("First name must not be blank"));
+        .body("message", equalTo("Invalid request body: field 'firstName' must not be blank"));
 
-    verify(gymFacade).createTrainer(request);
+    verifyNoInteractions(gymFacade);
   }
 
   @Test
@@ -448,9 +444,6 @@ class TrainerControllerTest {
 
   @Test
   void switchActiveStatusShouldReturnBadRequestWhenActiveIsMissing() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-
     given()
         .contentType(ContentType.JSON)
         .header("X-Auth-Token", TOKEN)
@@ -464,7 +457,7 @@ class TrainerControllerTest {
         .patch("/v1/trainers/profile/status")
         .then()
         .statusCode(400)
-        .body("message", equalTo("Active status must not be null"));
+        .body("message", equalTo("Invalid request body: field 'active' must not be null"));
 
     verifyNoInteractions(gymFacade);
   }

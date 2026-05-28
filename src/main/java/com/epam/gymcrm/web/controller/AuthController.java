@@ -8,6 +8,7 @@ import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.api.AuthApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.FakeTokenService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +28,7 @@ public class AuthController implements AuthApi {
 
   @PostMapping
   @Override
-  public LoginResponse loginUser(@RequestBody LoginRequest loginRequest) {
+  public LoginResponse loginUser(@Valid @RequestBody LoginRequest loginRequest) {
     try {
       authenticationService.authenticateTrainee(loginRequest.username(), loginRequest.password());
       AuthenticatedUser authenticatedUser =

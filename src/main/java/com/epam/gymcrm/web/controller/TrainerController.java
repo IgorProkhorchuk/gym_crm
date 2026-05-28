@@ -21,6 +21,7 @@ import com.epam.gymcrm.web.auth.FakeTokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +53,7 @@ public class TrainerController implements TrainerApi {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @Override
-  public UsernamePasswordResponse createTrainer(@RequestBody CreateTrainerRequest request) {
+  public UsernamePasswordResponse createTrainer(@Valid @RequestBody CreateTrainerRequest request) {
     return gymFacade.createTrainer(request);
   }
 
@@ -80,7 +81,7 @@ public class TrainerController implements TrainerApi {
   @Override
   public TrainerProfileResponse updateTrainerProfile(
       @RequestHeader("X-Auth-Token") String token,
-      @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
+      @Valid @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
@@ -104,7 +105,8 @@ public class TrainerController implements TrainerApi {
   @ResponseStatus(HttpStatus.OK)
   @Override
   public void changePassword(
-      @RequestHeader("X-Auth-Token") String token, @RequestBody ChangePasswordRestRequest body) {
+      @RequestHeader("X-Auth-Token") String token,
+      @Valid @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
@@ -124,7 +126,7 @@ public class TrainerController implements TrainerApi {
   @Override
   public void switchActiveStatus(
       @RequestHeader("X-Auth-Token") String token,
-      @RequestBody SwitchProfileStatusRestRequest request) {
+      @Valid @RequestBody SwitchProfileStatusRestRequest request) {
     AuthenticatedUser user = fakeTokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");

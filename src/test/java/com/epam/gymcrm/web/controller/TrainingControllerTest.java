@@ -152,10 +152,6 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldReturnBadRequestWhenDurationIsNotPositive() {
-    AuthenticatedUser user =
-        new AuthenticatedUser(TRAINEE_USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-
     given()
         .contentType(ContentType.JSON)
         .header("X-Auth-Token", TOKEN)
@@ -174,7 +170,9 @@ class TrainingControllerTest {
         .post("/v1/trainings")
         .then()
         .statusCode(400)
-        .body("message", equalTo("Training duration must be positive"));
+        .body(
+            "message",
+            equalTo("Invalid request body: field 'trainingDuration' must be positive"));
 
     verifyNoInteractions(gymFacade);
   }

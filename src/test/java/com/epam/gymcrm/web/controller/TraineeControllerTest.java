@@ -86,10 +86,6 @@ class TraineeControllerTest {
 
   @Test
   void createTraineeShouldReturnBadRequestWhenRequestIsInvalid() {
-    CreateTraineeRequest request = new CreateTraineeRequest("", "Doe", null, null);
-    when(gymFacade.createTrainee(request))
-        .thenThrow(new IllegalArgumentException("First name must not be blank"));
-
     given()
         .contentType(ContentType.JSON)
         .body(
@@ -103,9 +99,9 @@ class TraineeControllerTest {
         .post("/v1/trainees")
         .then()
         .statusCode(400)
-        .body("message", equalTo("First name must not be blank"));
+        .body("message", equalTo("Invalid request body: field 'firstName' must not be blank"));
 
-    verify(gymFacade).createTrainee(request);
+    verifyNoInteractions(gymFacade);
   }
 
   @Test
@@ -476,9 +472,6 @@ class TraineeControllerTest {
 
   @Test
   void switchActiveStatusShouldReturnBadRequestWhenActiveIsMissing() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-
     given()
         .contentType(ContentType.JSON)
         .header("X-Auth-Token", TOKEN)
@@ -492,7 +485,7 @@ class TraineeControllerTest {
         .patch("/v1/trainees/profile/status")
         .then()
         .statusCode(400)
-        .body("message", equalTo("Active status must not be null"));
+        .body("message", equalTo("Invalid request body: field 'active' must not be null"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -797,9 +790,6 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernamesAreMissing() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-
     given()
         .contentType(ContentType.JSON)
         .header("X-Auth-Token", TOKEN)
@@ -813,16 +803,17 @@ class TraineeControllerTest {
         .put("/v1/trainees/trainers")
         .then()
         .statusCode(400)
-        .body("message", equalTo("Trainer usernames must not be null"));
+        .body(
+            "message",
+            equalTo(
+                "Invalid request body: field 'trainerUsernames' "
+                    + "must contain at least one trainer username"));
 
     verifyNoInteractions(gymFacade);
   }
 
   @Test
   void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernameIsBlank() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
-
     given()
         .contentType(ContentType.JSON)
         .header("X-Auth-Token", TOKEN)
@@ -839,7 +830,9 @@ class TraineeControllerTest {
         .put("/v1/trainees/trainers")
         .then()
         .statusCode(400)
-        .body("message", equalTo("Trainer username must not be blank"));
+        .body(
+            "message",
+            equalTo("Invalid request body: field 'trainerUsernames[0]' must not be blank"));
 
     verifyNoInteractions(gymFacade);
   }

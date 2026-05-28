@@ -1,6 +1,11 @@
 package com.epam.gymcrm.web.dto;
 
-public record ChangePasswordRestRequest(String username, String oldPassword, String newPassword) {
+import jakarta.validation.constraints.NotBlank;
+
+public record ChangePasswordRestRequest(
+    @NotBlank(message = "must not be blank") String username,
+    @NotBlank(message = "must not be blank") String oldPassword,
+    @NotBlank(message = "must not be blank") String newPassword) {
 
   @Override
   public String toString() {

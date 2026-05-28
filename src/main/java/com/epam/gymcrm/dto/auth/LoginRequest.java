@@ -1,6 +1,10 @@
 package com.epam.gymcrm.dto.auth;
 
-public record LoginRequest(String username, String password) {
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginRequest(
+    @NotBlank(message = "must not be blank") String username,
+    @NotBlank(message = "must not be blank") String password) {
 
   @Override
   public String toString() {

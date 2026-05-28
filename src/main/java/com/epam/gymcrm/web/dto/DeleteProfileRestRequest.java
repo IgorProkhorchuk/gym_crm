@@ -1,6 +1,9 @@
 package com.epam.gymcrm.web.dto;
 
-public record DeleteProfileRestRequest(String username) {
+import jakarta.validation.constraints.NotBlank;
+
+public record DeleteProfileRestRequest(
+    @NotBlank(message = "must not be blank") String username) {
 
   @Override
   public String toString() {

@@ -11,10 +11,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /** OpenAPI contract for authentication endpoints. */
-@Tag(name = "Authentication", description = "Fake token authentication endpoints")
+@Tag(name = "Authentication", description = "Token authentication endpoints")
 public interface AuthApi {
 
-  /** Authenticates a trainee or trainer and returns a fake token. */
+  /** Authenticates a trainee or trainer and returns an authentication token. */
   @Operation(summary = "Login user", description = "Authenticates by username and password.")
   @ApiResponses({
     @ApiResponse(

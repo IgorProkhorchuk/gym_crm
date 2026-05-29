@@ -18,7 +18,7 @@ public interface TrainingTypeApi {
 
   /** Returns all available training types. */
   @Operation(summary = "Get training types")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -28,5 +28,5 @@ public interface TrainingTypeApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   List<TrainingTypeResponse> getTrainingTypes(
-      @Parameter(description = "Fake authentication token", required = true) String token);
+      @Parameter(description = "Authentication token", required = true) String token);
 }

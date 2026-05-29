@@ -41,7 +41,7 @@ public interface TrainerApi {
 
   /** Returns the authenticated trainer profile. */
   @Operation(summary = "Get trainer profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -50,12 +50,12 @@ public interface TrainerApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   TrainerProfileResponse getTrainerProfile(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @Parameter(description = "Trainer username", required = true) String username);
 
   /** Updates the authenticated trainer profile. */
   @Operation(summary = "Update trainer profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -65,7 +65,7 @@ public interface TrainerApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   TrainerProfileResponse updateTrainerProfile(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content =
@@ -74,14 +74,14 @@ public interface TrainerApi {
 
   /** Changes the authenticated trainer password. */
   @Operation(summary = "Change trainer password")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Password changed"),
     @ApiResponse(responseCode = "400", description = "Invalid password change request"),
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   void changePassword(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content = @Content(schema = @Schema(implementation = ChangePasswordRestRequest.class)))
@@ -89,14 +89,14 @@ public interface TrainerApi {
 
   /** Switches the authenticated trainer active status. */
   @Operation(summary = "Activate or deactivate trainer profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Trainer active status switched"),
     @ApiResponse(responseCode = "400", description = "Invalid status request"),
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   void switchActiveStatus(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content =
@@ -105,7 +105,7 @@ public interface TrainerApi {
 
   /** Returns trainings for the authenticated trainer. */
   @Operation(summary = "Get trainer trainings list")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -115,7 +115,7 @@ public interface TrainerApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   List<TrainerTrainingResponse> getTrainerTrainings(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @Parameter(description = "Trainer username", required = true) String username,
       @Parameter(description = "Training period start date") LocalDate fromDate,
       @Parameter(description = "Training period end date") LocalDate toDate,

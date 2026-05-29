@@ -44,7 +44,7 @@ public interface TraineeApi {
 
   /** Returns the authenticated trainee profile. */
   @Operation(summary = "Get trainee profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -53,12 +53,12 @@ public interface TraineeApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   TraineeProfileResponse getTraineeProfile(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @Parameter(description = "Trainee username", required = true) String username);
 
   /** Updates the authenticated trainee profile. */
   @Operation(summary = "Update trainee profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -68,7 +68,7 @@ public interface TraineeApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   TraineeProfileResponse updateTraineeProfile(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content =
@@ -77,13 +77,13 @@ public interface TraineeApi {
 
   /** Deletes the authenticated trainee profile. */
   @Operation(summary = "Delete trainee profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Trainee profile deleted"),
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   void deleteProfile(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content = @Content(schema = @Schema(implementation = DeleteProfileRestRequest.class)))
@@ -91,14 +91,14 @@ public interface TraineeApi {
 
   /** Changes the authenticated trainee password. */
   @Operation(summary = "Change trainee password")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Password changed"),
     @ApiResponse(responseCode = "400", description = "Invalid password change request"),
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   void changePassword(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content = @Content(schema = @Schema(implementation = ChangePasswordRestRequest.class)))
@@ -106,14 +106,14 @@ public interface TraineeApi {
 
   /** Switches the authenticated trainee active status. */
   @Operation(summary = "Activate or deactivate trainee profile")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Trainee active status switched"),
     @ApiResponse(responseCode = "400", description = "Invalid status request"),
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   void switchActiveStatus(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content =
@@ -122,7 +122,7 @@ public interface TraineeApi {
 
   /** Returns active trainers not assigned to the authenticated trainee. */
   @Operation(summary = "Get not assigned active trainers")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -132,12 +132,12 @@ public interface TraineeApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   List<TrainerSummaryResponse> getUnassignedTrainers(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @Parameter(description = "Trainee username", required = true) String username);
 
   /** Replaces the authenticated trainee trainer list. */
   @Operation(summary = "Update trainee trainer list")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -148,7 +148,7 @@ public interface TraineeApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   List<TrainerSummaryResponse> updateTraineeTrainers(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content =
@@ -157,7 +157,7 @@ public interface TraineeApi {
 
   /** Returns trainings for the authenticated trainee. */
   @Operation(summary = "Get trainee trainings list")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -167,7 +167,7 @@ public interface TraineeApi {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   List<TraineeTrainingResponse> getTraineeTrainings(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @Parameter(description = "Trainee username", required = true) String username,
       @Parameter(description = "Training period start date") LocalDate fromDate,
       @Parameter(description = "Training period end date") LocalDate toDate,

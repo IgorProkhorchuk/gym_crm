@@ -17,14 +17,14 @@ public interface TrainingApi {
 
   /** Adds a training for the authenticated trainee. */
   @Operation(summary = "Add training")
-  @SecurityRequirement(name = "fakeTokenAuth")
+  @SecurityRequirement(name = "tokenAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Training added"),
     @ApiResponse(responseCode = "400", description = "Invalid training request"),
     @ApiResponse(responseCode = "401", description = "Unauthorized")
   })
   void addTraining(
-      @Parameter(description = "Fake authentication token", required = true) String token,
+      @Parameter(description = "Authentication token", required = true) String token,
       @RequestBody(
               required = true,
               content = @Content(schema = @Schema(implementation = AddTrainingRestRequest.class)))

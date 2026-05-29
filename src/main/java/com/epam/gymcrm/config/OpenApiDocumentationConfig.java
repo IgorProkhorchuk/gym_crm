@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Import;
             description = "REST API for trainee, trainer, training, and training type management."),
     servers = @Server(url = "/api", description = "External Tomcat servlet mapping"))
 @SecurityScheme(
-    name = "fakeTokenAuth",
+    name = "tokenAuth",
     type = SecuritySchemeType.APIKEY,
     in = SecuritySchemeIn.HEADER,
     paramName = "X-Auth-Token")

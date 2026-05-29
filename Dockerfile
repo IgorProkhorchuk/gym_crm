@@ -9,6 +9,8 @@ COPY pom.xml .
 
 RUN mvn --batch-mode --no-transfer-progress dependency:go-offline -q
 
+COPY checkstyle.xml checkstyle-suppressions.xml checkstyle-xpath-suppressions.xml ./
+
 COPY src ./src
 
 RUN mvn --batch-mode --no-transfer-progress -DskipTests package

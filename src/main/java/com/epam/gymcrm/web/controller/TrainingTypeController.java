@@ -2,7 +2,9 @@ package com.epam.gymcrm.web.controller;
 
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.web.api.TrainingTypeApi;
+import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,8 @@ public class TrainingTypeController implements TrainingTypeApi {
   @Override
   public List<TrainingTypeResponse> getTrainingTypes(
       @RequestHeader("X-Auth-Token") String token) {
-    tokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     return gymFacade.getTrainingTypes();
   }
 }

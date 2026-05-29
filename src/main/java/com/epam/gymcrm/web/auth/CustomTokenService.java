@@ -37,6 +37,8 @@ public class CustomTokenService implements TokenService {
     requireNonBlank(newPassword, "New password must not be blank");
     AuthenticatedUser user = getUserByToken(token);
     authenticatedUsers.put(
-        token, new AuthenticatedUser(user.username(), newPassword, user.profileType()));
+        token,
+        new AuthenticatedUser(
+            user.username(), newPassword, user.profileType(), user.userId(), user.profileId()));
   }
 }

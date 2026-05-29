@@ -15,6 +15,7 @@ import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.web.api.TrainerApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
@@ -64,6 +65,7 @@ public class TrainerController implements TrainerApi {
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -83,6 +85,7 @@ public class TrainerController implements TrainerApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -108,6 +111,7 @@ public class TrainerController implements TrainerApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -128,6 +132,7 @@ public class TrainerController implements TrainerApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody SwitchProfileStatusRestRequest request) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -154,6 +159,7 @@ public class TrainerController implements TrainerApi {
           LocalDate toDate,
       @RequestParam(name = "traineeName", required = false) String traineeName) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }

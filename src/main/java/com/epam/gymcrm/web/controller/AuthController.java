@@ -4,6 +4,8 @@ import com.epam.gymcrm.dto.auth.LoginRequest;
 import com.epam.gymcrm.dto.auth.LoginResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.exception.AuthenticationException;
+import com.epam.gymcrm.model.Trainee;
+import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.api.AuthApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -30,19 +32,29 @@ public class AuthController implements AuthApi {
   @Override
   public LoginResponse loginUser(@Valid @RequestBody LoginRequest loginRequest) {
     try {
-      authenticationService.authenticateTrainee(loginRequest.username(), loginRequest.password());
+      Trainee trainee =
+          authenticationService.authenticateTrainee(loginRequest.username(), loginRequest.password());
       AuthenticatedUser authenticatedUser =
           new AuthenticatedUser(
-              loginRequest.username(), loginRequest.password(), ProfileType.TRAINEE);
+              loginRequest.username(),
+              loginRequest.password(),
+              ProfileType.TRAINEE,
+              trainee.getUser().getUserId(),
+              trainee.getId());
       String token = tokenService.createToken(authenticatedUser);
 
       return new LoginResponse(token, ProfileType.TRAINEE);
     } catch (AuthenticationException exception) {
-      authenticationService.authenticateTrainer(loginRequest.username(), loginRequest.password());
+      Trainer trainer =
+          authenticationService.authenticateTrainer(loginRequest.username(), loginRequest.password());
 
       AuthenticatedUser authenticatedUser =
           new AuthenticatedUser(
-              loginRequest.username(), loginRequest.password(), ProfileType.TRAINER);
+              loginRequest.username(),
+              loginRequest.password(),
+              ProfileType.TRAINER,
+              trainer.getUser().getUserId(),
+              trainer.getId());
       String token = tokenService.createToken(authenticatedUser);
 
       return new LoginResponse(token, ProfileType.TRAINER);

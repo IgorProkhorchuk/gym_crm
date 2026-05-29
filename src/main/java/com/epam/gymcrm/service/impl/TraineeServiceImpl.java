@@ -10,12 +10,14 @@ import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
+import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -66,7 +68,8 @@ public class TraineeServiceImpl implements TraineeService {
             userDao.findUsernamesByPattern(baseUsername + "%")));
     user.setPassword(passwordGenerator.generate());
     traineeDao.save(trainee);
-    log.info("Trainee profile created, userId={}", trainee.getId());
+    AuditContext.setAuthenticatedUser(ProfileType.TRAINEE, user.getUserId(), trainee.getId());
+    log.info("Trainee profile created, userId={}, traineeId={}", user.getUserId(), trainee.getId());
 
     return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
   }
@@ -90,7 +93,10 @@ public class TraineeServiceImpl implements TraineeService {
     trainee.getUser().setPassword(request.newPassword());
     traineeDao.save(trainee);
 
-    log.info("Trainee password changed, userId={}", trainee.getId());
+    log.info(
+        "Trainee password changed, userId={}, traineeId={}",
+        trainee.getUser().getUserId(),
+        trainee.getId());
   }
 
   @Override
@@ -102,7 +108,11 @@ public class TraineeServiceImpl implements TraineeService {
     trainee.getUser().switchActiveStatus();
     traineeDao.save(trainee);
 
-    log.info("Trainee active status switched, userId={}", trainee.getId());
+    log.info(
+        "Trainee active status switched, userId={}, traineeId={}, active={}",
+        trainee.getUser().getUserId(),
+        trainee.getId(),
+        trainee.getUser().getActive());
   }
 
   @Override
@@ -113,7 +123,10 @@ public class TraineeServiceImpl implements TraineeService {
     Trainee trainee = authenticateTrainee(request);
     traineeDao.delete(trainee.getId());
 
-    log.info("Trainee profile deleted, userId={}", trainee.getId());
+    log.info(
+        "Trainee profile deleted, userId={}, traineeId={}",
+        trainee.getUser().getUserId(),
+        trainee.getId());
   }
 
   @Override
@@ -140,7 +153,11 @@ public class TraineeServiceImpl implements TraineeService {
     trainee.getTrainers().addAll(trainers);
     traineeDao.save(trainee);
 
-    log.info("Trainee trainers list updated, userId={}", trainee.getId());
+    log.info(
+        "Trainee trainers list updated, userId={}, traineeId={}, trainersCount={}",
+        trainee.getUser().getUserId(),
+        trainee.getId(),
+        trainers.size());
     return trainers.stream().map(trainerMapper::toSummaryResponse).toList();
   }
 
@@ -157,7 +174,10 @@ public class TraineeServiceImpl implements TraineeService {
     traineeMapper.updateFromRequest(request, authenticatedTrainee);
     traineeDao.save(authenticatedTrainee);
 
-    log.info("Trainee profile updated, userId={}", authenticatedTrainee.getId());
+    log.info(
+        "Trainee profile updated, userId={}, traineeId={}",
+        authenticatedTrainee.getUser().getUserId(),
+        authenticatedTrainee.getId());
     return traineeMapper.toProfileResponse(authenticatedTrainee);
   }
 

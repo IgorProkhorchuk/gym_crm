@@ -18,6 +18,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.web.api.TraineeApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
@@ -71,6 +72,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -90,6 +92,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody UpdateTraineeProfileRestRequest traineeRequest) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -116,6 +119,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody DeleteProfileRestRequest request) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -133,6 +137,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -153,6 +158,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody SwitchProfileStatusRestRequest request) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -172,6 +178,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -189,6 +196,7 @@ public class TraineeController implements TraineeApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody UpdateTraineeTrainersRestRequest request) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }
@@ -219,6 +227,7 @@ public class TraineeController implements TraineeApi {
       @RequestParam(name = "trainerName", required = false) String trainerName,
       @RequestParam(name = "trainingType", required = false) String trainingType) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }

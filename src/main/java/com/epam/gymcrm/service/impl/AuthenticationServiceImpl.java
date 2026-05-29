@@ -4,7 +4,9 @@ import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireN
 
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
+import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.exception.AuthenticationException;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.AuthenticationService;
@@ -31,10 +33,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     log.info("Authenticating trainee profile");
 
-    return traineeDao
+    Trainee trainee =
+        traineeDao
         .findByUsername(username)
-        .filter(trainee -> password.equals(trainee.getUser().getPassword()))
+        .filter(foundTrainee -> password.equals(foundTrainee.getUser().getPassword()))
         .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));
+    AuditContext.setAuthenticatedUser(
+        ProfileType.TRAINEE, trainee.getUser().getUserId(), trainee.getId());
+    return trainee;
   }
 
   @Override
@@ -45,9 +51,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     log.info("Authenticating trainer profile");
 
-    return trainerDao
+    Trainer trainer =
+        trainerDao
         .findByUsername(username)
-        .filter(trainer -> password.equals(trainer.getUser().getPassword()))
+        .filter(foundTrainer -> password.equals(foundTrainer.getUser().getPassword()))
         .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));
+    AuditContext.setAuthenticatedUser(
+        ProfileType.TRAINER, trainer.getUser().getUserId(), trainer.getId());
+    return trainer;
   }
 }

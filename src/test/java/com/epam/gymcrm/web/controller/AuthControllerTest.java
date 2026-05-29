@@ -13,6 +13,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.User;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
@@ -30,6 +31,8 @@ class AuthControllerTest {
 
   private static final String USERNAME = "John.Doe";
   private static final String PASSWORD = "password";
+  private static final long USER_ID = 1L;
+  private static final long PROFILE_ID = 2L;
 
   @Mock private AuthenticationService authenticationService;
 
@@ -50,8 +53,9 @@ class AuthControllerTest {
   void loginUserShouldReturnTraineeTokenWhenTraineeAuthenticationSucceeds() {
     LoginRequest request = new LoginRequest(USERNAME, PASSWORD);
     AuthenticatedUser authenticatedUser =
-        new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(authenticationService.authenticateTrainee(USERNAME, PASSWORD)).thenReturn(new Trainee());
+        new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE, USER_ID, PROFILE_ID);
+    when(authenticationService.authenticateTrainee(USERNAME, PASSWORD))
+        .thenReturn(trainee(PROFILE_ID, USER_ID));
     when(tokenService.createToken(authenticatedUser)).thenReturn("trainee-token");
 
     given()
@@ -73,10 +77,11 @@ class AuthControllerTest {
       loginUserShouldReturnTrainerTokenWhenTraineeAuthenticationFailsAndTrainerAuthenticationSucceeds() {
     LoginRequest request = new LoginRequest(USERNAME, PASSWORD);
     AuthenticatedUser authenticatedUser =
-        new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER);
+        new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINER, USER_ID, PROFILE_ID);
     when(authenticationService.authenticateTrainee(USERNAME, PASSWORD))
         .thenThrow(new AuthenticationException("Invalid username or password"));
-    when(authenticationService.authenticateTrainer(USERNAME, PASSWORD)).thenReturn(new Trainer());
+    when(authenticationService.authenticateTrainer(USERNAME, PASSWORD))
+        .thenReturn(trainer(PROFILE_ID, USER_ID));
     when(tokenService.createToken(authenticatedUser)).thenReturn("trainer-token");
 
     given()
@@ -112,5 +117,17 @@ class AuthControllerTest {
         .body("message", equalTo("Invalid username or password"));
 
     verifyNoInteractions(tokenService);
+  }
+
+  private static Trainee trainee(Long traineeId, Long userId) {
+    return Trainee.builder().id(traineeId).user(user(userId)).build();
+  }
+
+  private static Trainer trainer(Long trainerId, Long userId) {
+    return Trainer.builder().id(trainerId).user(user(userId)).build();
+  }
+
+  private static User user(Long userId) {
+    return User.builder().userId(userId).build();
   }
 }

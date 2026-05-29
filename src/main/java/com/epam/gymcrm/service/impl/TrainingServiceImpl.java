@@ -16,6 +16,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
@@ -72,8 +73,13 @@ public class TrainingServiceImpl implements TrainingService {
     training.setTrainingType(trainingType);
 
     trainingDao.save(training);
+    AuditContext.setTrainingId(training.getTrainingId());
 
-    log.info("Training added, trainingId={}", training.getTrainingId());
+    log.info(
+        "Training added, trainingId={}, traineeId={}, trainerId={}",
+        training.getTrainingId(),
+        trainee.getId(),
+        trainer.getId());
   }
 
   @Override
@@ -84,7 +90,8 @@ public class TrainingServiceImpl implements TrainingService {
 
     authenticationService.authenticateTrainee(request.username(), request.password());
     TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
-    return trainingDao
+    List<TraineeTrainingResponse> trainings =
+        trainingDao
         .findByTraineeUsernameAndCriteria(
             request.username(),
             criteria == null ? TraineeTrainingCriteria.empty() : criteria,
@@ -92,6 +99,8 @@ public class TrainingServiceImpl implements TrainingService {
         .stream()
         .map(trainingMapper::toTraineeTrainingResponse)
         .toList();
+    log.info("Trainee trainings found, count={}", trainings.size());
+    return trainings;
   }
 
   @Override
@@ -102,7 +111,8 @@ public class TrainingServiceImpl implements TrainingService {
 
     authenticationService.authenticateTrainer(request.username(), request.password());
     TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
-    return trainingDao
+    List<TrainerTrainingResponse> trainings =
+        trainingDao
         .findByTrainerUsernameAndCriteria(
             request.username(),
             criteria == null ? TrainerTrainingCriteria.empty() : criteria,
@@ -110,6 +120,8 @@ public class TrainingServiceImpl implements TrainingService {
         .stream()
         .map(trainingMapper::toTrainerTrainingResponse)
         .toList();
+    log.info("Trainer trainings found, count={}", trainings.size());
+    return trainings;
   }
 
   private static PageRequest page(PageRequest pageRequest) {

@@ -2,6 +2,7 @@ package com.epam.gymcrm.web.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.epam.gymcrm.logging.AuditContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -27,8 +28,10 @@ class RestLoggingInterceptorTest {
     boolean result = interceptor.preHandle(request, response, HANDLER);
 
     assertThat(result).isTrue();
-    assertThat(MDC.get("transactionId")).isNotBlank();
-    assertThat(request.getAttribute(RestLoggingInterceptor.START_TIME_ATTRIBUTE)).isInstanceOf(Long.class);
+    assertThat(MDC.get(AuditContext.TRANSACTION_ID)).isNotBlank();
+    assertThat(MDC.get(AuditContext.OPERATION_NAME)).isEqualTo("GET_TRAINEE_PROFILE");
+    assertThat(request.getAttribute(RestLoggingInterceptor.START_TIME_ATTRIBUTE))
+        .isInstanceOf(Long.class);
   }
 
   @Test
@@ -40,7 +43,36 @@ class RestLoggingInterceptorTest {
 
     interceptor.afterCompletion(request, response, HANDLER, null);
 
-    assertThat(MDC.get("transactionId")).isNull();
+    assertThat(MDC.get(AuditContext.TRANSACTION_ID)).isNull();
+    assertThat(MDC.get(AuditContext.OPERATION_NAME)).isNull();
+  }
+
+  @Test
+  void afterCompletionShouldClearTransactionContextForBadRequest() {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/unknown");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    response.setStatus(HttpServletResponseStatus.BAD_REQUEST);
+    interceptor.preHandle(request, response, HANDLER);
+
+    interceptor.afterCompletion(request, response, HANDLER, null);
+
+    assertThat(MDC.get(AuditContext.TRANSACTION_ID)).isNull();
+    assertThat(MDC.get(AuditContext.OPERATION_NAME)).isNull();
+  }
+
+  @Test
+  void afterCompletionShouldHandleMissingStartTime() {
+    final MockHttpServletRequest request =
+        new MockHttpServletRequest("GET", "/v1/trainees/profile");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    response.setStatus(HttpServletResponseStatus.OK);
+    AuditContext.setTransactionId("tx-id");
+    AuditContext.setOperationName("GET_TRAINEE_PROFILE");
+
+    interceptor.afterCompletion(request, response, HANDLER, null);
+
+    assertThat(MDC.get(AuditContext.TRANSACTION_ID)).isNull();
+    assertThat(MDC.get(AuditContext.OPERATION_NAME)).isNull();
   }
 
   @Test
@@ -52,12 +84,14 @@ class RestLoggingInterceptorTest {
 
     interceptor.afterCompletion(request, response, HANDLER, new RuntimeException("password=secret"));
 
-    assertThat(MDC.get("transactionId")).isNull();
+    assertThat(MDC.get(AuditContext.TRANSACTION_ID)).isNull();
+    assertThat(MDC.get(AuditContext.OPERATION_NAME)).isNull();
   }
 
   private static final class HttpServletResponseStatus {
 
     private static final int OK = 200;
+    private static final int BAD_REQUEST = 400;
     private static final int SERVER_ERROR = 500;
   }
 }

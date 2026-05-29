@@ -9,11 +9,13 @@ import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
+import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
 import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
@@ -62,7 +64,8 @@ public class TrainerServiceImpl implements TrainerService {
 
     user.setPassword(passwordGenerator.generate());
     trainerDao.save(trainer);
-    log.info("Trainer profile created, Id={}, userId={}", trainer.getId(), user.getUserId());
+    AuditContext.setAuthenticatedUser(ProfileType.TRAINER, user.getUserId(), trainer.getId());
+    log.info("Trainer profile created, userId={}, trainerId={}", user.getUserId(), trainer.getId());
 
     return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
   }
@@ -86,7 +89,10 @@ public class TrainerServiceImpl implements TrainerService {
     trainer.getUser().setPassword(request.newPassword());
     trainerDao.save(trainer);
 
-    log.info("Trainer password changed, userId={}", trainer.getId());
+    log.info(
+        "Trainer password changed, userId={}, trainerId={}",
+        trainer.getUser().getUserId(),
+        trainer.getId());
   }
 
   @Override
@@ -98,7 +104,11 @@ public class TrainerServiceImpl implements TrainerService {
     trainer.getUser().switchActiveStatus();
     trainerDao.save(trainer);
 
-    log.info("Trainer active status switched, userId={}", trainer.getId());
+    log.info(
+        "Trainer active status switched, userId={}, trainerId={}, active={}",
+        trainer.getUser().getUserId(),
+        trainer.getId(),
+        trainer.getUser().getActive());
   }
 
   @Override
@@ -128,7 +138,10 @@ public class TrainerServiceImpl implements TrainerService {
     authenticatedTrainer.setSpecialization(resolveSpecializationName(request.specialization()));
     trainerDao.save(authenticatedTrainer);
 
-    log.info("Trainer profile updated, userId={}", authenticatedTrainer.getId());
+    log.info(
+        "Trainer profile updated, userId={}, trainerId={}",
+        authenticatedTrainer.getUser().getUserId(),
+        authenticatedTrainer.getId());
     return trainerMapper.toProfileResponse(authenticatedTrainer);
   }
 

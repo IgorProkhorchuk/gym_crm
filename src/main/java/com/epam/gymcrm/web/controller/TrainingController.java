@@ -8,6 +8,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.logging.AuditContext;
 import com.epam.gymcrm.web.api.TrainingApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
@@ -42,6 +43,7 @@ public class TrainingController implements TrainingApi {
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody AddTrainingRestRequest request) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuditContext.setAuthenticatedUser(user.profileType(), user.userId(), user.profileId());
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }

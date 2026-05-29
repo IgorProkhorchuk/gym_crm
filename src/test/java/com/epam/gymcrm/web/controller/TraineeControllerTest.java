@@ -23,7 +23,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
@@ -44,11 +44,11 @@ class TraineeControllerTest {
 
   @Mock private GymFacade gymFacade;
 
-  @Mock private FakeTokenService fakeTokenService;
+  @Mock private TokenService tokenService;
 
   @BeforeEach
   void setUp() {
-    standaloneSetup(new TraineeController(gymFacade, fakeTokenService), new RestExceptionHandler());
+    standaloneSetup(new TraineeController(gymFacade, tokenService), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -117,7 +117,7 @@ class TraineeControllerTest {
             LocalDate.of(1995, 1, 10),
             "Main Street, 123",
             List.of());
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.getTraineeProfile(request)).thenReturn(response);
 
     given()
@@ -133,14 +133,14 @@ class TraineeControllerTest {
         .body("active", equalTo(true))
         .body("address", equalTo("Main Street, 123"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).getTraineeProfile(request);
   }
 
   @Test
   void getTraineeProfileShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .header("X-Auth-Token", TOKEN)
@@ -157,7 +157,7 @@ class TraineeControllerTest {
   @Test
   void getTraineeProfileShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .header("X-Auth-Token", TOKEN)
@@ -173,7 +173,7 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeProfileShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
@@ -209,7 +209,7 @@ class TraineeControllerTest {
             LocalDate.of(1996, 2, 20),
             "Updated Street, 7",
             List.of());
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.updateTrainee(request)).thenReturn(response);
 
     given()
@@ -237,14 +237,14 @@ class TraineeControllerTest {
         .body("dateOfBirth", equalTo("1996-02-20"))
         .body("address", equalTo("Updated Street, 7"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).updateTrainee(request);
   }
 
   @Test
   void updateTraineeProfileShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -272,7 +272,7 @@ class TraineeControllerTest {
   @Test
   void updateTraineeProfileShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -301,7 +301,7 @@ class TraineeControllerTest {
   void changePasswordShouldReturnOkForTraineeToken() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
     ChangePasswordRequest request = new ChangePasswordRequest(USERNAME, PASSWORD, "new-password");
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -320,13 +320,13 @@ class TraineeControllerTest {
         .statusCode(200);
 
     verify(gymFacade).changeTraineePassword(request);
-    verify(fakeTokenService).updatePassword(TOKEN, "new-password");
+    verify(tokenService).updatePassword(TOKEN, "new-password");
   }
 
   @Test
   void changePasswordShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -351,7 +351,7 @@ class TraineeControllerTest {
   @Test
   void changePasswordShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -377,7 +377,7 @@ class TraineeControllerTest {
   void switchActiveStatusShouldReturnOkForTraineeToken() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
     AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -394,14 +394,14 @@ class TraineeControllerTest {
         .then()
         .statusCode(200);
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).switchTraineeActiveStatus(request);
   }
 
   @Test
   void switchActiveStatusShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -425,7 +425,7 @@ class TraineeControllerTest {
   @Test
   void switchActiveStatusShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -448,7 +448,7 @@ class TraineeControllerTest {
 
   @Test
   void switchActiveStatusShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
@@ -494,7 +494,7 @@ class TraineeControllerTest {
   void deleteTraineeProfileShouldReturnOk() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
     AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -510,7 +510,7 @@ class TraineeControllerTest {
         .then()
         .statusCode(200);
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).deleteTraineeByUsername(request);
   }
 
@@ -518,7 +518,7 @@ class TraineeControllerTest {
   void deleteTraineeProfileShouldRejectTrainerToken() {
     AuthenticatedUser user =
         new AuthenticatedUser("Petryk.Pjatochkyn", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -541,7 +541,7 @@ class TraineeControllerTest {
   @Test
   void deleteTraineeProfileShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -563,7 +563,7 @@ class TraineeControllerTest {
 
   @Test
   void deleteTraineeProfileShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
@@ -592,7 +592,7 @@ class TraineeControllerTest {
         List.of(
             new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
             new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.getUnassignedTrainers(request)).thenReturn(response);
 
     given()
@@ -612,14 +612,14 @@ class TraineeControllerTest {
         .body("[1].lastName", equalTo("Yoga"))
         .body("[1].specialization", equalTo("Yoga"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).getUnassignedTrainers(request);
   }
 
   @Test
   void getUnassignedTrainersShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .header("X-Auth-Token", TOKEN)
@@ -636,7 +636,7 @@ class TraineeControllerTest {
   @Test
   void getUnassignedTrainersShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .header("X-Auth-Token", TOKEN)
@@ -652,7 +652,7 @@ class TraineeControllerTest {
 
   @Test
   void getUnassignedTrainersShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
@@ -676,7 +676,7 @@ class TraineeControllerTest {
         List.of(
             new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
             new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.updateTraineeTrainers(request)).thenReturn(response);
 
     given()
@@ -706,14 +706,14 @@ class TraineeControllerTest {
         .body("[1].lastName", equalTo("Yoga"))
         .body("[1].specialization", equalTo("Yoga"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).updateTraineeTrainers(request);
   }
 
   @Test
   void updateTraineeTrainersShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -739,7 +739,7 @@ class TraineeControllerTest {
   @Test
   void updateTraineeTrainersShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -764,7 +764,7 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeTrainersShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
@@ -853,7 +853,7 @@ class TraineeControllerTest {
         List.of(
             new TraineeTrainingResponse(
                 "Morning Training", "Fitness", LocalDate.of(2026, 1, 10), 60, "Mike Stone"));
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.getTraineeTrainings(request)).thenReturn(response);
 
     given()
@@ -874,14 +874,14 @@ class TraineeControllerTest {
         .body("[0].trainingDuration", equalTo(60))
         .body("[0].trainerName", equalTo("Mike Stone"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).getTraineeTrainings(request);
   }
 
   @Test
   void getTraineeTrainingsShouldRejectTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .header("X-Auth-Token", TOKEN)
@@ -898,7 +898,7 @@ class TraineeControllerTest {
   @Test
   void getTraineeTrainingsShouldRejectAnotherUsername() {
     AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .header("X-Auth-Token", TOKEN)
@@ -914,7 +914,7 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeTrainingsShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()

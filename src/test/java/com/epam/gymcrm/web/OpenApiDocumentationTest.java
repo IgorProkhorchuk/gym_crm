@@ -10,10 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epam.gymcrm.config.WebConfig;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.service.AuthenticationService;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
 import org.springframework.test.web.servlet.MockMvc;
@@ -56,8 +57,9 @@ class OpenApiDocumentationTest {
     }
 
     @Bean
-    FakeTokenService fakeTokenService() {
-      return mock(FakeTokenService.class);
+    @Primary
+    TokenService tokenService() {
+      return mock(TokenService.class);
     }
 
     @Bean

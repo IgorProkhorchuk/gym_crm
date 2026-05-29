@@ -7,7 +7,7 @@ import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.api.AuthApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/auth/login")
 public class AuthController implements AuthApi {
   private final AuthenticationService authenticationService;
-  private final FakeTokenService tokenService;
+  private final TokenService tokenService;
 
   public AuthController(
-      AuthenticationService authenticationService, FakeTokenService tokenService) {
+      AuthenticationService authenticationService, TokenService tokenService) {
     this.authenticationService = authenticationService;
     this.tokenService = tokenService;
   }

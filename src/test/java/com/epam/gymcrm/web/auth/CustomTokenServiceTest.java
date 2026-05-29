@@ -8,52 +8,52 @@ import com.epam.gymcrm.exception.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class FakeTokenServiceTest {
+class CustomTokenServiceTest {
 
-  private FakeTokenService fakeTokenService;
+  private TokenService tokenService;
 
   @BeforeEach
   void setUp() {
-    fakeTokenService = new FakeTokenService();
+    tokenService = new CustomTokenService();
   }
 
   @Test
   void createTokenShouldStoreAuthenticatedUser() {
     AuthenticatedUser user = new AuthenticatedUser("John.Doe", "password", ProfileType.TRAINEE);
 
-    String token = fakeTokenService.createToken(user);
+    String token = tokenService.createToken(user);
 
     assertThat(token).isNotBlank();
-    assertThat(fakeTokenService.getUserByToken(token)).isEqualTo(user);
+    assertThat(tokenService.getUserByToken(token)).isEqualTo(user);
   }
 
   @Test
   void createTokenShouldGenerateDifferentTokensForDifferentCalls() {
     AuthenticatedUser user = new AuthenticatedUser("John.Doe", "password", ProfileType.TRAINEE);
 
-    String firstToken = fakeTokenService.createToken(user);
-    String secondToken = fakeTokenService.createToken(user);
+    String firstToken = tokenService.createToken(user);
+    String secondToken = tokenService.createToken(user);
 
     assertThat(firstToken).isNotEqualTo(secondToken);
   }
 
   @Test
   void createTokenShouldThrowWhenUserIsNull() {
-    assertThatThrownBy(() -> fakeTokenService.createToken(null))
+    assertThatThrownBy(() -> tokenService.createToken(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Authenticated user must not be null");
   }
 
   @Test
   void getUserByTokenShouldThrowWhenTokenIsBlank() {
-    assertThatThrownBy(() -> fakeTokenService.getUserByToken(" "))
+    assertThatThrownBy(() -> tokenService.getUserByToken(" "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Authentication token must not be blank");
   }
 
   @Test
   void getUserByTokenShouldThrowWhenTokenIsUnknown() {
-    assertThatThrownBy(() -> fakeTokenService.getUserByToken("unknown-token"))
+    assertThatThrownBy(() -> tokenService.getUserByToken("unknown-token"))
         .isInstanceOf(AuthenticationException.class)
         .hasMessage("Invalid authentication token");
   }
@@ -61,20 +61,20 @@ class FakeTokenServiceTest {
   @Test
   void updatePasswordShouldReplacePasswordForExistingToken() {
     AuthenticatedUser user = new AuthenticatedUser("John.Doe", "old-password", ProfileType.TRAINEE);
-    String token = fakeTokenService.createToken(user);
+    String token = tokenService.createToken(user);
 
-    fakeTokenService.updatePassword(token, "new-password");
+    tokenService.updatePassword(token, "new-password");
 
-    assertThat(fakeTokenService.getUserByToken(token))
+    assertThat(tokenService.getUserByToken(token))
         .isEqualTo(new AuthenticatedUser("John.Doe", "new-password", ProfileType.TRAINEE));
   }
 
   @Test
   void updatePasswordShouldThrowWhenNewPasswordIsBlank() {
     AuthenticatedUser user = new AuthenticatedUser("John.Doe", "old-password", ProfileType.TRAINEE);
-    String token = fakeTokenService.createToken(user);
+    String token = tokenService.createToken(user);
 
-    assertThatThrownBy(() -> fakeTokenService.updatePassword(token, " "))
+    assertThatThrownBy(() -> tokenService.updatePassword(token, " "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("New password must not be blank");
   }

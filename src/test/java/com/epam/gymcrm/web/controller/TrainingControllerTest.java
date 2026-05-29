@@ -13,7 +13,7 @@ import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
@@ -34,11 +34,11 @@ class TrainingControllerTest {
 
   @Mock private GymFacade gymFacade;
 
-  @Mock private FakeTokenService fakeTokenService;
+  @Mock private TokenService tokenService;
 
   @BeforeEach
   void setUp() {
-    standaloneSetup(new TrainingController(gymFacade, fakeTokenService), new RestExceptionHandler());
+    standaloneSetup(new TrainingController(gymFacade, tokenService), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -59,7 +59,7 @@ class TrainingControllerTest {
             "Fitness",
             LocalDate.of(2026, 1, 10),
             60);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -80,7 +80,7 @@ class TrainingControllerTest {
         .then()
         .statusCode(200);
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).addTraining(request);
   }
 
@@ -88,7 +88,7 @@ class TrainingControllerTest {
   void addTrainingShouldRejectTrainerToken() {
     AuthenticatedUser user =
         new AuthenticatedUser(TRAINER_USERNAME, PASSWORD, ProfileType.TRAINER);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -107,7 +107,7 @@ class TrainingControllerTest {
   void addTrainingShouldRejectAnotherUsername() {
     AuthenticatedUser user =
         new AuthenticatedUser(TRAINEE_USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
 
     given()
         .contentType(ContentType.JSON)
@@ -134,7 +134,7 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()

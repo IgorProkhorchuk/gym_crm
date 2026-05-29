@@ -10,7 +10,7 @@ import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.api.TrainingApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import com.epam.gymcrm.web.dto.AddTrainingRestRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainingController implements TrainingApi {
 
   private final GymFacade gymFacade;
-  private final FakeTokenService fakeTokenService;
+  private final TokenService tokenService;
 
   @Autowired
-  public TrainingController(GymFacade gymFacade, FakeTokenService fakeTokenService) {
+  public TrainingController(GymFacade gymFacade, TokenService tokenService) {
     this.gymFacade = gymFacade;
-    this.fakeTokenService = fakeTokenService;
+    this.tokenService = tokenService;
   }
 
   @PostMapping
@@ -41,7 +41,7 @@ public class TrainingController implements TrainingApi {
   public void addTraining(
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody AddTrainingRestRequest request) {
-    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException("Access denied");
     }

@@ -17,7 +17,7 @@ import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.api.TrainerApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
 import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
@@ -42,12 +42,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/trainers")
 public class TrainerController implements TrainerApi {
   private final GymFacade gymFacade;
-  private final FakeTokenService fakeTokenService;
+  private final TokenService tokenService;
 
   @Autowired
-  public TrainerController(GymFacade gymFacade, FakeTokenService fakeTokenService) {
+  public TrainerController(GymFacade gymFacade, TokenService tokenService) {
     this.gymFacade = gymFacade;
-    this.fakeTokenService = fakeTokenService;
+    this.tokenService = tokenService;
   }
 
   @PostMapping
@@ -63,7 +63,7 @@ public class TrainerController implements TrainerApi {
   public TrainerProfileResponse getTrainerProfile(
       @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
-    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -82,7 +82,7 @@ public class TrainerController implements TrainerApi {
   public TrainerProfileResponse updateTrainerProfile(
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
-    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -107,7 +107,7 @@ public class TrainerController implements TrainerApi {
   public void changePassword(
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody ChangePasswordRestRequest body) {
-    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -118,7 +118,7 @@ public class TrainerController implements TrainerApi {
     ChangePasswordRequest request =
         new ChangePasswordRequest(body.username(), body.oldPassword(), body.newPassword());
     gymFacade.changeTrainerPassword(request);
-    fakeTokenService.updatePassword(token, body.newPassword());
+    tokenService.updatePassword(token, body.newPassword());
   }
 
   @PatchMapping("/profile/status")
@@ -127,7 +127,7 @@ public class TrainerController implements TrainerApi {
   public void switchActiveStatus(
       @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody SwitchProfileStatusRestRequest request) {
-    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }
@@ -153,7 +153,7 @@ public class TrainerController implements TrainerApi {
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate toDate,
       @RequestParam(name = "traineeName", required = false) String traineeName) {
-    AuthenticatedUser user = fakeTokenService.getUserByToken(token);
+    AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
       throw new AuthenticationException("Access denied");
     }

@@ -3,7 +3,7 @@ package com.epam.gymcrm.web.controller;
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.api.TrainingTypeApi;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,12 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainingTypeController implements TrainingTypeApi {
 
   private final GymFacade gymFacade;
-  private final FakeTokenService fakeTokenService;
+  private final TokenService tokenService;
 
   @Autowired
-  public TrainingTypeController(GymFacade gymFacade, FakeTokenService fakeTokenService) {
+  public TrainingTypeController(GymFacade gymFacade, TokenService tokenService) {
     this.gymFacade = gymFacade;
-    this.fakeTokenService = fakeTokenService;
+    this.tokenService = tokenService;
   }
 
   @GetMapping
@@ -31,7 +31,7 @@ public class TrainingTypeController implements TrainingTypeApi {
   @Override
   public List<TrainingTypeResponse> getTrainingTypes(
       @RequestHeader("X-Auth-Token") String token) {
-    fakeTokenService.getUserByToken(token);
+    tokenService.getUserByToken(token);
     return gymFacade.getTrainingTypes();
   }
 }

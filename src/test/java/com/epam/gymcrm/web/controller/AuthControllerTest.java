@@ -15,7 +15,7 @@ import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.AfterEach;
@@ -33,12 +33,12 @@ class AuthControllerTest {
 
   @Mock private AuthenticationService authenticationService;
 
-  @Mock private FakeTokenService fakeTokenService;
+  @Mock private TokenService tokenService;
 
   @BeforeEach
   void setUp() {
     standaloneSetup(
-        new AuthController(authenticationService, fakeTokenService), new RestExceptionHandler());
+        new AuthController(authenticationService, tokenService), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -52,7 +52,7 @@ class AuthControllerTest {
     AuthenticatedUser authenticatedUser =
         new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
     when(authenticationService.authenticateTrainee(USERNAME, PASSWORD)).thenReturn(new Trainee());
-    when(fakeTokenService.createToken(authenticatedUser)).thenReturn("trainee-token");
+    when(tokenService.createToken(authenticatedUser)).thenReturn("trainee-token");
 
     given()
         .contentType(ContentType.JSON)
@@ -65,7 +65,7 @@ class AuthControllerTest {
         .body("profileType", equalTo("TRAINEE"));
 
     verify(authenticationService).authenticateTrainee(USERNAME, PASSWORD);
-    verify(fakeTokenService).createToken(authenticatedUser);
+    verify(tokenService).createToken(authenticatedUser);
   }
 
   @Test
@@ -77,7 +77,7 @@ class AuthControllerTest {
     when(authenticationService.authenticateTrainee(USERNAME, PASSWORD))
         .thenThrow(new AuthenticationException("Invalid username or password"));
     when(authenticationService.authenticateTrainer(USERNAME, PASSWORD)).thenReturn(new Trainer());
-    when(fakeTokenService.createToken(authenticatedUser)).thenReturn("trainer-token");
+    when(tokenService.createToken(authenticatedUser)).thenReturn("trainer-token");
 
     given()
         .contentType(ContentType.JSON)
@@ -91,7 +91,7 @@ class AuthControllerTest {
 
     verify(authenticationService).authenticateTrainee(USERNAME, PASSWORD);
     verify(authenticationService).authenticateTrainer(USERNAME, PASSWORD);
-    verify(fakeTokenService).createToken(authenticatedUser);
+    verify(tokenService).createToken(authenticatedUser);
   }
 
   @Test
@@ -111,6 +111,6 @@ class AuthControllerTest {
         .statusCode(401)
         .body("message", equalTo("Invalid username or password"));
 
-    verifyNoInteractions(fakeTokenService);
+    verifyNoInteractions(tokenService);
   }
 }

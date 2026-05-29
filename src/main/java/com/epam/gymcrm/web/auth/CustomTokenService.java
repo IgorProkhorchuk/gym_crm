@@ -10,10 +10,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FakeTokenService {
+public class CustomTokenService implements TokenService {
 
   private final Map<String, AuthenticatedUser> authenticatedUsers = new ConcurrentHashMap<>();
 
+  @Override
   public String createToken(AuthenticatedUser user) {
     requireNonNull(user, "Authenticated user must not be null");
     String token = UUID.randomUUID().toString();
@@ -21,6 +22,7 @@ public class FakeTokenService {
     return token;
   }
 
+  @Override
   public AuthenticatedUser getUserByToken(String token) {
     requireNonBlank(token, "Authentication token must not be blank");
     AuthenticatedUser user = authenticatedUsers.get(token);
@@ -30,6 +32,7 @@ public class FakeTokenService {
     return user;
   }
 
+  @Override
   public void updatePassword(String token, String newPassword) {
     requireNonBlank(newPassword, "New password must not be blank");
     AuthenticatedUser user = getUserByToken(token);

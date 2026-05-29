@@ -13,7 +13,7 @@ import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.FakeTokenService;
+import com.epam.gymcrm.web.auth.TokenService;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -30,12 +30,12 @@ class TrainingTypeControllerTest {
 
   @Mock private GymFacade gymFacade;
 
-  @Mock private FakeTokenService fakeTokenService;
+  @Mock private TokenService tokenService;
 
   @BeforeEach
   void setUp() {
     standaloneSetup(
-        new TrainingTypeController(gymFacade, fakeTokenService), new RestExceptionHandler());
+        new TrainingTypeController(gymFacade, tokenService), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -48,7 +48,7 @@ class TrainingTypeControllerTest {
     AuthenticatedUser user = new AuthenticatedUser("John.Doe", "password", ProfileType.TRAINEE);
     List<TrainingTypeResponse> response =
         List.of(new TrainingTypeResponse(1L, "Fitness"), new TrainingTypeResponse(2L, "Yoga"));
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.getTrainingTypes()).thenReturn(response);
 
     given()
@@ -63,7 +63,7 @@ class TrainingTypeControllerTest {
         .body("[1].id", equalTo(2))
         .body("[1].trainingTypeName", equalTo("Yoga"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).getTrainingTypes();
   }
 
@@ -71,7 +71,7 @@ class TrainingTypeControllerTest {
   void getTrainingTypesShouldReturnReferenceDataForTrainerToken() {
     AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", "password", ProfileType.TRAINER);
     List<TrainingTypeResponse> response = List.of(new TrainingTypeResponse(1L, "Fitness"));
-    when(fakeTokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
     when(gymFacade.getTrainingTypes()).thenReturn(response);
 
     given()
@@ -83,13 +83,13 @@ class TrainingTypeControllerTest {
         .body("size()", equalTo(1))
         .body("[0].trainingTypeName", equalTo("Fitness"));
 
-    verify(fakeTokenService).getUserByToken(TOKEN);
+    verify(tokenService).getUserByToken(TOKEN);
     verify(gymFacade).getTrainingTypes();
   }
 
   @Test
   void getTrainingTypesShouldRejectInvalidToken() {
-    when(fakeTokenService.getUserByToken("invalid-token"))
+    when(tokenService.getUserByToken("invalid-token"))
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()

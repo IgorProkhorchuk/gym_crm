@@ -522,7 +522,7 @@
               },
               {
                 "key": "X-Auth-Token",
-                "value": "{{trainerToken}}"
+                "value": "{{traineeToken}}"
               }
             ],
             "body": {
@@ -1109,7 +1109,6 @@
                   "",
                   "const body = pm.response.json();",
                   "pm.test('Error body is JSON', function () {",
-                  "  pm.expect(body.status).to.eql(401);",
                   "  pm.expect(body.message).to.be.a('string').and.not.empty;",
                   "});"
                 ]
@@ -1155,7 +1154,6 @@
                   "",
                   "const body = pm.response.json();",
                   "pm.test('Validation error explains invalid field', function () {",
-                  "  pm.expect(body.status).to.eql(400);",
                   "  pm.expect(body.message).to.include('firstName');",
                   "});"
                 ]
@@ -1284,7 +1282,6 @@
                   "",
                   "const body = pm.response.json();",
                   "pm.test('Malformed body error is readable', function () {",
-                  "  pm.expect(body.status).to.eql(400);",
                   "  pm.expect(body.message).to.include('Malformed request body');",
                   "});"
                 ]

@@ -11,34 +11,37 @@ import java.util.Set;
 @Dao
 public class UserDaoImpl implements UserDao {
 
-    private final EntityManager entityManager;
+  private final EntityManager entityManager;
 
-    public UserDaoImpl(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
+  public UserDaoImpl(EntityManager entityManager) {
+    this.entityManager = entityManager;
+  }
 
-    @Override
-    public Optional<User> findByUsername(String username) {
-        return entityManager.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class)
-                .setParameter("username", username)
-                .getResultStream()
-                .findFirst();
-    }
+  @Override
+  public Optional<User> findByUsername(String username) {
+    return entityManager
+        .createQuery("SELECT u FROM User u WHERE u.username = :username", User.class)
+        .setParameter("username", username)
+        .getResultStream()
+        .findFirst();
+  }
 
-    @Override
-    public Set<String> findUsernamesByPattern(String pattern) {
-        return new HashSet<>(entityManager.createQuery(
+  @Override
+  public Set<String> findUsernamesByPattern(String pattern) {
+    return new HashSet<>(
+        entityManager
+            .createQuery(
                 "SELECT u.username FROM User u WHERE u.username LIKE :pattern", String.class)
-                .setParameter("pattern", pattern)
-                .getResultList());
-    }
+            .setParameter("pattern", pattern)
+            .getResultList());
+  }
 
-    @Override
-    public void save(User user) {
-        if (user.getUserId() != null) {
-            entityManager.merge(user);
-        } else {
-            entityManager.persist(user);
-        }
+  @Override
+  public void save(User user) {
+    if (user.getUserId() != null) {
+      entityManager.merge(user);
+    } else {
+      entityManager.persist(user);
     }
+  }
 }

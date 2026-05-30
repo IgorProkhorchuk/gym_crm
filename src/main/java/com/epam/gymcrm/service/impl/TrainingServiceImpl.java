@@ -1,5 +1,9 @@
 package com.epam.gymcrm.service.impl;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requirePositive;
+
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.TrainerDao;
@@ -19,16 +23,11 @@ import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.TrainingService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requirePositive;
 
 @Slf4j
 @Service
@@ -36,76 +35,84 @@ import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireP
 @Transactional
 public class TrainingServiceImpl implements TrainingService {
 
-    private final TrainingDao trainingDao;
-    private final TrainerDao trainerDao;
-    private final TrainingTypeDao trainingTypeDao;
-    private final AuthenticationService authenticationService;
-    private final TrainingMapper trainingMapper;
+  private final TrainingDao trainingDao;
+  private final TrainerDao trainerDao;
+  private final TrainingTypeDao trainingTypeDao;
+  private final AuthenticationService authenticationService;
+  private final TrainingMapper trainingMapper;
 
-    @Override
-    public void addTraining(AddTrainingRequest request) {
-        requireNonNull(request, "Training request must not be null");
-        requireNonBlank(request.traineeUsername(), "Trainee username must not be blank");
-        requireNonBlank(request.traineePassword(), "Trainee password must not be blank");
-        requireNonBlank(request.trainerUsername(), "Trainer username must not be blank");
-        requireNonBlank(request.trainingName(), "Training name must not be blank");
-        requireNonBlank(request.trainingTypeName(), "Training type must not be blank");
-        requireNonNull(request.trainingDate(), "Training date must not be null");
-        requirePositive(request.trainingDuration(), "Training duration must be positive");
+  @Override
+  public void addTraining(AddTrainingRequest request) {
+    requireNonNull(request, "Training request must not be null");
+    requireNonBlank(request.traineeUsername(), "Trainee username must not be blank");
+    requireNonBlank(request.traineePassword(), "Trainee password must not be blank");
+    requireNonBlank(request.trainerUsername(), "Trainer username must not be blank");
+    requireNonBlank(request.trainingName(), "Training name must not be blank");
+    requireNonBlank(request.trainingTypeName(), "Training type must not be blank");
+    requireNonNull(request.trainingDate(), "Training date must not be null");
+    requirePositive(request.trainingDuration(), "Training duration must be positive");
 
-        log.info("Adding training");
+    log.info("Adding training");
 
-        Trainee trainee = authenticationService.authenticateTrainee(request.traineeUsername(), request.traineePassword());
-        Trainer trainer = trainerDao.findByUsername(request.trainerUsername())
-                .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
-        TrainingType trainingType = trainingTypeDao.findByName(request.trainingTypeName())
-                .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
+    Trainee trainee =
+        authenticationService.authenticateTrainee(
+            request.traineeUsername(), request.traineePassword());
+    Trainer trainer =
+        trainerDao
+            .findByUsername(request.trainerUsername())
+            .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
+    TrainingType trainingType =
+        trainingTypeDao
+            .findByName(request.trainingTypeName())
+            .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
 
-        Training training = trainingMapper.toEntity(request);
-        training.setTrainee(trainee);
-        training.setTrainer(trainer);
-        training.setTrainingType(trainingType);
+    Training training = trainingMapper.toEntity(request);
+    training.setTrainee(trainee);
+    training.setTrainer(trainer);
+    training.setTrainingType(trainingType);
 
-        trainingDao.save(training);
+    trainingDao.save(training);
 
-        log.info("Training added, trainingId={}", training.getTrainingId());
-    }
+    log.info("Training added, trainingId={}", training.getTrainingId());
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
-        requireNonNull(request, "Trainee trainings request must not be null");
-        log.info("Getting trainee trainings");
+  @Override
+  @Transactional(readOnly = true)
+  public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
+    requireNonNull(request, "Trainee trainings request must not be null");
+    log.info("Getting trainee trainings");
 
-        authenticationService.authenticateTrainee(request.username(), request.password());
-        TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
-        return trainingDao.findByTraineeUsernameAndCriteria(
-                request.username(),
-                criteria == null ? TraineeTrainingCriteria.empty() : criteria,
-                page(request.pageRequest())
-        ).stream()
-                .map(trainingMapper::toTraineeTrainingResponse)
-                .toList();
-    }
+    authenticationService.authenticateTrainee(request.username(), request.password());
+    TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
+    return trainingDao
+        .findByTraineeUsernameAndCriteria(
+            request.username(),
+            criteria == null ? TraineeTrainingCriteria.empty() : criteria,
+            page(request.pageRequest()))
+        .stream()
+        .map(trainingMapper::toTraineeTrainingResponse)
+        .toList();
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
-        requireNonNull(request, "Trainer trainings request must not be null");
-        log.info("Getting trainer trainings");
+  @Override
+  @Transactional(readOnly = true)
+  public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
+    requireNonNull(request, "Trainer trainings request must not be null");
+    log.info("Getting trainer trainings");
 
-        authenticationService.authenticateTrainer(request.username(), request.password());
-        TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
-        return trainingDao.findByTrainerUsernameAndCriteria(
-                request.username(),
-                criteria == null ? TrainerTrainingCriteria.empty() : criteria,
-                page(request.pageRequest())
-        ).stream()
-                .map(trainingMapper::toTrainerTrainingResponse)
-                .toList();
-    }
+    authenticationService.authenticateTrainer(request.username(), request.password());
+    TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
+    return trainingDao
+        .findByTrainerUsernameAndCriteria(
+            request.username(),
+            criteria == null ? TrainerTrainingCriteria.empty() : criteria,
+            page(request.pageRequest()))
+        .stream()
+        .map(trainingMapper::toTrainerTrainingResponse)
+        .toList();
+  }
 
-    private static PageRequest page(PageRequest pageRequest) {
-        return pageRequest == null ? PageRequest.firstPage() : pageRequest;
-    }
+  private static PageRequest page(PageRequest pageRequest) {
+    return pageRequest == null ? PageRequest.firstPage() : pageRequest;
+  }
 }

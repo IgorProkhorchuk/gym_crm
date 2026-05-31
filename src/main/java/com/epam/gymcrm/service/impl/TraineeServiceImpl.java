@@ -1,9 +1,5 @@
 package com.epam.gymcrm.service.impl;
 
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireEachNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
-
 import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.UserDao;
@@ -50,9 +46,6 @@ public class TraineeServiceImpl implements TraineeService {
 
   @Override
   public UsernamePasswordResponse create(CreateTraineeRequest request) {
-    requireNonNull(request, "Trainee request must not be null");
-    validateNameFields(request.firstName(), request.lastName());
-
     Trainee trainee = traineeMapper.toEntity(request);
     User user = trainee.getUser();
 
@@ -81,8 +74,6 @@ public class TraineeServiceImpl implements TraineeService {
   @Override
   @Transactional
   public void changePassword(ChangePasswordRequest request) {
-    requireNonNull(request, "Change password request must not be null");
-    requireNonBlank(request.newPassword(), "New password must not be blank");
     log.info("Changing trainee password");
 
     Trainee trainee =
@@ -119,8 +110,6 @@ public class TraineeServiceImpl implements TraineeService {
   @Override
   @Transactional
   public List<TrainerSummaryResponse> updateTrainers(UpdateTraineeTrainersRequest request) {
-    requireNonNull(request, "Update trainee trainers request must not be null");
-    requireNonNull(request.trainerUsernames(), "Trainer usernames must not be null");
     log.info("Updating trainee trainers list");
 
     Set<String> uniqueTrainerUsernames = normalizeTrainerUsernames(request.trainerUsernames());
@@ -147,9 +136,6 @@ public class TraineeServiceImpl implements TraineeService {
   @Override
   @Transactional
   public TraineeProfileResponse update(UpdateTraineeRequest request) {
-    requireNonNull(request, "Update trainee request must not be null");
-    validateNameFields(request.firstName(), request.lastName());
-    requireNonNull(request.active(), "Active status must not be null");
     log.info("Updating trainee profile");
 
     Trainee authenticatedTrainee =
@@ -161,20 +147,13 @@ public class TraineeServiceImpl implements TraineeService {
     return traineeMapper.toProfileResponse(authenticatedTrainee);
   }
 
-  private static void validateNameFields(String firstName, String lastName) {
-    requireNonBlank(firstName, "First name must not be blank");
-    requireNonBlank(lastName, "Last name must not be blank");
-  }
-
   private static Set<String> normalizeTrainerUsernames(List<String> trainerUsernames) {
     Set<String> uniqueTrainerUsernames = new LinkedHashSet<>();
-    requireEachNonBlank(trainerUsernames, "Trainer username must not be blank");
     uniqueTrainerUsernames.addAll(trainerUsernames);
     return uniqueTrainerUsernames;
   }
 
   private Trainee authenticateTrainee(AuthRequest request) {
-    requireNonNull(request, "Authentication request must not be null");
     return authenticationService.authenticateTrainee(request.username(), request.password());
   }
 }

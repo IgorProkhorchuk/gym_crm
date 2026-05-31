@@ -1,7 +1,6 @@
 package com.epam.gymcrm.web.controller;
 
 import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
 
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
@@ -24,7 +23,7 @@ import com.epam.gymcrm.web.dto.UpdateTrainerProfileRestRequest;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,15 +39,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/trainers")
+@RequiredArgsConstructor
 public class TrainerController implements TrainerApi {
+
+  private static final String TRAINER_PROFILE_REQUIRED =
+      "This operation is available only for trainer profiles";
+  private static final String OWN_TRAINER_PROFILE_REQUIRED =
+      "Authenticated trainer can perform this operation only for own profile";
+
   private final GymFacade gymFacade;
   private final TokenService tokenService;
-
-  @Autowired
-  public TrainerController(GymFacade gymFacade, TokenService tokenService) {
-    this.gymFacade = gymFacade;
-    this.tokenService = tokenService;
-  }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
@@ -65,11 +65,11 @@ public class TrainerController implements TrainerApi {
       @RequestParam(name = "username") String username) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(TRAINER_PROFILE_REQUIRED);
     }
     requireNonBlank(username, "Username must not be blank");
     if (!user.username().equals(username)) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(OWN_TRAINER_PROFILE_REQUIRED);
     }
 
     AuthRequest request = new AuthRequest(username, user.password());
@@ -84,10 +84,10 @@ public class TrainerController implements TrainerApi {
       @Valid @RequestBody UpdateTrainerProfileRestRequest trainerRequest) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(TRAINER_PROFILE_REQUIRED);
     }
     if (!user.username().equals(trainerRequest.username())) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(OWN_TRAINER_PROFILE_REQUIRED);
     }
 
     UpdateTrainerRequest request =
@@ -109,10 +109,10 @@ public class TrainerController implements TrainerApi {
       @Valid @RequestBody ChangePasswordRestRequest body) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(TRAINER_PROFILE_REQUIRED);
     }
     if (!user.username().equals(body.username())) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(OWN_TRAINER_PROFILE_REQUIRED);
     }
 
     ChangePasswordRequest request =
@@ -129,12 +129,10 @@ public class TrainerController implements TrainerApi {
       @Valid @RequestBody SwitchProfileStatusRestRequest request) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(TRAINER_PROFILE_REQUIRED);
     }
-    requireNonBlank(request.username(), "Username must not be blank");
-    requireNonNull(request.active(), "Active status must not be null");
     if (!user.username().equals(request.username())) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(OWN_TRAINER_PROFILE_REQUIRED);
     }
 
     gymFacade.switchTrainerActiveStatus(new AuthRequest(user.username(), user.password()));
@@ -155,11 +153,11 @@ public class TrainerController implements TrainerApi {
       @RequestParam(name = "traineeName", required = false) String traineeName) {
     AuthenticatedUser user = tokenService.getUserByToken(token);
     if (user.profileType() != ProfileType.TRAINER) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(TRAINER_PROFILE_REQUIRED);
     }
     requireNonBlank(username, "Username must not be blank");
     if (!user.username().equals(username)) {
-      throw new AuthenticationException("Access denied");
+      throw new AuthenticationException(OWN_TRAINER_PROFILE_REQUIRED);
     }
 
     return gymFacade.getTrainerTrainings(

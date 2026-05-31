@@ -1,9 +1,5 @@
 package com.epam.gymcrm.service.impl;
 
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requirePositive;
-
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dao.TrainerDao;
@@ -28,9 +24,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 @Transactional
 public class TrainingServiceImpl implements TrainingService {
@@ -43,15 +41,6 @@ public class TrainingServiceImpl implements TrainingService {
 
   @Override
   public void addTraining(AddTrainingRequest request) {
-    requireNonNull(request, "Training request must not be null");
-    requireNonBlank(request.traineeUsername(), "Trainee username must not be blank");
-    requireNonBlank(request.traineePassword(), "Trainee password must not be blank");
-    requireNonBlank(request.trainerUsername(), "Trainer username must not be blank");
-    requireNonBlank(request.trainingName(), "Training name must not be blank");
-    requireNonBlank(request.trainingTypeName(), "Training type must not be blank");
-    requireNonNull(request.trainingDate(), "Training date must not be null");
-    requirePositive(request.trainingDuration(), "Training duration must be positive");
-
     log.info("Adding training");
 
     Trainee trainee =
@@ -79,7 +68,6 @@ public class TrainingServiceImpl implements TrainingService {
   @Override
   @Transactional(readOnly = true)
   public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
-    requireNonNull(request, "Trainee trainings request must not be null");
     log.info("Getting trainee trainings");
 
     authenticationService.authenticateTrainee(request.username(), request.password());
@@ -97,7 +85,6 @@ public class TrainingServiceImpl implements TrainingService {
   @Override
   @Transactional(readOnly = true)
   public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
-    requireNonNull(request, "Trainer trainings request must not be null");
     log.info("Getting trainer trainings");
 
     authenticationService.authenticateTrainer(request.username(), request.password());

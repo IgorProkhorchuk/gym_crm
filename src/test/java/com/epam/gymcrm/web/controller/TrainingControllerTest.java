@@ -98,7 +98,7 @@ class TrainingControllerTest {
         .post("/v1/trainings")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -127,7 +127,7 @@ class TrainingControllerTest {
         .post("/v1/trainings")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can add trainings only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }

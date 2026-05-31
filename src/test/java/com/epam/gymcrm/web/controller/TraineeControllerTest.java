@@ -149,7 +149,7 @@ class TraineeControllerTest {
         .get("/v1/trainees/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -166,7 +166,7 @@ class TraineeControllerTest {
         .get("/v1/trainees/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -264,7 +264,7 @@ class TraineeControllerTest {
         .put("/v1/trainees/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -292,7 +292,7 @@ class TraineeControllerTest {
         .put("/v1/trainees/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -343,7 +343,7 @@ class TraineeControllerTest {
         .put("/v1/trainees/password")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -368,7 +368,7 @@ class TraineeControllerTest {
         .put("/v1/trainees/password")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -417,7 +417,7 @@ class TraineeControllerTest {
         .patch("/v1/trainees/profile/status")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -441,7 +441,7 @@ class TraineeControllerTest {
         .patch("/v1/trainees/profile/status")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -533,7 +533,7 @@ class TraineeControllerTest {
         .delete("/v1/trainees/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -556,7 +556,7 @@ class TraineeControllerTest {
         .delete("/v1/trainees/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -628,7 +628,7 @@ class TraineeControllerTest {
         .get("/v1/trainees/trainers/unassigned")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -645,7 +645,7 @@ class TraineeControllerTest {
         .get("/v1/trainees/trainers/unassigned")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -731,7 +731,7 @@ class TraineeControllerTest {
         .put("/v1/trainees/trainers")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -757,7 +757,7 @@ class TraineeControllerTest {
         .put("/v1/trainees/trainers")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -890,7 +890,7 @@ class TraineeControllerTest {
         .get("/v1/trainees/trainings")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainee profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -907,7 +907,7 @@ class TraineeControllerTest {
         .get("/v1/trainees/trainings")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }

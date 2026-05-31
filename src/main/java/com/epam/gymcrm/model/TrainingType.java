@@ -1,25 +1,35 @@
 package com.epam.gymcrm.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "training_type")
+@Table(name = "training_types")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 public class TrainingType {
 
-    @EqualsAndHashCode.Include
-    @ToString.Include
-    @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long trainingTypeId;
+  @EqualsAndHashCode.Include
+  @ToString.Include
+  @Id
+  @Column(name = "id")
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long trainingTypeId;
 
-    @Column(name = "training_type_name", nullable = false, unique = true)
-    private String trainingTypeName;
+  @Column(name = "training_type_name", nullable = false, unique = true)
+  private String trainingTypeName;
 }

@@ -11,13 +11,9 @@ import java.time.LocalDate;
  * @param trainingType training type name
  */
 public record TraineeTrainingCriteria(
-        LocalDate fromDate,
-        LocalDate toDate,
-        String trainerName,
-        String trainingType
-) {
+    LocalDate fromDate, LocalDate toDate, String trainerName, String trainingType) {
 
-    public static TraineeTrainingCriteria empty() {
-        return new TraineeTrainingCriteria(null, null, null, null);
-    }
+  public static TraineeTrainingCriteria empty() {
+    return new TraineeTrainingCriteria(null, null, null, null);
+  }
 }

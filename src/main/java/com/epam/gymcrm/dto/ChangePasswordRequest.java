@@ -1,9 +1,14 @@
 package com.epam.gymcrm.dto;
 
-public record ChangePasswordRequest(String username, String oldPassword, String newPassword) {
+import jakarta.validation.constraints.NotBlank;
 
-    @Override
-    public String toString() {
-        return "ChangePasswordRequest[username=[PROTECTED], oldPassword=[PROTECTED], newPassword=[PROTECTED]]";
-    }
+public record ChangePasswordRequest(
+    @NotBlank(message = "Username must not be blank") String username,
+    @NotBlank(message = "Old password must not be blank") String oldPassword,
+    @NotBlank(message = "New password must not be blank") String newPassword) {
+
+  @Override
+  public String toString() {
+    return "ChangePasswordRequest[username=[PROTECTED], oldPassword=[PROTECTED], newPassword=[PROTECTED]]";
+  }
 }

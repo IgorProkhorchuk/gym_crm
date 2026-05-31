@@ -72,6 +72,27 @@ services:
       timeout: 5s
       retries: 10
 
+#==================APP=================
+
+  gym-app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: gym-app
+    ports:
+      - "8080:8080"
+    networks:
+      - gym-crm-net
+    environment:
+      CATALINA_OPTS: >-
+        -Ddb.url=jdbc:postgresql://gym-pgpool:5432/gym_crm
+        -Ddb.username=${APP_DB_USERNAME:-gym_user}
+        -Ddb.password=${APP_DB_PASSWORD:-password}
+        -Ddb.driver=org.postgresql.Driver
+    depends_on:
+      gym-pgpool:
+        condition: service_healthy
+
 networks:
   gym-crm-net:
     driver: bridge

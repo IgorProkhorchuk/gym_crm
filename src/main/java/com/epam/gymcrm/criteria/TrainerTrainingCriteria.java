@@ -9,13 +9,9 @@ import java.time.LocalDate;
  * @param toDate upper inclusive training date boundary
  * @param traineeName trainee first or last name fragment
  */
-public record TrainerTrainingCriteria(
-        LocalDate fromDate,
-        LocalDate toDate,
-        String traineeName
-) {
+public record TrainerTrainingCriteria(LocalDate fromDate, LocalDate toDate, String traineeName) {
 
-    public static TrainerTrainingCriteria empty() {
-        return new TrainerTrainingCriteria(null, null, null);
-    }
+  public static TrainerTrainingCriteria empty() {
+    return new TrainerTrainingCriteria(null, null, null);
+  }
 }

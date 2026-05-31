@@ -9,6 +9,7 @@ import com.epam.gymcrm.web.api.AuthApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,15 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/auth/login")
+@RequiredArgsConstructor
 public class AuthController implements AuthApi {
   private final AuthenticationService authenticationService;
   private final TokenService tokenService;
-
-  public AuthController(
-      AuthenticationService authenticationService, TokenService tokenService) {
-    this.authenticationService = authenticationService;
-    this.tokenService = tokenService;
-  }
 
   @PostMapping
   @Override

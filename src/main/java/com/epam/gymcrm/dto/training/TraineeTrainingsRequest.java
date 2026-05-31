@@ -1,11 +1,12 @@
 package com.epam.gymcrm.dto.training;
 
 import com.epam.gymcrm.dto.PageRequest;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
 public record TraineeTrainingsRequest(
-    String username,
-    String password,
+    @NotBlank(message = "Username must not be blank") String username,
+    @NotBlank(message = "Password must not be blank") String password,
     LocalDate fromDate,
     LocalDate toDate,
     String trainerName,

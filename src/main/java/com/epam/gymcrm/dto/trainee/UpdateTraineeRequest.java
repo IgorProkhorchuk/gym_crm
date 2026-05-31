@@ -1,15 +1,17 @@
 package com.epam.gymcrm.dto.trainee;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public record UpdateTraineeRequest(
-    String username,
-    String password,
-    String firstName,
-    String lastName,
+    @NotBlank(message = "Username must not be blank") String username,
+    @NotBlank(message = "Password must not be blank") String password,
+    @NotBlank(message = "First name must not be blank") String firstName,
+    @NotBlank(message = "Last name must not be blank") String lastName,
     LocalDate dateOfBirth,
     String address,
-    Boolean active) {
+    @NotNull(message = "Active status must not be null") Boolean active) {
 
   @Override
   public String toString() {

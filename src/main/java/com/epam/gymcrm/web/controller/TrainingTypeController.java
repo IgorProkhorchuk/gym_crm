@@ -5,7 +5,7 @@ import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.api.TrainingTypeApi;
 import com.epam.gymcrm.web.auth.TokenService;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -15,16 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/training-types")
+@RequiredArgsConstructor
 public class TrainingTypeController implements TrainingTypeApi {
 
   private final GymFacade gymFacade;
   private final TokenService tokenService;
-
-  @Autowired
-  public TrainingTypeController(GymFacade gymFacade, TokenService tokenService) {
-    this.gymFacade = gymFacade;
-    this.tokenService = tokenService;
-  }
 
   @GetMapping
   @ResponseStatus(HttpStatus.OK)

@@ -27,6 +27,10 @@ import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.service.impl.TrainerServiceImpl;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +43,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerServiceImplTest {
+
+  private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
   @InjectMocks private TrainerServiceImpl trainerService;
 
@@ -134,52 +140,43 @@ class TrainerServiceImplTest {
   }
 
   @Test
-  void createShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
-    assertThatThrownBy(() -> trainerService.create(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainer request must not be null");
+  void createShouldHaveBeanValidationViolationWhenRequestIsNull() throws Exception {
+    assertServiceParameterViolation(
+        "create", CreateTrainerRequest.class, null, "Trainer request must not be null");
   }
 
   @Test
-  void createShouldThrowIllegalArgumentExceptionWhenFirstNameIsBlank() {
+  void createShouldHaveBeanValidationViolationWhenFirstNameIsBlank() {
     CreateTrainerRequest request = createTrainerRequest(" ", "Snape", "Fitness", true);
 
-    assertThatThrownBy(() -> trainerService.create(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("First name must not be blank");
+    assertRequestViolation(request, "must not be blank");
 
     verifyNoInteractions(
         trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
   }
 
   @Test
-  void createShouldThrowIllegalArgumentExceptionWhenLastNameIsBlank() {
+  void createShouldHaveBeanValidationViolationWhenLastNameIsBlank() {
     CreateTrainerRequest request = createTrainerRequest("Severus", " ", "Fitness", true);
 
-    assertThatThrownBy(() -> trainerService.create(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Last name must not be blank");
+    assertRequestViolation(request, "must not be blank");
 
     verifyNoInteractions(
         trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
   }
 
   @Test
-  void createShouldThrowIllegalArgumentExceptionWhenSpecializationIsNull() {
+  void createShouldHaveBeanValidationViolationWhenSpecializationIsNull() {
     CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", null, true);
 
-    assertThatThrownBy(() -> trainerService.create(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainer specialization must not be null");
+    assertRequestViolation(request, "must not be blank");
   }
 
   @Test
-  void createShouldThrowIllegalArgumentExceptionWhenSpecializationIsBlank() {
+  void createShouldHaveBeanValidationViolationWhenSpecializationIsBlank() {
     CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", " ", true);
 
-    assertThatThrownBy(() -> trainerService.create(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainer specialization must not be blank");
+    assertRequestViolation(request, "must not be blank");
   }
 
   @Test
@@ -227,28 +224,26 @@ class TrainerServiceImplTest {
   }
 
   @Test
-  void changePasswordShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
-    assertThatThrownBy(() -> trainerService.changePassword(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Change password request must not be null");
+  void changePasswordShouldHaveBeanValidationViolationWhenRequestIsNull() throws Exception {
+    assertServiceParameterViolation(
+        "changePassword",
+        ChangePasswordRequest.class,
+        null,
+        "Change password request must not be null");
   }
 
   @Test
-  void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsNull() {
+  void changePasswordShouldHaveBeanValidationViolationWhenNewPasswordIsNull() {
     ChangePasswordRequest request = new ChangePasswordRequest("John.Coach", "old-password", null);
 
-    assertThatThrownBy(() -> trainerService.changePassword(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("New password must not be blank");
+    assertRequestViolation(request, "New password must not be blank");
   }
 
   @Test
-  void changePasswordShouldThrowIllegalArgumentExceptionWhenNewPasswordIsBlank() {
+  void changePasswordShouldHaveBeanValidationViolationWhenNewPasswordIsBlank() {
     ChangePasswordRequest request = new ChangePasswordRequest("John.Coach", "old-password", " ");
 
-    assertThatThrownBy(() -> trainerService.changePassword(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("New password must not be blank");
+    assertRequestViolation(request, "New password must not be blank");
   }
 
   @Test
@@ -368,10 +363,9 @@ class TrainerServiceImplTest {
   }
 
   @Test
-  void updateShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
-    assertThatThrownBy(() -> trainerService.update(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Update trainer request must not be null");
+  void updateShouldHaveBeanValidationViolationWhenRequestIsNull() throws Exception {
+    assertServiceParameterViolation(
+        "update", UpdateTrainerRequest.class, null, "Update trainer request must not be null");
   }
 
   private static CreateTrainerRequest createTrainerRequest(
@@ -393,5 +387,19 @@ class TrainerServiceImplTest {
   private static TrainerSummaryResponse trainerSummaryResponse(
       Long id, String username, String firstName, String lastName) {
     return new TrainerSummaryResponse(username, firstName, lastName, "Fitness");
+  }
+
+  private void assertRequestViolation(Object request, String message) {
+    assertThat(validator.validate(request)).extracting(ConstraintViolation::getMessage).contains(message);
+  }
+
+  private void assertServiceParameterViolation(
+      String methodName, Class<?> parameterType, Object argument, String message) throws Exception {
+    Method method = TrainerService.class.getMethod(methodName, parameterType);
+    TrainerService target = trainerService;
+
+    assertThat(validator.forExecutables().validateParameters(target, method, new Object[] {argument}))
+        .extracting(ConstraintViolation::getMessage)
+        .contains(message);
   }
 }

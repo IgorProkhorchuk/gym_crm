@@ -8,9 +8,13 @@ import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import org.springframework.validation.annotation.Validated;
 
 /** Business operations for trainee profiles. */
+@Validated
 public interface TraineeService {
 
   /**
@@ -19,7 +23,8 @@ public interface TraineeService {
    * @param request trainee profile data; first name and last name are used to generate the username
    * @return generated trainee credentials
    */
-  UsernamePasswordResponse create(CreateTraineeRequest request);
+  UsernamePasswordResponse create(
+      @Valid @NotNull(message = "Trainee request must not be null") CreateTraineeRequest request);
 
   /**
    * Returns a trainee profile after authenticating the trainee credentials.
@@ -27,14 +32,17 @@ public interface TraineeService {
    * @param request trainee credentials
    * @return authenticated trainee profile
    */
-  TraineeProfileResponse getProfile(AuthRequest request);
+  TraineeProfileResponse getProfile(
+      @Valid @NotNull(message = "Authentication request must not be null") AuthRequest request);
 
   /**
    * Changes a trainee password after authenticating the current credentials.
    *
    * @param request password change data
    */
-  void changePassword(ChangePasswordRequest request);
+  void changePassword(
+      @Valid @NotNull(message = "Change password request must not be null")
+          ChangePasswordRequest request);
 
   /**
    * Switches a trainee profile active status after authenticating the trainee credentials. This
@@ -42,7 +50,8 @@ public interface TraineeService {
    *
    * @param request trainee credentials
    */
-  void switchActiveStatus(AuthRequest request);
+  void switchActiveStatus(
+      @Valid @NotNull(message = "Authentication request must not be null") AuthRequest request);
 
   /**
    * Hard deletes a trainee profile by username after authenticating the trainee credentials.
@@ -50,7 +59,8 @@ public interface TraineeService {
    *
    * @param request trainee credentials
    */
-  void deleteByUsername(AuthRequest request);
+  void deleteByUsername(
+      @Valid @NotNull(message = "Authentication request must not be null") AuthRequest request);
 
   /**
    * Replaces an authenticated trainee's assigned trainers with the provided trainer usernames.
@@ -58,7 +68,9 @@ public interface TraineeService {
    * @param request trainee credentials and trainer usernames to assign
    * @return updated assigned trainers list
    */
-  List<TrainerSummaryResponse> updateTrainers(UpdateTraineeTrainersRequest request);
+  List<TrainerSummaryResponse> updateTrainers(
+      @Valid @NotNull(message = "Update trainee trainers request must not be null")
+          UpdateTraineeTrainersRequest request);
 
   /**
    * Saves trainee profile changes after authenticating the trainee credentials.
@@ -68,5 +80,7 @@ public interface TraineeService {
    * @throws com.epam.gymcrm.exception.AuthenticationException when credentials are invalid or the
    *     payload does not belong to the authenticated trainee
    */
-  TraineeProfileResponse update(UpdateTraineeRequest request);
+  TraineeProfileResponse update(
+      @Valid @NotNull(message = "Update trainee request must not be null")
+          UpdateTraineeRequest request);
 }

@@ -1,5 +1,8 @@
 package com.epam.gymcrm.dto.training;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 
 /**
@@ -12,13 +15,15 @@ import java.time.LocalDate;
  * @param trainingDuration training duration in minutes
  */
 public record AddTrainingRequest(
-    String traineeUsername,
-    String traineePassword,
-    String trainerUsername,
-    String trainingName,
-    String trainingTypeName,
-    LocalDate trainingDate,
-    Integer trainingDuration) {
+    @NotBlank(message = "Trainee username must not be blank") String traineeUsername,
+    @NotBlank(message = "Trainee password must not be blank") String traineePassword,
+    @NotBlank(message = "Trainer username must not be blank") String trainerUsername,
+    @NotBlank(message = "Training name must not be blank") String trainingName,
+    @NotBlank(message = "Training type must not be blank") String trainingTypeName,
+    @NotNull(message = "Training date must not be null") LocalDate trainingDate,
+    @NotNull(message = "Training duration must not be null")
+        @Positive(message = "Training duration must be positive")
+        Integer trainingDuration) {
 
   @Override
   public String toString() {

@@ -1,8 +1,5 @@
 package com.epam.gymcrm.service.impl;
 
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
-import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
-
 import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dao.UserDao;
@@ -44,10 +41,6 @@ public class TrainerServiceImpl implements TrainerService {
 
   @Override
   public UsernamePasswordResponse create(CreateTrainerRequest request) {
-    requireNonNull(request, "Trainer request must not be null");
-    validateNameFields(request.firstName(), request.lastName());
-    validateSpecializationName(request.specialization());
-
     Trainer trainer = trainerMapper.toEntity(request);
     trainer.setSpecialization(resolveSpecializationName(request.specialization()));
     User user = trainer.getUser();
@@ -77,8 +70,6 @@ public class TrainerServiceImpl implements TrainerService {
   @Override
   @Transactional
   public void changePassword(ChangePasswordRequest request) {
-    requireNonNull(request, "Change password request must not be null");
-    requireNonBlank(request.newPassword(), "New password must not be blank");
     log.info("Changing trainer password");
 
     Trainer trainer =
@@ -104,7 +95,6 @@ public class TrainerServiceImpl implements TrainerService {
   @Override
   @Transactional(readOnly = true)
   public List<TrainerSummaryResponse> getUnassignedTrainers(AuthRequest request) {
-    requireNonNull(request, "Authentication request must not be null");
     log.info("Getting active trainers not assigned to trainee");
 
     authenticationService.authenticateTrainee(request.username(), request.password());
@@ -116,10 +106,6 @@ public class TrainerServiceImpl implements TrainerService {
   @Override
   @Transactional
   public TrainerProfileResponse update(UpdateTrainerRequest request) {
-    requireNonNull(request, "Update trainer request must not be null");
-    validateNameFields(request.firstName(), request.lastName());
-    validateSpecializationName(request.specialization());
-    requireNonNull(request.active(), "Active status must not be null");
     log.info("Updating trainer profile");
 
     Trainer authenticatedTrainer =
@@ -132,25 +118,13 @@ public class TrainerServiceImpl implements TrainerService {
     return trainerMapper.toProfileResponse(authenticatedTrainer);
   }
 
-  private static void validateNameFields(String firstName, String lastName) {
-    requireNonBlank(firstName, "First name must not be blank");
-    requireNonBlank(lastName, "Last name must not be blank");
-  }
-
-  private static void validateSpecializationName(String specialization) {
-    requireNonNull(specialization, "Trainer specialization must not be null");
-    requireNonBlank(specialization, "Trainer specialization must not be blank");
-  }
-
   private TrainingType resolveSpecializationName(String specialization) {
-    validateSpecializationName(specialization);
     return trainingTypeDao
         .findByName(specialization)
         .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
   }
 
   private Trainer authenticateTrainer(AuthRequest request) {
-    requireNonNull(request, "Authentication request must not be null");
     return authenticationService.authenticateTrainer(request.username(), request.password());
   }
 }

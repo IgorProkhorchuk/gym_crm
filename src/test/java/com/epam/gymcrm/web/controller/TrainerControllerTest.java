@@ -139,7 +139,7 @@ class TrainerControllerTest {
         .get("/v1/trainers/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainer profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -156,7 +156,7 @@ class TrainerControllerTest {
         .get("/v1/trainers/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainer can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -237,7 +237,7 @@ class TrainerControllerTest {
         .put("/v1/trainers/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainer profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -264,7 +264,7 @@ class TrainerControllerTest {
         .put("/v1/trainers/profile")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainer can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -315,7 +315,7 @@ class TrainerControllerTest {
         .put("/v1/trainers/password")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainer profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -340,7 +340,7 @@ class TrainerControllerTest {
         .put("/v1/trainers/password")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainer can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -389,7 +389,7 @@ class TrainerControllerTest {
         .patch("/v1/trainers/profile/status")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainer profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -413,7 +413,7 @@ class TrainerControllerTest {
         .patch("/v1/trainers/profile/status")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainer can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -513,7 +513,7 @@ class TrainerControllerTest {
         .get("/v1/trainers/trainings")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("This operation is available only for trainer profiles"));
 
     verifyNoInteractions(gymFacade);
   }
@@ -530,7 +530,7 @@ class TrainerControllerTest {
         .get("/v1/trainers/trainings")
         .then()
         .statusCode(401)
-        .body("message", equalTo("Access denied"));
+        .body("message", equalTo("Authenticated trainer can perform this operation only for own profile"));
 
     verifyNoInteractions(gymFacade);
   }

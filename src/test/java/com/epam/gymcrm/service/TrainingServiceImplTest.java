@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
@@ -29,9 +28,14 @@ import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.service.impl.TrainingServiceImpl;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,9 +59,11 @@ class TrainingServiceImplTest {
   @Mock private TrainingMapper trainingMapper;
 
   private AddTrainingRequest addTrainingRequest;
+  private Validator validator;
 
   @BeforeEach
   void setUp() {
+    validator = Validation.buildDefaultValidatorFactory().getValidator();
     addTrainingRequest =
         new AddTrainingRequest(
             "Training.Trainee",
@@ -129,13 +135,16 @@ class TrainingServiceImplTest {
   }
 
   @Test
-  void addTrainingShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
-    assertThatThrownBy(() -> trainingService.addTraining(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Training request must not be null");
+  void addTrainingShouldHaveBeanValidationViolationWhenRequestIsNull() throws Exception {
+    TrainingService target = trainingService;
+    Method method = TrainingService.class.getMethod("addTraining", AddTrainingRequest.class);
 
-    verifyNoInteractions(
-        authenticationService, trainerDao, trainingTypeDao, trainingDao, trainingMapper);
+    Set<ConstraintViolation<TrainingService>> violations =
+        validator.forExecutables().validateParameters(target, method, new Object[] {null});
+
+    assertThat(violations)
+        .extracting(ConstraintViolation::getMessage)
+        .containsExactly("Training request must not be null");
   }
 
   @Test
@@ -150,9 +159,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainee username must not be blank");
+    assertAddTrainingRequestViolation(request, "Trainee username must not be blank");
   }
 
   @Test
@@ -167,9 +174,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainee password must not be blank");
+    assertAddTrainingRequestViolation(request, "Trainee password must not be blank");
   }
 
   @Test
@@ -184,9 +189,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainer username must not be blank");
+    assertAddTrainingRequestViolation(request, "Trainer username must not be blank");
   }
 
   @Test
@@ -201,9 +204,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Trainer username must not be blank");
+    assertAddTrainingRequestViolation(request, "Trainer username must not be blank");
   }
 
   @Test
@@ -218,9 +219,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Training name must not be blank");
+    assertAddTrainingRequestViolation(request, "Training name must not be blank");
   }
 
   @Test
@@ -235,9 +234,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Training type must not be blank");
+    assertAddTrainingRequestViolation(request, "Training type must not be blank");
   }
 
   @Test
@@ -246,9 +243,7 @@ class TrainingServiceImplTest {
         addTrainingRequest(
             "Training.Trainee", "password", "Training.Trainer", "Yoga Basics", "Yoga", null, 60);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Training date must not be null");
+    assertAddTrainingRequestViolation(request, "Training date must not be null");
   }
 
   @Test
@@ -263,9 +258,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             null);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Training duration must be positive");
+    assertAddTrainingRequestViolation(request, "Training duration must not be null");
   }
 
   @Test
@@ -280,9 +273,7 @@ class TrainingServiceImplTest {
             LocalDate.of(2026, 5, 3),
             0);
 
-    assertThatThrownBy(() -> trainingService.addTraining(request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Training duration must be positive");
+    assertAddTrainingRequestViolation(request, "Training duration must be positive");
   }
 
   @Test
@@ -415,6 +406,10 @@ class TrainingServiceImplTest {
         trainingTypeName,
         trainingDate,
         trainingDuration);
+  }
+
+  private void assertAddTrainingRequestViolation(AddTrainingRequest request, String message) {
+    assertThat(validator.validate(request)).extracting(ConstraintViolation::getMessage).contains(message);
   }
 
   private static Training validTraining() {

@@ -1108,8 +1108,8 @@
                   "});",
                   "",
                   "const body = pm.response.json();",
-                  "pm.test('Error body is JSON', function () {",
-                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "pm.test('Error explains invalid credentials without exposing details', function () {",
+                  "  pm.expect(body.message).to.eql('Invalid username or password');",
                   "});"
                 ]
               }
@@ -1154,6 +1154,7 @@
                   "",
                   "const body = pm.response.json();",
                   "pm.test('Validation error explains invalid field', function () {",
+                  "  pm.expect(body.message).to.include('Invalid request body');",
                   "  pm.expect(body.message).to.include('firstName');",
                   "});"
                 ]
@@ -1194,6 +1195,11 @@
                 "exec": [
                   "pm.test('Status is 401 Unauthorized', function () {",
                   "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains invalid token', function () {",
+                  "  pm.expect(body.message).to.eql('Invalid authentication token');",
                   "});"
                 ]
               }
@@ -1236,6 +1242,11 @@
                 "exec": [
                   "pm.test('Status is 401 Unauthorized', function () {",
                   "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains trainee-only endpoint', function () {",
+                  "  pm.expect(body.message).to.eql('This operation is available only for trainee profiles');",
                   "});"
                 ]
               }
@@ -1263,6 +1274,193 @@
                 {
                   "key": "username",
                   "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trainee Token Cannot Access Trainer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains trainer-only endpoint', function () {",
+                  "  pm.expect(body.message).to.eql('This operation is available only for trainer profiles');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Auth-Token",
+                "value": "{{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile?username={{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trainee Token Cannot Access Another Username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains own profile requirement', function () {",
+                  "  pm.expect(body.message).to.eql('Authenticated trainee can perform this operation only for own profile');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Auth-Token",
+                "value": "{{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile?username={{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Missing Auth Header Should Return 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains missing auth header', function () {",
+                  "  pm.expect(body.message).to.eql(\"Missing required request header 'X-Auth-Token'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile?username={{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Date Query Parameter Should Return 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains expected date format', function () {",
+                  "  pm.expect(body.message).to.eql(\"Invalid request parameter 'fromDate': value 'wrong-date' cannot be converted to date in yyyy-MM-dd format\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Auth-Token",
+                "value": "{{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/trainings?username={{traineeUsername}}&fromDate=wrong-date",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "trainings"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "wrong-date"
                 }
               ]
             }

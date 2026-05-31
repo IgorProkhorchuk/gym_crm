@@ -2,7 +2,11 @@ package com.epam.gymcrm.web.exception;
 
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.validation.ConstraintViolationException;
+import java.time.LocalDate;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -30,20 +34,47 @@ public class RestExceptionHandler {
     return new ErrorResponse(exception.getMessage());
   }
 
-  @ExceptionHandler({
-    MissingRequestHeaderException.class,
-    MissingServletRequestParameterException.class,
-    MethodArgumentTypeMismatchException.class
-  })
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public ErrorResponse handleBadRequest(Exception exception) {
-    return new ErrorResponse(exception.getMessage());
-  }
-
   @ExceptionHandler(HttpMessageNotReadableException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public ErrorResponse handleHttpMessageNotReadableException() {
+  public ErrorResponse handleHttpMessageNotReadableException(
+      HttpMessageNotReadableException exception) {
+    InvalidFormatException invalidFormat = findInvalidFormatException(exception);
+    if (invalidFormat != null) {
+      return new ErrorResponse(
+          MALFORMED_REQUEST_BODY
+              + ": "
+              + formatInvalidJsonField(invalidFormat));
+    }
     return new ErrorResponse(MALFORMED_REQUEST_BODY + ": request body is missing or invalid JSON");
+  }
+
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponse handleMissingRequestHeaderException(
+      MissingRequestHeaderException exception) {
+    return new ErrorResponse(
+        "Missing required request header '" + exception.getHeaderName() + "'");
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponse handleMissingServletRequestParameterException(
+      MissingServletRequestParameterException exception) {
+    return new ErrorResponse(
+        "Missing required request parameter '" + exception.getParameterName() + "'");
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ErrorResponse handleMethodArgumentTypeMismatchException(
+      MethodArgumentTypeMismatchException exception) {
+    return new ErrorResponse(
+        "Invalid request parameter '"
+            + exception.getName()
+            + "': value '"
+            + exception.getValue()
+            + "' cannot be converted to "
+            + formatExpectedType(exception.getRequiredType()));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -93,5 +124,34 @@ public class RestExceptionHandler {
 
   private static String formatFieldError(FieldError error) {
     return "field '" + error.getField() + "' " + error.getDefaultMessage();
+  }
+
+  private static String formatInvalidJsonField(InvalidFormatException exception) {
+    String fieldName =
+        exception.getPath().stream()
+            .map(JsonMappingException.Reference::getFieldName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("."));
+    String target = formatExpectedType(exception.getTargetType());
+    String fieldDescription = fieldName.isBlank() ? "request body" : "field '" + fieldName + "'";
+    return fieldDescription + " has invalid value. Expected " + target;
+  }
+
+  private static String formatExpectedType(Class<?> type) {
+    if (LocalDate.class.equals(type)) {
+      return "date in yyyy-MM-dd format";
+    }
+    return type == null ? "the expected type" : type.getSimpleName();
+  }
+
+  private static InvalidFormatException findInvalidFormatException(Throwable exception) {
+    Throwable current = exception;
+    while (current != null) {
+      if (current instanceof InvalidFormatException invalidFormat) {
+        return invalidFormat;
+      }
+      current = current.getCause();
+    }
+    return null;
   }
 }

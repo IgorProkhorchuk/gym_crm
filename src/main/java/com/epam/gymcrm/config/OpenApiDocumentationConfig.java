@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Import;
             title = "Gym CRM REST API",
             version = "1.0",
             description = "REST API for trainee, trainer, training, and training type management."),
-    servers = @Server(url = "/api", description = "External Tomcat servlet mapping"))
+    servers = @Server(url = "/api", description = "API servlet path"))
 @SecurityScheme(
     name = "tokenAuth",
     type = SecuritySchemeType.APIKEY,

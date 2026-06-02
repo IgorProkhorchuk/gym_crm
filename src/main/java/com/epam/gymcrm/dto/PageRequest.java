@@ -1,23 +1,23 @@
 package com.epam.gymcrm.dto;
 
-public record PageRequest(int offset, int limit) {
+public record PageRequest(int page, int size) {
 
-  private static final int DEFAULT_LIMIT = 50;
-  private static final int MAX_LIMIT = 100;
+  private static final int DEFAULT_SIZE = 50;
+  private static final int MAX_SIZE = 100;
 
   public PageRequest {
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset cannot be negative");
+    if (page < 0) {
+      throw new IllegalArgumentException("Page cannot be negative");
     }
-    if (limit <= 0) {
-      limit = DEFAULT_LIMIT;
+    if (size <= 0) {
+      size = DEFAULT_SIZE;
     }
-    if (limit > MAX_LIMIT) {
-      limit = MAX_LIMIT;
+    if (size > MAX_SIZE) {
+      size = MAX_SIZE;
     }
   }
 
   public static PageRequest firstPage() {
-    return new PageRequest(0, DEFAULT_LIMIT);
+    return new PageRequest(0, DEFAULT_SIZE);
   }
 }

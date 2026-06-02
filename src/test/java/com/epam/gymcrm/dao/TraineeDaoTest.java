@@ -1,4 +1,4 @@
-package com.epam.gymcrm.dao.impl;
+package com.epam.gymcrm.dao;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.epam.gymcrm.PostgresContainerTest;
-import com.epam.gymcrm.dao.TraineeDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
@@ -20,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class TraineeDaoImplTest extends PostgresContainerTest {
+class TraineeDaoTest extends PostgresContainerTest {
 
   @PersistenceContext private EntityManager entityManager;
 

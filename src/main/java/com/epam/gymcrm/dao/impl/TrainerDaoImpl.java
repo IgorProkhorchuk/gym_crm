@@ -88,8 +88,12 @@ public class TrainerDaoImpl implements TrainerDao {
     PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
     return entityManager
         .createQuery("select t from Trainer t", Trainer.class)
-        .setFirstResult(page.offset())
-        .setMaxResults(page.limit())
+        .setFirstResult(toFirstResult(page))
+        .setMaxResults(page.size())
         .getResultList();
+  }
+
+  private static int toFirstResult(PageRequest page) {
+    return page.page() * page.size();
   }
 }

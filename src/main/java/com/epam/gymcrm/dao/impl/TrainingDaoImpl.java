@@ -81,7 +81,7 @@ public class TrainingDaoImpl implements TrainingDao {
     if (isNotBlank(effectiveCriteria.trainingType())) {
       query.setParameter("trainingType", effectiveCriteria.trainingType());
     }
-    return query.setFirstResult(page.offset()).setMaxResults(page.limit()).getResultList();
+    return query.setFirstResult(toFirstResult(page)).setMaxResults(page.size()).getResultList();
   }
 
   @Override
@@ -123,7 +123,7 @@ public class TrainingDaoImpl implements TrainingDao {
     if (isNotBlank(effectiveCriteria.traineeName())) {
       query.setParameter("traineeName", toLikePattern(effectiveCriteria.traineeName()));
     }
-    return query.setFirstResult(page.offset()).setMaxResults(page.limit()).getResultList();
+    return query.setFirstResult(toFirstResult(page)).setMaxResults(page.size()).getResultList();
   }
 
   private static void appendDateCriteria(StringBuilder jpql, LocalDate fromDate, LocalDate toDate) {
@@ -151,5 +151,9 @@ public class TrainingDaoImpl implements TrainingDao {
 
   private static String toLikePattern(String value) {
     return "%" + value.toLowerCase() + "%";
+  }
+
+  private static int toFirstResult(PageRequest page) {
+    return page.page() * page.size();
   }
 }

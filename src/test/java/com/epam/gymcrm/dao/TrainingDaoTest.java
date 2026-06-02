@@ -1,16 +1,14 @@
-package com.epam.gymcrm.dao.impl;
+package com.epam.gymcrm.dao;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
 import static com.epam.gymcrm.TestFixtures.training;
-import static com.epam.gymcrm.TestFixtures.trainingType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
-import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
@@ -24,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class TrainingDaoImplTest extends PostgresContainerTest {
+class TrainingDaoTest extends PostgresContainerTest {
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -310,9 +308,9 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     return entityManager
         .createQuery(
             """
-                        select tt
-                        from TrainingType tt
-                        where tt.trainingTypeName = :name
+                select tt
+                from TrainingType tt
+                where tt.trainingTypeName = :name
             """,
             TrainingType.class)
         .setParameter("name", name)

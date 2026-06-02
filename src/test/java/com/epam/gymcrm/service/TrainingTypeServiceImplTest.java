@@ -30,7 +30,7 @@ class TrainingTypeServiceImplTest {
     fitness.setTrainingTypeId(1L);
     TrainingType yoga = trainingType("Yoga");
     yoga.setTrainingTypeId(2L);
-    when(trainingTypeDao.findAll()).thenReturn(List.of(fitness, yoga));
+    when(trainingTypeDao.findAllByOrderByTrainingTypeIdAsc()).thenReturn(List.of(fitness, yoga));
 
     List<TrainingTypeResponse> result = trainingTypeService.getTrainingTypes();
 
@@ -40,6 +40,6 @@ class TrainingTypeServiceImplTest {
                 .containsExactly(
                     new TrainingTypeResponse(1L, "Fitness"),
                     new TrainingTypeResponse(2L, "Yoga")),
-        () -> verify(trainingTypeDao).findAll());
+        () -> verify(trainingTypeDao).findAllByOrderByTrainingTypeIdAsc());
   }
 }

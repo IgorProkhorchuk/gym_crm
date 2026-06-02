@@ -20,7 +20,7 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
   @Transactional(readOnly = true)
   public List<TrainingTypeResponse> getTrainingTypes() {
     log.info("Getting training types");
-    return trainingTypeDao.findAll().stream()
+    return trainingTypeDao.findAllByOrderByTrainingTypeIdAsc().stream()
         .map(type -> new TrainingTypeResponse(type.getTrainingTypeId(), type.getTrainingTypeName()))
         .toList();
   }

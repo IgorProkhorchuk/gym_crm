@@ -1,16 +1,15 @@
-package com.epam.gymcrm.dao.impl;
+package com.epam.gymcrm.dao;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.epam.gymcrm.PostgresContainerTest;
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.model.TrainingType;
 import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class TrainingTypeDaoImplTest extends PostgresContainerTest {
+class TrainingTypeDaoTest extends PostgresContainerTest {
 
   @Resource private TrainingTypeDao trainingTypeDao;
 
@@ -33,8 +32,8 @@ class TrainingTypeDaoImplTest extends PostgresContainerTest {
   }
 
   @Test
-  void findAllShouldReturnSeededTrainingTypesOrderedById() {
-    List<TrainingType> found = trainingTypeDao.findAll();
+  void findAllByOrderByTrainingTypeIdAscShouldReturnSeededTrainingTypesOrderedById() {
+    List<TrainingType> found = trainingTypeDao.findAllByOrderByTrainingTypeIdAsc();
 
     assertThat(found)
         .extracting(TrainingType::getTrainingTypeName)

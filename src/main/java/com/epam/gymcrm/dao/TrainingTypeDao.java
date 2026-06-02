@@ -3,9 +3,11 @@ package com.epam.gymcrm.dao;
 import com.epam.gymcrm.model.TrainingType;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /** Persistence contract for {@link TrainingType} records. */
-public interface TrainingTypeDao {
+public interface TrainingTypeDao extends JpaRepository<TrainingType, Long> {
 
   /**
    * Finds a training type by name.
@@ -13,6 +15,7 @@ public interface TrainingTypeDao {
    * @param name training type name
    * @return training type with the given name, or {@link Optional#empty()} when absent
    */
+  @Query("select tt from TrainingType tt where tt.trainingTypeName = :name")
   Optional<TrainingType> findByName(String name);
 
   /**
@@ -20,5 +23,5 @@ public interface TrainingTypeDao {
    *
    * @return available training types
    */
-  List<TrainingType> findAll();
+  List<TrainingType> findAllByOrderByTrainingTypeIdAsc();
 }

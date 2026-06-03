@@ -20,4 +20,34 @@ class GymMetricsTest {
                 .count())
         .isEqualTo(1.0);
   }
+
+  @Test
+  void recordTrainingCreationSucceededShouldIncrementSuccessCounter() {
+    gymMetrics.recordTrainingCreationSucceeded();
+
+    assertThat(meterRegistry.counter("gym.training.creation.succeeded").count()).isEqualTo(1.0);
+  }
+
+  @Test
+  void recordTrainingCreationFailuresShouldIncrementTaggedFailureCounters() {
+    gymMetrics.recordTrainingCreationAuthFailed();
+    gymMetrics.recordTrainingCreationTrainerNotFound();
+    gymMetrics.recordTrainingCreationTrainingTypeNotFound();
+
+    assertThat(
+            meterRegistry
+                .counter("gym.training.creation.failed", "reason", "auth_failed")
+                .count())
+        .isEqualTo(1.0);
+    assertThat(
+            meterRegistry
+                .counter("gym.training.creation.failed", "reason", "trainer_not_found")
+                .count())
+        .isEqualTo(1.0);
+    assertThat(
+            meterRegistry
+                .counter("gym.training.creation.failed", "reason", "training_type_not_found")
+                .count())
+        .isEqualTo(1.0);
+  }
 }

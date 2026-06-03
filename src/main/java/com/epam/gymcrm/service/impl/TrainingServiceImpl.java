@@ -11,12 +11,14 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.TrainingService;
 import java.util.List;
@@ -38,22 +40,29 @@ public class TrainingServiceImpl implements TrainingService {
   private final TrainingTypeDao trainingTypeDao;
   private final AuthenticationService authenticationService;
   private final TrainingMapper trainingMapper;
+  private final GymMetrics gymMetrics;
 
   @Override
   public void addTraining(AddTrainingRequest request) {
     log.info("Adding training");
 
-    Trainee trainee =
-        authenticationService.authenticateTrainee(
-            request.traineeUsername(), request.traineePassword());
+    Trainee trainee = authenticateTrainingTrainee(request);
     Trainer trainer =
         trainerDao
             .findByUsername(request.trainerUsername())
-            .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
+            .orElseThrow(
+                () -> {
+                  gymMetrics.recordTrainingCreationTrainerNotFound();
+                  return new EntityNotFoundException("Trainer profile not found");
+                });
     TrainingType trainingType =
         trainingTypeDao
             .findByName(request.trainingTypeName())
-            .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
+            .orElseThrow(
+                () -> {
+                  gymMetrics.recordTrainingCreationTrainingTypeNotFound();
+                  return new EntityNotFoundException("Training type not found");
+                });
 
     Training training = trainingMapper.toEntity(request);
     training.setTrainee(trainee);
@@ -61,6 +70,7 @@ public class TrainingServiceImpl implements TrainingService {
     training.setTrainingType(trainingType);
 
     trainingDao.save(training);
+    gymMetrics.recordTrainingCreationSucceeded();
 
     log.info("Training added, trainingId={}", training.getTrainingId());
   }
@@ -101,5 +111,15 @@ public class TrainingServiceImpl implements TrainingService {
 
   private static PageRequest page(PageRequest pageRequest) {
     return pageRequest == null ? PageRequest.firstPage() : pageRequest;
+  }
+
+  private Trainee authenticateTrainingTrainee(AddTrainingRequest request) {
+    try {
+      return authenticationService.authenticateTrainee(
+          request.traineeUsername(), request.traineePassword());
+    } catch (AuthenticationException exception) {
+      gymMetrics.recordTrainingCreationAuthFailed();
+      throw exception;
+    }
   }
 }

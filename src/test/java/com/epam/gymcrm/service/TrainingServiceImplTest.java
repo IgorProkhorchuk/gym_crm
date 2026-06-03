@@ -21,12 +21,14 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
 import com.epam.gymcrm.service.impl.TrainingServiceImpl;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -57,6 +59,8 @@ class TrainingServiceImplTest {
   @Mock private AuthenticationService authenticationService;
 
   @Mock private TrainingMapper trainingMapper;
+
+  @Mock private GymMetrics gymMetrics;
 
   private AddTrainingRequest addTrainingRequest;
   private Validator validator;
@@ -100,6 +104,7 @@ class TrainingServiceImplTest {
         () -> verify(trainingTypeDao).findByName("Yoga"),
         () -> verify(trainingMapper).toEntity(addTrainingRequest),
         () -> verify(trainingDao).save(training),
+        () -> verify(gymMetrics).recordTrainingCreationSucceeded(),
         () -> assertThat(training.getTrainee()).isSameAs(trainee),
         () -> assertThat(training.getTrainer()).isSameAs(trainer),
         () -> assertThat(training.getTrainingType()).isSameAs(trainingType),
@@ -118,6 +123,8 @@ class TrainingServiceImplTest {
     assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
         .isInstanceOf(EntityNotFoundException.class)
         .hasMessage("Trainer profile not found");
+
+    verify(gymMetrics).recordTrainingCreationTrainerNotFound();
   }
 
   @Test
@@ -132,6 +139,19 @@ class TrainingServiceImplTest {
     assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
         .isInstanceOf(EntityNotFoundException.class)
         .hasMessage("Training type not found");
+
+    verify(gymMetrics).recordTrainingCreationTrainingTypeNotFound();
+  }
+
+  @Test
+  void addTrainingShouldRecordAuthFailureWhenTraineeAuthenticationFails() {
+    AuthenticationException exception = new AuthenticationException("Invalid username or password");
+    when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
+        .thenThrow(exception);
+
+    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest)).isSameAs(exception);
+
+    verify(gymMetrics).recordTrainingCreationAuthFailed();
   }
 
   @Test

@@ -21,7 +21,7 @@ class OpenApiDocumentationTest extends PostgresContainerTest {
 
   @Test
   void apiDocsShouldExposeOpenApiContract() {
-    String apiDocs = restClient.get().uri("/v3/api-docs").retrieve().body(String.class);
+    String apiDocs = restClient.get().uri("/api/v3/api-docs").retrieve().body(String.class);
 
     assertThat(apiDocs)
         .contains("\"title\":\"Gym CRM REST API\"")
@@ -31,9 +31,9 @@ class OpenApiDocumentationTest extends PostgresContainerTest {
   @Test
   void swaggerUiShouldRedirectToIndexPage() {
     ResponseEntity<Void> response =
-        restClient.get().uri("/swagger-ui.html").retrieve().toBodilessEntity();
+        restClient.get().uri("/api/swagger-ui.html").retrieve().toBodilessEntity();
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
-    assertThat(response.getHeaders().getLocation().toString()).contains("/swagger-ui/index.html");
+    assertThat(response.getHeaders().getLocation().toString()).contains("/api/swagger-ui/index.html");
   }
 }

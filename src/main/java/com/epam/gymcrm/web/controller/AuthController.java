@@ -4,6 +4,7 @@ import com.epam.gymcrm.dto.auth.LoginRequest;
 import com.epam.gymcrm.dto.auth.LoginResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.exception.AuthenticationException;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.api.AuthApi;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController implements AuthApi {
   private final AuthenticationService authenticationService;
+  private final GymMetrics gymMetrics;
   private final TokenService tokenService;
 
   @PostMapping
@@ -34,7 +36,12 @@ public class AuthController implements AuthApi {
 
       return new LoginResponse(token, ProfileType.TRAINEE);
     } catch (AuthenticationException exception) {
-      authenticationService.authenticateTrainer(loginRequest.username(), loginRequest.password());
+      try {
+        authenticationService.authenticateTrainer(loginRequest.username(), loginRequest.password());
+      } catch (AuthenticationException trainerException) {
+        gymMetrics.recordLoginFailedInvalidCredentials();
+        throw trainerException;
+      }
 
       AuthenticatedUser authenticatedUser =
           new AuthenticatedUser(

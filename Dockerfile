@@ -1,10 +1,13 @@
-ARG TOMCAT_IMAGE=tomcat:11.0-jdk25
-ARG WAR_FILE=target/gym-crm-1.0-SNAPSHOT.war
+ARG JRE_IMAGE=eclipse-temurin:25-jre
+ARG JAR_FILE=target/gym-crm-1.0-SNAPSHOT.jar
 
-FROM ${TOMCAT_IMAGE}
+FROM ${JRE_IMAGE}
 
-ARG WAR_FILE
+ARG JAR_FILE
 
-COPY ${WAR_FILE} /usr/local/tomcat/webapps/ROOT.war
+WORKDIR /app
+COPY ${JAR_FILE} app.jar
 
 EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

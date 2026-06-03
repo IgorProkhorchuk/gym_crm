@@ -84,11 +84,10 @@ services:
     networks:
       - gym-crm-net
     environment:
-      CATALINA_OPTS: >-
-        -Ddb.url=jdbc:postgresql://gym-pgpool:5432/gym_crm
-        -Ddb.username=${APP_DB_USERNAME:-gym_user}
-        -Ddb.password=${APP_DB_PASSWORD:-password}
-        -Ddb.driver=org.postgresql.Driver
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-pgpool:5432/gym_crm
+      SPRING_DATASOURCE_USERNAME: ${APP_DB_USERNAME:-gym_user}
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-password}
     depends_on:
       gym-pgpool:
         condition: service_healthy

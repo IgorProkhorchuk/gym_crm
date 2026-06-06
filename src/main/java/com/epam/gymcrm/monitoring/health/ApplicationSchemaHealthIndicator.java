@@ -39,9 +39,18 @@ public class ApplicationSchemaHealthIndicator implements HealthIndicator {
     }
 
     return coreTables.stream()
-        .map(String::trim)
-        .peek(ApplicationSchemaHealthIndicator::validateTableName)
+        .map(ApplicationSchemaHealthIndicator::normalizeTableName)
         .toList();
+  }
+
+  private static String normalizeTableName(String tableName) {
+    if (tableName == null) {
+      throw new IllegalArgumentException("Application schema health table must not be null");
+    }
+
+    String normalizedTableName = tableName.trim();
+    validateTableName(normalizedTableName);
+    return normalizedTableName;
   }
 
   private static void validateTableName(String tableName) {

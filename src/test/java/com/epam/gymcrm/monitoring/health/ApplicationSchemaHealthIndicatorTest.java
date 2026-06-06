@@ -1,9 +1,11 @@
 package com.epam.gymcrm.monitoring.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,7 +44,18 @@ class ApplicationSchemaHealthIndicatorTest {
     assertThat(health.getDetails()).containsKeys("checkedTables", "error");
   }
 
+  @Test
+  void constructorShouldRejectInvalidTableNames() {
+    assertThatThrownBy(
+            () ->
+                new ApplicationSchemaHealthIndicator(
+                    jdbcTemplate, List.of("users", "trainings; drop table users")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Invalid application schema health table");
+  }
+
   private ApplicationSchemaHealthIndicator indicator() {
-    return new ApplicationSchemaHealthIndicator(jdbcTemplate);
+    return new ApplicationSchemaHealthIndicator(
+        jdbcTemplate, List.of("users", "trainees", "trainers", "training_types", "trainings"));
   }
 }

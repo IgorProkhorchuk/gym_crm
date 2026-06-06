@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,28 @@ class ApplicationSchemaHealthIndicatorTest {
                     jdbcTemplate, List.of("users", "trainings; drop table users")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid application schema health table");
+  }
+
+  @Test
+  void constructorShouldRejectMissingCoreTables() {
+    assertThatThrownBy(() -> new ApplicationSchemaHealthIndicator(jdbcTemplate, null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Application schema health tables must not be empty");
+  }
+
+  @Test
+  void constructorShouldRejectEmptyCoreTables() {
+    assertThatThrownBy(() -> new ApplicationSchemaHealthIndicator(jdbcTemplate, List.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Application schema health tables must not be empty");
+  }
+
+  @Test
+  void constructorShouldRejectNullTableName() {
+    assertThatThrownBy(
+            () -> new ApplicationSchemaHealthIndicator(jdbcTemplate, Collections.singletonList(null)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Application schema health table must not be null");
   }
 
   private ApplicationSchemaHealthIndicator indicator() {

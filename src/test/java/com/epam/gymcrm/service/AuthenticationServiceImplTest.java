@@ -9,11 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.service.impl.AuthenticationServiceImpl;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -27,48 +27,48 @@ class AuthenticationServiceImplTest {
 
   @InjectMocks private AuthenticationServiceImpl authenticationService;
 
-  @Mock private TraineeDao traineeDao;
+  @Mock private TraineeRepository traineeRepository;
 
-  @Mock private TrainerDao trainerDao;
+  @Mock private TrainerRepository trainerRepository;
 
   @Test
   void authenticateTraineeShouldReturnTraineeWhenCredentialsMatch() {
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
-    when(traineeDao.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     Trainee result = authenticationService.authenticateTrainee("Jane.Doe", "password");
 
     assertAll(
         () -> assertThat(result).isSameAs(trainee),
-        () -> verify(traineeDao).findByUsername("Jane.Doe"),
-        () -> verifyNoInteractions(trainerDao));
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
+        () -> verifyNoInteractions(trainerRepository));
   }
 
   @Test
   void authenticateTraineeShouldThrowAuthenticationExceptionWhenUsernameDoesNotExist() {
-    when(traineeDao.findByUsername("Unknown.Trainee")).thenReturn(Optional.empty());
+    when(traineeRepository.findByUsername("Unknown.Trainee")).thenReturn(Optional.empty());
 
     assertThatThrownBy(
             () -> authenticationService.authenticateTrainee("Unknown.Trainee", "password"))
         .isInstanceOf(AuthenticationException.class)
         .hasMessage("Invalid username or password");
 
-    verify(traineeDao).findByUsername("Unknown.Trainee");
-    verifyNoInteractions(trainerDao);
+    verify(traineeRepository).findByUsername("Unknown.Trainee");
+    verifyNoInteractions(trainerRepository);
   }
 
   @Test
   void authenticateTraineeShouldThrowAuthenticationExceptionWhenPasswordDoesNotMatch() {
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
-    when(traineeDao.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     assertThatThrownBy(
             () -> authenticationService.authenticateTrainee("Jane.Doe", "wrong-password"))
         .isInstanceOf(AuthenticationException.class)
         .hasMessage("Invalid username or password");
 
-    verify(traineeDao).findByUsername("Jane.Doe");
-    verifyNoInteractions(trainerDao);
+    verify(traineeRepository).findByUsername("Jane.Doe");
+    verifyNoInteractions(trainerRepository);
   }
 
   @Test
@@ -77,7 +77,7 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Username must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
@@ -86,7 +86,7 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Username must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
@@ -95,7 +95,7 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Password must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
@@ -104,47 +104,47 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Password must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
   void authenticateTrainerShouldReturnTrainerWhenCredentialsMatch() {
     Trainer trainer = trainer("John", "Coach", "John.Coach");
-    when(trainerDao.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
+    when(trainerRepository.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
 
     Trainer result = authenticationService.authenticateTrainer("John.Coach", "password");
 
     assertAll(
         () -> assertThat(result).isSameAs(trainer),
-        () -> verify(trainerDao).findByUsername("John.Coach"),
-        () -> verifyNoInteractions(traineeDao));
+        () -> verify(trainerRepository).findByUsername("John.Coach"),
+        () -> verifyNoInteractions(traineeRepository));
   }
 
   @Test
   void authenticateTrainerShouldThrowAuthenticationExceptionWhenUsernameDoesNotExist() {
-    when(trainerDao.findByUsername("Unknown.Trainer")).thenReturn(Optional.empty());
+    when(trainerRepository.findByUsername("Unknown.Trainer")).thenReturn(Optional.empty());
 
     assertThatThrownBy(
             () -> authenticationService.authenticateTrainer("Unknown.Trainer", "password"))
         .isInstanceOf(AuthenticationException.class)
         .hasMessage("Invalid username or password");
 
-    verify(trainerDao).findByUsername("Unknown.Trainer");
-    verifyNoInteractions(traineeDao);
+    verify(trainerRepository).findByUsername("Unknown.Trainer");
+    verifyNoInteractions(traineeRepository);
   }
 
   @Test
   void authenticateTrainerShouldThrowAuthenticationExceptionWhenPasswordDoesNotMatch() {
     Trainer trainer = trainer("John", "Coach", "John.Coach");
-    when(trainerDao.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
+    when(trainerRepository.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
 
     assertThatThrownBy(
             () -> authenticationService.authenticateTrainer("John.Coach", "wrong-password"))
         .isInstanceOf(AuthenticationException.class)
         .hasMessage("Invalid username or password");
 
-    verify(trainerDao).findByUsername("John.Coach");
-    verifyNoInteractions(traineeDao);
+    verify(trainerRepository).findByUsername("John.Coach");
+    verifyNoInteractions(traineeRepository);
   }
 
   @Test
@@ -153,7 +153,7 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Username must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
@@ -162,7 +162,7 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Username must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
@@ -171,7 +171,7 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Password must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 
   @Test
@@ -180,6 +180,6 @@ class AuthenticationServiceImplTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Password must not be blank");
 
-    verifyNoInteractions(traineeDao, trainerDao);
+    verifyNoInteractions(traineeRepository, trainerRepository);
   }
 }

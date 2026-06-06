@@ -1,4 +1,10 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
+
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.fromDate;
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.toDate;
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.toExactValue;
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.toLikePattern;
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.toSpringPageRequest;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
@@ -6,13 +12,12 @@ import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Training;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-/** Persistence contract for {@link Training} records keyed by {@link Training#getTrainingId()}. */
-public interface TrainingDao extends JpaRepository<Training, Long> {
+/** Repository contract for {@link Training} records keyed by {@link Training#getTrainingId()}. */
+public interface TrainingRepository extends JpaRepository<Training, Long> {
 
   /**
    * Finds trainee trainings by trainee username and optional criteria.
@@ -26,14 +31,13 @@ public interface TrainingDao extends JpaRepository<Training, Long> {
       String traineeUsername, TraineeTrainingCriteria criteria, PageRequest pageRequest) {
     TraineeTrainingCriteria effectiveCriteria =
         criteria == null ? TraineeTrainingCriteria.empty() : criteria;
-    PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
     return findByTraineeUsernameAndFilters(
         traineeUsername,
         fromDate(effectiveCriteria.fromDate()),
         toDate(effectiveCriteria.toDate()),
         toLikePattern(effectiveCriteria.trainerName()),
         toExactValue(effectiveCriteria.trainingType()),
-        toSpringPageRequest(page));
+        toSpringPageRequest(pageRequest));
   }
 
   /**
@@ -48,13 +52,12 @@ public interface TrainingDao extends JpaRepository<Training, Long> {
       String trainerUsername, TrainerTrainingCriteria criteria, PageRequest pageRequest) {
     TrainerTrainingCriteria effectiveCriteria =
         criteria == null ? TrainerTrainingCriteria.empty() : criteria;
-    PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
     return findByTrainerUsernameAndFilters(
         trainerUsername,
         fromDate(effectiveCriteria.fromDate()),
         toDate(effectiveCriteria.toDate()),
         toLikePattern(effectiveCriteria.traineeName()),
-        toSpringPageRequest(page));
+        toSpringPageRequest(pageRequest));
   }
 
   /**
@@ -131,28 +134,4 @@ public interface TrainingDao extends JpaRepository<Training, Long> {
       LocalDate toDate,
       String traineeName,
       Pageable pageable);
-
-  private static org.springframework.data.domain.PageRequest toSpringPageRequest(PageRequest page) {
-    return org.springframework.data.domain.PageRequest.of(page.page(), page.size());
-  }
-
-  private static String toExactValue(String value) {
-    return isBlank(value) ? "" : value;
-  }
-
-  private static String toLikePattern(String value) {
-    return isBlank(value) ? "" : "%" + value.toLowerCase() + "%";
-  }
-
-  private static LocalDate fromDate(LocalDate fromDate) {
-    return fromDate == null ? LocalDate.of(1, 1, 1) : fromDate;
-  }
-
-  private static LocalDate toDate(LocalDate toDate) {
-    return toDate == null ? LocalDate.of(9999, 12, 31) : toDate;
-  }
-
-  private static boolean isBlank(String value) {
-    return value == null || value.isBlank();
-  }
 }

@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.service.impl.TrainingTypeServiceImpl;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ class TrainingTypeServiceImplTest {
 
   @InjectMocks private TrainingTypeServiceImpl trainingTypeService;
 
-  @Mock private TrainingTypeDao trainingTypeDao;
+  @Mock private TrainingTypeRepository trainingTypeRepository;
 
   @Test
   void getTrainingTypesShouldReturnMappedDaoResult() {
@@ -30,7 +30,7 @@ class TrainingTypeServiceImplTest {
     fitness.setTrainingTypeId(1L);
     TrainingType yoga = trainingType("Yoga");
     yoga.setTrainingTypeId(2L);
-    when(trainingTypeDao.findAllByOrderByTrainingTypeIdAsc()).thenReturn(List.of(fitness, yoga));
+    when(trainingTypeRepository.findAllByOrderByTrainingTypeIdAsc()).thenReturn(List.of(fitness, yoga));
 
     List<TrainingTypeResponse> result = trainingTypeService.getTrainingTypes();
 
@@ -40,6 +40,6 @@ class TrainingTypeServiceImplTest {
                 .containsExactly(
                     new TrainingTypeResponse(1L, "Fitness"),
                     new TrainingTypeResponse(2L, "Yoga")),
-        () -> verify(trainingTypeDao).findAllByOrderByTrainingTypeIdAsc());
+        () -> verify(trainingTypeRepository).findAllByOrderByTrainingTypeIdAsc());
   }
 }

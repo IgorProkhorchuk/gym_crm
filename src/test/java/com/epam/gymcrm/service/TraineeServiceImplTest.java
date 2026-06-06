@@ -12,8 +12,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
@@ -28,6 +26,9 @@ import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -51,11 +52,11 @@ class TraineeServiceImplTest {
 
   @InjectMocks private TraineeServiceImpl traineeService;
 
-  @Mock private TraineeDao traineeDao;
+  @Mock private TraineeRepository traineeRepository;
 
-  @Mock private TrainerDao trainerDao;
+  @Mock private TrainerRepository trainerRepository;
 
-  @Mock private com.epam.gymcrm.dao.UserDao userDao;
+  @Mock private UserRepository userRepository;
 
   @Mock private AuthenticationService authenticationService;
 
@@ -74,7 +75,7 @@ class TraineeServiceImplTest {
 
     when(traineeMapper.toEntity(request)).thenReturn(trainee);
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-    when(userDao.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
+    when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
     when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
 
     UsernamePasswordResponse result = traineeService.create(request);
@@ -87,7 +88,7 @@ class TraineeServiceImplTest {
         () -> verify(traineeMapper).toEntity(request),
         () -> verify(usernameGenerator).generate("John", "Doe", Collections.emptySet()),
         () -> verify(passwordGenerator).generate(),
-        () -> verify(traineeDao).save(trainee));
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -98,7 +99,7 @@ class TraineeServiceImplTest {
     Set<String> existingUsernames = Set.of("John.Doe", "John.Doe2", "John.Doering");
     when(traineeMapper.toEntity(request)).thenReturn(newTrainee);
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-    when(userDao.findUsernamesByPattern("John.Doe%")).thenReturn(existingUsernames);
+    when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(existingUsernames);
     when(usernameGenerator.generate("John", "Doe", existingUsernames)).thenReturn("John.Doe1");
 
     traineeService.create(request);
@@ -106,7 +107,7 @@ class TraineeServiceImplTest {
     assertAll(
         () -> assertThat(newTrainee.getUser().getUsername()).isEqualTo("John.Doe1"),
         () -> verify(usernameGenerator).generate("John", "Doe", existingUsernames),
-        () -> verify(traineeDao).save(newTrainee));
+        () -> verify(traineeRepository).save(newTrainee));
   }
 
   @Test
@@ -116,10 +117,10 @@ class TraineeServiceImplTest {
     RuntimeException exception = new RuntimeException("DAO failure");
 
     when(traineeMapper.toEntity(request)).thenReturn(trainee);
-    when(userDao.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
+    when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
     when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
-    doThrow(exception).when(traineeDao).save(trainee);
+    doThrow(exception).when(traineeRepository).save(trainee);
 
     assertThatThrownBy(() -> traineeService.create(request)).isSameAs(exception);
   }
@@ -134,14 +135,14 @@ class TraineeServiceImplTest {
   void createShouldHaveBeanValidationViolationWhenFirstNameIsBlank() {
     assertRequestViolation(createTraineeRequest(" ", "Doe", true), "must not be blank");
 
-    verifyNoInteractions(traineeMapper, usernameGenerator, passwordGenerator, traineeDao);
+    verifyNoInteractions(traineeMapper, usernameGenerator, passwordGenerator, traineeRepository);
   }
 
   @Test
   void createShouldHaveBeanValidationViolationWhenLastNameIsBlank() {
     assertRequestViolation(createTraineeRequest("John", " ", true), "must not be blank");
 
-    verifyNoInteractions(traineeMapper, usernameGenerator, passwordGenerator, traineeDao);
+    verifyNoInteractions(traineeMapper, usernameGenerator, passwordGenerator, traineeRepository);
   }
 
   @Test
@@ -173,7 +174,7 @@ class TraineeServiceImplTest {
     assertAll(
         () -> assertThat(trainee.getUser().getPassword()).isEqualTo("new-password"),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "old-password"),
-        () -> verify(traineeDao).save(trainee));
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -211,7 +212,7 @@ class TraineeServiceImplTest {
     assertAll(
         () -> assertThat(trainee.getUser().getActive()).isTrue(),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(traineeDao).save(trainee));
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -225,7 +226,7 @@ class TraineeServiceImplTest {
     assertAll(
         () -> assertThat(trainee.getUser().getActive()).isFalse(),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(traineeDao).save(trainee));
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -242,7 +243,7 @@ class TraineeServiceImplTest {
         () ->
             verify(authenticationService, org.mockito.Mockito.times(2))
                 .authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(traineeDao, org.mockito.Mockito.times(2)).save(trainee));
+        () -> verify(traineeRepository, org.mockito.Mockito.times(2)).save(trainee));
   }
 
   @Test
@@ -255,7 +256,7 @@ class TraineeServiceImplTest {
 
     assertAll(
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(traineeDao).delete(15L));
+        () -> verify(traineeRepository).delete(15L));
   }
 
   @Test
@@ -269,7 +270,7 @@ class TraineeServiceImplTest {
 
     assertAll(
         () -> verify(authenticationService).authenticateTrainee("Deleted.Trainee", "password"),
-        () -> verifyNoInteractions(traineeDao));
+        () -> verifyNoInteractions(traineeRepository));
   }
 
   @Test
@@ -288,8 +289,8 @@ class TraineeServiceImplTest {
     trainee.getTrainers().add(oldTrainer);
 
     when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
-    when(trainerDao.findByUsername("First.Trainer")).thenReturn(Optional.of(firstTrainer));
-    when(trainerDao.findByUsername("Second.Trainer")).thenReturn(Optional.of(secondTrainer));
+    when(trainerRepository.findByUsername("First.Trainer")).thenReturn(Optional.of(firstTrainer));
+    when(trainerRepository.findByUsername("Second.Trainer")).thenReturn(Optional.of(secondTrainer));
     when(trainerMapper.toSummaryResponse(firstTrainer)).thenReturn(firstResponse);
     when(trainerMapper.toSummaryResponse(secondTrainer)).thenReturn(secondResponse);
 
@@ -301,9 +302,9 @@ class TraineeServiceImplTest {
             assertThat(trainee.getTrainers())
                 .containsExactlyInAnyOrder(firstTrainer, secondTrainer),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(trainerDao).findByUsername("First.Trainer"),
-        () -> verify(trainerDao).findByUsername("Second.Trainer"),
-        () -> verify(traineeDao).save(trainee));
+        () -> verify(trainerRepository).findByUsername("First.Trainer"),
+        () -> verify(trainerRepository).findByUsername("Second.Trainer"),
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -317,7 +318,7 @@ class TraineeServiceImplTest {
         trainerSummaryResponse(20L, "First.Trainer", "First", "Trainer");
 
     when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
-    when(trainerDao.findByUsername("First.Trainer")).thenReturn(Optional.of(trainer));
+    when(trainerRepository.findByUsername("First.Trainer")).thenReturn(Optional.of(trainer));
     when(trainerMapper.toSummaryResponse(trainer)).thenReturn(response);
 
     List<TrainerSummaryResponse> result = traineeService.updateTrainers(request);
@@ -325,8 +326,8 @@ class TraineeServiceImplTest {
     assertAll(
         () -> assertThat(result).containsExactly(response),
         () -> assertThat(trainee.getTrainers()).containsExactly(trainer),
-        () -> verify(trainerDao).findByUsername("First.Trainer"),
-        () -> verify(traineeDao).save(trainee));
+        () -> verify(trainerRepository).findByUsername("First.Trainer"),
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -344,8 +345,8 @@ class TraineeServiceImplTest {
         () -> assertThat(result).isEmpty(),
         () -> assertThat(trainee.getTrainers()).isEmpty(),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verifyNoInteractions(trainerDao),
-        () -> verify(traineeDao).save(trainee));
+        () -> verifyNoInteractions(trainerRepository),
+        () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
@@ -354,7 +355,7 @@ class TraineeServiceImplTest {
         new UpdateTraineeTrainersRequest("Jane.Doe", "password", List.of("Unknown.Trainer"));
     Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
     when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
-    when(trainerDao.findByUsername("Unknown.Trainer")).thenReturn(Optional.empty());
+    when(trainerRepository.findByUsername("Unknown.Trainer")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> traineeService.updateTrainers(request))
         .isInstanceOf(EntityNotFoundException.class)
@@ -362,8 +363,8 @@ class TraineeServiceImplTest {
 
     assertAll(
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(trainerDao).findByUsername("Unknown.Trainer"),
-        () -> verifyNoMoreInteractions(traineeDao));
+        () -> verify(trainerRepository).findByUsername("Unknown.Trainer"),
+        () -> verifyNoMoreInteractions(traineeRepository));
   }
 
   @Test
@@ -375,8 +376,8 @@ class TraineeServiceImplTest {
 
     assertAll(
         () -> verifyNoInteractions(authenticationService),
-        () -> verifyNoInteractions(trainerDao),
-        () -> verifyNoInteractions(traineeDao));
+        () -> verifyNoInteractions(trainerRepository),
+        () -> verifyNoInteractions(traineeRepository));
   }
 
   @Test
@@ -388,8 +389,8 @@ class TraineeServiceImplTest {
 
     assertAll(
         () -> verifyNoInteractions(authenticationService),
-        () -> verifyNoInteractions(trainerDao),
-        () -> verifyNoInteractions(traineeDao));
+        () -> verifyNoInteractions(trainerRepository),
+        () -> verifyNoInteractions(traineeRepository));
   }
 
   @Test
@@ -408,9 +409,9 @@ class TraineeServiceImplTest {
         () -> assertThat(result).isSameAs(response),
         () -> verify(authenticationService).authenticateTrainee("Hermione.Granger", "password"),
         () -> verify(traineeMapper).updateFromRequest(request, authenticatedTrainee),
-        () -> verify(traineeDao).save(authenticatedTrainee),
+        () -> verify(traineeRepository).save(authenticatedTrainee),
         () -> verify(traineeMapper).toProfileResponse(authenticatedTrainee),
-        () -> verifyNoMoreInteractions(traineeDao));
+        () -> verifyNoMoreInteractions(traineeRepository));
   }
 
   @Test
@@ -422,7 +423,7 @@ class TraineeServiceImplTest {
 
     assertThatThrownBy(() -> traineeService.update(request)).isSameAs(exception);
 
-    verifyNoInteractions(traineeDao);
+    verifyNoInteractions(traineeRepository);
   }
 
   @Test
@@ -432,7 +433,7 @@ class TraineeServiceImplTest {
     RuntimeException exception = new RuntimeException("DAO failure");
     when(authenticationService.authenticateTrainee("Hermione.Granger", "password"))
         .thenReturn(authenticatedTrainee);
-    doThrow(exception).when(traineeDao).save(authenticatedTrainee);
+    doThrow(exception).when(traineeRepository).save(authenticatedTrainee);
 
     assertThatThrownBy(() -> traineeService.update(request)).isSameAs(exception);
   }

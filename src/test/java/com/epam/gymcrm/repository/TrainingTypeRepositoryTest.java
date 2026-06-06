@@ -1,4 +1,4 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class TrainingTypeDaoTest extends PostgresContainerTest {
+class TrainingTypeRepositoryTest extends PostgresContainerTest {
 
-  @Resource private TrainingTypeDao trainingTypeDao;
+  @Resource private TrainingTypeRepository trainingTypeRepository;
 
   @Test
   void findByNameShouldReturnSeededTrainingTypeWhenNameExists() {
-    Optional<TrainingType> found = trainingTypeDao.findByName("Fitness");
+    Optional<TrainingType> found = trainingTypeRepository.findByName("Fitness");
 
     assertThat(found)
         .isPresent()
@@ -26,14 +26,14 @@ class TrainingTypeDaoTest extends PostgresContainerTest {
 
   @Test
   void findByNameShouldReturnEmptyOptionalWhenNameDoesNotExist() {
-    Optional<TrainingType> found = trainingTypeDao.findByName("Unknown");
+    Optional<TrainingType> found = trainingTypeRepository.findByName("Unknown");
 
     assertThat(found).isEmpty();
   }
 
   @Test
   void findAllByOrderByTrainingTypeIdAscShouldReturnSeededTrainingTypesOrderedById() {
-    List<TrainingType> found = trainingTypeDao.findAllByOrderByTrainingTypeIdAsc();
+    List<TrainingType> found = trainingTypeRepository.findAllByOrderByTrainingTypeIdAsc();
 
     assertThat(found)
         .extracting(TrainingType::getTrainingTypeName)

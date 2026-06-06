@@ -1,4 +1,4 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
 
 import com.epam.gymcrm.model.TrainingType;
 import java.util.List;
@@ -6,8 +6,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-/** Persistence contract for {@link TrainingType} records. */
-public interface TrainingTypeDao extends JpaRepository<TrainingType, Long> {
+/** Repository contract for {@link TrainingType} records. */
+public interface TrainingTypeRepository extends JpaRepository<TrainingType, Long> {
 
   /**
    * Finds a training type by name.

@@ -1,8 +1,5 @@
 package com.epam.gymcrm.service.impl;
 
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingTypeDao;
-import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
@@ -15,6 +12,9 @@ import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.model.User;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
+import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TrainerService;
@@ -31,9 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TrainerServiceImpl implements TrainerService {
 
-  private final TrainerDao trainerDao;
-  private final UserDao userDao;
-  private final TrainingTypeDao trainingTypeDao;
+  private final TrainerRepository trainerRepository;
+  private final UserRepository userRepository;
+  private final TrainingTypeRepository trainingTypeRepository;
   private final AuthenticationService authenticationService;
   private final PasswordGenerator passwordGenerator;
   private final UsernameGenerator usernameGenerator;
@@ -51,10 +51,10 @@ public class TrainerServiceImpl implements TrainerService {
         usernameGenerator.generate(
             user.getFirstName(),
             user.getLastName(),
-            userDao.findUsernamesByPattern(baseUsername + "%")));
+            userRepository.findUsernamesByPattern(baseUsername + "%")));
 
     user.setPassword(passwordGenerator.generate());
-    trainerDao.save(trainer);
+    trainerRepository.save(trainer);
     log.info("Trainer profile created, Id={}, userId={}", trainer.getId(), user.getUserId());
 
     return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
@@ -75,7 +75,7 @@ public class TrainerServiceImpl implements TrainerService {
     Trainer trainer =
         authenticationService.authenticateTrainer(request.username(), request.oldPassword());
     trainer.getUser().setPassword(request.newPassword());
-    trainerDao.save(trainer);
+    trainerRepository.save(trainer);
 
     log.info("Trainer password changed, userId={}", trainer.getId());
   }
@@ -87,7 +87,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     Trainer trainer = authenticateTrainer(request);
     trainer.getUser().switchActiveStatus();
-    trainerDao.save(trainer);
+    trainerRepository.save(trainer);
 
     log.info("Trainer active status switched, userId={}", trainer.getId());
   }
@@ -98,7 +98,7 @@ public class TrainerServiceImpl implements TrainerService {
     log.info("Getting active trainers not assigned to trainee");
 
     authenticationService.authenticateTrainee(request.username(), request.password());
-    return trainerDao.findNotAssignedToTrainee(request.username()).stream()
+    return trainerRepository.findNotAssignedToTrainee(request.username()).stream()
         .map(trainerMapper::toSummaryResponse)
         .toList();
   }
@@ -112,14 +112,14 @@ public class TrainerServiceImpl implements TrainerService {
         authenticationService.authenticateTrainer(request.username(), request.password());
     trainerMapper.updateFromRequest(request, authenticatedTrainer);
     authenticatedTrainer.setSpecialization(resolveSpecializationName(request.specialization()));
-    trainerDao.save(authenticatedTrainer);
+    trainerRepository.save(authenticatedTrainer);
 
     log.info("Trainer profile updated, userId={}", authenticatedTrainer.getId());
     return trainerMapper.toProfileResponse(authenticatedTrainer);
   }
 
   private TrainingType resolveSpecializationName(String specialization) {
-    return trainingTypeDao
+    return trainingTypeRepository
         .findByName(specialization)
         .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
   }

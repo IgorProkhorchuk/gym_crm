@@ -3,7 +3,7 @@ package com.epam.gymcrm.monitoring.health;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -14,11 +14,11 @@ import org.springframework.boot.health.contributor.Status;
 @ExtendWith(MockitoExtension.class)
 class TrainingTypeCatalogHealthIndicatorTest {
 
-  @Mock private TrainingTypeDao trainingTypeDao;
+  @Mock private TrainingTypeRepository trainingTypeRepository;
 
   @Test
   void healthShouldBeUpWhenTrainingTypeCatalogIsNotEmpty() {
-    when(trainingTypeDao.count()).thenReturn(7L);
+    when(trainingTypeRepository.count()).thenReturn(7L);
 
     Health health = indicator().health();
 
@@ -28,7 +28,7 @@ class TrainingTypeCatalogHealthIndicatorTest {
 
   @Test
   void healthShouldBeDownWhenTrainingTypeCatalogIsEmpty() {
-    when(trainingTypeDao.count()).thenReturn(0L);
+    when(trainingTypeRepository.count()).thenReturn(0L);
 
     Health health = indicator().health();
 
@@ -38,7 +38,7 @@ class TrainingTypeCatalogHealthIndicatorTest {
 
   @Test
   void healthShouldBeDownWhenRepositoryFails() {
-    when(trainingTypeDao.count()).thenThrow(new RuntimeException("catalog unavailable"));
+    when(trainingTypeRepository.count()).thenThrow(new RuntimeException("catalog unavailable"));
 
     Health health = indicator().health();
 
@@ -47,6 +47,6 @@ class TrainingTypeCatalogHealthIndicatorTest {
   }
 
   private TrainingTypeCatalogHealthIndicator indicator() {
-    return new TrainingTypeCatalogHealthIndicator(trainingTypeDao);
+    return new TrainingTypeCatalogHealthIndicator(trainingTypeRepository);
   }
 }

@@ -1,6 +1,6 @@
 package com.epam.gymcrm.monitoring.health;
 
-import com.epam.gymcrm.dao.TrainingTypeDao;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
@@ -10,12 +10,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TrainingTypeCatalogHealthIndicator implements HealthIndicator {
 
-  private final TrainingTypeDao trainingTypeDao;
+  private final TrainingTypeRepository trainingTypeRepository;
 
   @Override
   public Health health() {
     try {
-      long trainingTypeCount = trainingTypeDao.count();
+      long trainingTypeCount = trainingTypeRepository.count();
       Health.Builder health = trainingTypeCount > 0 ? Health.up() : Health.down();
       return health.withDetail("trainingTypeCount", trainingTypeCount).build();
     } catch (RuntimeException exception) {

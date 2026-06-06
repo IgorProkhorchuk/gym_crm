@@ -1,15 +1,16 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
+
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.toSpringPageRequest;
 
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainer;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-/** Persistence contract for {@link Trainer} records keyed by {@link Trainer#getId()}. */
-public interface TrainerDao extends JpaRepository<Trainer, Long> {
+/** Repository contract for {@link Trainer} records keyed by {@link Trainer#getId()}. */
+public interface TrainerRepository extends JpaRepository<Trainer, Long> {
 
   /**
    * Finds a trainer by profile id.
@@ -81,8 +82,6 @@ public interface TrainerDao extends JpaRepository<Trainer, Long> {
    * @return trainers present on the requested page
    */
   default List<Trainer> findAll(PageRequest pageRequest) {
-    PageRequest page = Objects.requireNonNull(pageRequest, "Page request must not be null");
-    return findAll(org.springframework.data.domain.PageRequest.of(page.page(), page.size()))
-        .getContent();
+    return findAll(toSpringPageRequest(pageRequest)).getContent();
   }
 }

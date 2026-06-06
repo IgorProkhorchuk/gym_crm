@@ -1,4 +1,4 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
 
 import com.epam.gymcrm.model.User;
 import java.util.Optional;
@@ -6,8 +6,8 @@ import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-/** Persistence contract for {@link User} records. */
-public interface UserDao extends JpaRepository<User, Long> {
+/** Repository contract for {@link User} records. */
+public interface UserRepository extends JpaRepository<User, Long> {
   /**
    * Finds a user by their unique username.
    *

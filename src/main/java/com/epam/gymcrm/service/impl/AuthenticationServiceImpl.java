@@ -2,11 +2,11 @@ package com.epam.gymcrm.service.impl;
 
 import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonBlank;
 
-import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.dao.TrainerDao;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +20,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
   private static final String INVALID_CREDENTIALS_ERROR = "Invalid username or password";
 
-  private final TraineeDao traineeDao;
-  private final TrainerDao trainerDao;
+  private final TraineeRepository traineeRepository;
+  private final TrainerRepository trainerRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -31,7 +31,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     log.info("Authenticating trainee profile");
 
-    return traineeDao
+    return traineeRepository
         .findByUsername(username)
         .filter(trainee -> password.equals(trainee.getUser().getPassword()))
         .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));
@@ -45,7 +45,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     log.info("Authenticating trainer profile");
 
-    return trainerDao
+    return trainerRepository
         .findByUsername(username)
         .filter(trainer -> password.equals(trainer.getUser().getPassword()))
         .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));

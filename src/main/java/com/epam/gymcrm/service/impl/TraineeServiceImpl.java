@@ -1,8 +1,5 @@
 package com.epam.gymcrm.service.impl;
 
-import com.epam.gymcrm.dao.TraineeDao;
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
@@ -17,6 +14,9 @@ import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.User;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
 import com.epam.gymcrm.service.TraineeService;
@@ -35,9 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TraineeServiceImpl implements TraineeService {
 
-  private final TraineeDao traineeDao;
-  private final TrainerDao trainerDao;
-  private final UserDao userDao;
+  private final TraineeRepository traineeRepository;
+  private final TrainerRepository trainerRepository;
+  private final UserRepository userRepository;
   private final AuthenticationService authenticationService;
   private final PasswordGenerator passwordGenerator;
   private final UsernameGenerator usernameGenerator;
@@ -56,9 +56,9 @@ public class TraineeServiceImpl implements TraineeService {
         usernameGenerator.generate(
             user.getFirstName(),
             user.getLastName(),
-            userDao.findUsernamesByPattern(baseUsername + "%")));
+            userRepository.findUsernamesByPattern(baseUsername + "%")));
     user.setPassword(passwordGenerator.generate());
-    traineeDao.save(trainee);
+    traineeRepository.save(trainee);
     log.info("Trainee profile created, userId={}", trainee.getId());
 
     return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
@@ -79,7 +79,7 @@ public class TraineeServiceImpl implements TraineeService {
     Trainee trainee =
         authenticationService.authenticateTrainee(request.username(), request.oldPassword());
     trainee.getUser().setPassword(request.newPassword());
-    traineeDao.save(trainee);
+    traineeRepository.save(trainee);
 
     log.info("Trainee password changed, userId={}", trainee.getId());
   }
@@ -91,7 +91,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     Trainee trainee = authenticateTrainee(request);
     trainee.getUser().switchActiveStatus();
-    traineeDao.save(trainee);
+    traineeRepository.save(trainee);
 
     log.info("Trainee active status switched, userId={}", trainee.getId());
   }
@@ -102,7 +102,7 @@ public class TraineeServiceImpl implements TraineeService {
     log.info("Deleting trainee profile");
 
     Trainee trainee = authenticateTrainee(request);
-    traineeDao.delete(trainee.getId());
+    traineeRepository.delete(trainee.getId());
 
     log.info("Trainee profile deleted, userId={}", trainee.getId());
   }
@@ -119,7 +119,7 @@ public class TraineeServiceImpl implements TraineeService {
         uniqueTrainerUsernames.stream()
             .map(
                 trainerUsername ->
-                    trainerDao
+                    trainerRepository
                         .findByUsername(trainerUsername)
                         .orElseThrow(
                             () -> new EntityNotFoundException("Trainer profile not found")))
@@ -127,7 +127,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     trainee.getTrainers().clear();
     trainee.getTrainers().addAll(trainers);
-    traineeDao.save(trainee);
+    traineeRepository.save(trainee);
 
     log.info("Trainee trainers list updated, userId={}", trainee.getId());
     return trainers.stream().map(trainerMapper::toSummaryResponse).toList();
@@ -141,7 +141,7 @@ public class TraineeServiceImpl implements TraineeService {
     Trainee authenticatedTrainee =
         authenticationService.authenticateTrainee(request.username(), request.password());
     traineeMapper.updateFromRequest(request, authenticatedTrainee);
-    traineeDao.save(authenticatedTrainee);
+    traineeRepository.save(authenticatedTrainee);
 
     log.info("Trainee profile updated, userId={}", authenticatedTrainee.getId());
     return traineeMapper.toProfileResponse(authenticatedTrainee);

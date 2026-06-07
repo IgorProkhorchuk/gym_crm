@@ -1,11 +1,13 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
 
 import com.epam.gymcrm.model.User;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
-/** Persistence contract for {@link User} records. */
-public interface UserDao {
+/** Repository contract for {@link User} records. */
+public interface UserRepository extends JpaRepository<User, Long> {
   /**
    * Finds a user by their unique username.
    *
@@ -20,12 +22,6 @@ public interface UserDao {
    * @param pattern the SQL LIKE pattern to match against
    * @return a set of matching usernames
    */
+  @Query("select u.username from User u where u.username like :pattern")
   Set<String> findUsernamesByPattern(String pattern);
-
-  /**
-   * Saves or updates a user.
-   *
-   * @param user the user to save
-   */
-  void save(User user);
 }

@@ -13,6 +13,7 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.auth.TokenService;
@@ -35,10 +36,13 @@ class AuthControllerTest {
 
   @Mock private TokenService tokenService;
 
+  @Mock private GymMetrics gymMetrics;
+
   @BeforeEach
   void setUp() {
     standaloneSetup(
-        new AuthController(authenticationService, tokenService), new RestExceptionHandler());
+        new AuthController(authenticationService, gymMetrics, tokenService),
+        new RestExceptionHandler());
   }
 
   @AfterEach
@@ -66,6 +70,7 @@ class AuthControllerTest {
 
     verify(authenticationService).authenticateTrainee(USERNAME, PASSWORD);
     verify(tokenService).createToken(authenticatedUser);
+    verifyNoInteractions(gymMetrics);
   }
 
   @Test
@@ -92,6 +97,7 @@ class AuthControllerTest {
     verify(authenticationService).authenticateTrainee(USERNAME, PASSWORD);
     verify(authenticationService).authenticateTrainer(USERNAME, PASSWORD);
     verify(tokenService).createToken(authenticatedUser);
+    verifyNoInteractions(gymMetrics);
   }
 
   @Test
@@ -112,5 +118,6 @@ class AuthControllerTest {
         .body("message", equalTo("Invalid username or password"));
 
     verifyNoInteractions(tokenService);
+    verify(gymMetrics).recordLoginFailedInvalidCredentials();
   }
 }

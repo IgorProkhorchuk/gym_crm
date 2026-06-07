@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service.impl;
 
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.service.TrainingTypeService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TrainingTypeServiceImpl implements TrainingTypeService {
 
-  private final TrainingTypeDao trainingTypeDao;
+  private final TrainingTypeRepository trainingTypeRepository;
 
   @Override
   @Transactional(readOnly = true)
   public List<TrainingTypeResponse> getTrainingTypes() {
     log.info("Getting training types");
-    return trainingTypeDao.findAll().stream()
+    return trainingTypeRepository.findAllByOrderByTrainingTypeIdAsc().stream()
         .map(type -> new TrainingTypeResponse(type.getTrainingTypeId(), type.getTrainingTypeName()))
         .toList();
   }

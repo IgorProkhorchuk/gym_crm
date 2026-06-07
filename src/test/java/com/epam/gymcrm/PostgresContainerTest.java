@@ -1,16 +1,12 @@
 package com.epam.gymcrm;
 
-import com.epam.gymcrm.config.RootConfig;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = RootConfig.class)
+@SpringBootTest(classes = Main.class)
 @Transactional
 public abstract class PostgresContainerTest {
 
@@ -26,9 +22,9 @@ public abstract class PostgresContainerTest {
 
   @DynamicPropertySource
   static void registerPostgresProperties(DynamicPropertyRegistry registry) {
-    registry.add("db.url", POSTGRES::getJdbcUrl);
-    registry.add("db.username", POSTGRES::getUsername);
-    registry.add("db.password", POSTGRES::getPassword);
-    registry.add("db.driver", POSTGRES::getDriverClassName);
+    registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+    registry.add("spring.datasource.username", POSTGRES::getUsername);
+    registry.add("spring.datasource.password", POSTGRES::getPassword);
+    registry.add("spring.datasource.driver-class-name", POSTGRES::getDriverClassName);
   }
 }

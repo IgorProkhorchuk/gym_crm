@@ -1,19 +1,16 @@
-package com.epam.gymcrm.dao;
+package com.epam.gymcrm.repository;
+
+import static com.epam.gymcrm.repository.RepositoryQueryUtils.toSpringPageRequest;
 
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
-/** Persistence contract for {@link Trainee} records keyed by {@link Trainee#getId()}. */
-public interface TraineeDao {
-
-  /**
-   * Stores the trainee under its profile id, replacing any record with the same id.
-   *
-   * @param trainee trainee to insert or replace
-   */
-  void save(Trainee trainee);
+/** Repository contract for {@link Trainee} records keyed by {@link Trainee#getId()}. */
+public interface TraineeRepository extends JpaRepository<Trainee, Long> {
 
   /**
    * Finds a trainee by profile id.
@@ -29,6 +26,13 @@ public interface TraineeDao {
    * @param username trainee username to look up
    * @return trainee with the given username, or {@link Optional#empty()} when absent
    */
+  @Query(
+      """
+          select t
+          from Trainee t
+          join fetch t.user u
+          where u.username = :username
+      """)
   Optional<Trainee> findByUsername(String username);
 
   /**
@@ -36,7 +40,9 @@ public interface TraineeDao {
    *
    * @param id trainee profile id to remove
    */
-  void delete(Long id);
+  default void delete(Long id) {
+    findById(id).ifPresent(this::delete);
+  }
 
   /**
    * Returns a page of stored trainees.
@@ -44,5 +50,7 @@ public interface TraineeDao {
    * @param pageRequest pagination settings
    * @return trainees present on the requested page
    */
-  List<Trainee> findAll(PageRequest pageRequest);
+  default List<Trainee> findAll(PageRequest pageRequest) {
+    return findAll(toSpringPageRequest(pageRequest)).getContent();
+  }
 }

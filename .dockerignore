@@ -2,7 +2,7 @@
 .idea
 .mvn/wrapper/maven-wrapper.jar
 target/*
-!target/*.war
+!target/*.jar
 logs
 infra
 *.pdf

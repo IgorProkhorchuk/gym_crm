@@ -12,8 +12,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
@@ -26,6 +24,9 @@ import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
+import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.service.impl.TrainerServiceImpl;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -48,11 +49,11 @@ class TrainerServiceImplTest {
 
   @InjectMocks private TrainerServiceImpl trainerService;
 
-  @Mock private TrainerDao trainerDao;
+  @Mock private TrainerRepository trainerRepository;
 
-  @Mock private com.epam.gymcrm.dao.UserDao userDao;
+  @Mock private UserRepository userRepository;
 
-  @Mock private TrainingTypeDao trainingTypeDao;
+  @Mock private TrainingTypeRepository trainingTypeRepository;
 
   @Mock private AuthenticationService authenticationService;
 
@@ -73,9 +74,9 @@ class TrainerServiceImplTest {
     TrainingType specialization = trainingType("Fitness");
 
     when(trainerMapper.toEntity(request)).thenReturn(trainer);
-    when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(specialization));
+    when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(specialization));
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-    when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
+    when(userRepository.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
     when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
         .thenReturn("Severus.Snape");
 
@@ -90,7 +91,7 @@ class TrainerServiceImplTest {
         () -> verify(trainerMapper).toEntity(request),
         () -> verify(usernameGenerator).generate("Severus", "Snape", Collections.emptySet()),
         () -> verify(passwordGenerator).generate(),
-        () -> verify(trainerDao).save(trainer));
+        () -> verify(trainerRepository).save(trainer));
   }
 
   @Test
@@ -104,9 +105,9 @@ class TrainerServiceImplTest {
 
     Set<String> existingUsernames = Set.of("Severus.Snape", "Severus.Snape2", "Severus.Snapely");
     when(trainerMapper.toEntity(request)).thenReturn(newTrainer);
-    when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
+    when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
-    when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(existingUsernames);
+    when(userRepository.findUsernamesByPattern("Severus.Snape%")).thenReturn(existingUsernames);
     when(usernameGenerator.generate("Severus", "Snape", existingUsernames))
         .thenReturn("Severus.Snape1");
 
@@ -115,7 +116,7 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(newTrainer.getUser().getUsername()).isEqualTo("Severus.Snape1"),
         () -> verify(usernameGenerator).generate("Severus", "Snape", existingUsernames),
-        () -> verify(trainerDao).save(newTrainer));
+        () -> verify(trainerRepository).save(newTrainer));
   }
 
   @Test
@@ -129,12 +130,12 @@ class TrainerServiceImplTest {
     RuntimeException exception = new RuntimeException("DAO failure");
 
     when(trainerMapper.toEntity(request)).thenReturn(trainer);
-    when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
-    when(userDao.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
+    when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
+    when(userRepository.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
     when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
         .thenReturn("Severus.Snape");
-    doThrow(exception).when(trainerDao).save(trainer);
+    doThrow(exception).when(trainerRepository).save(trainer);
 
     assertThatThrownBy(() -> trainerService.create(request)).isSameAs(exception);
   }
@@ -152,7 +153,7 @@ class TrainerServiceImplTest {
     assertRequestViolation(request, "must not be blank");
 
     verifyNoInteractions(
-        trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
+        trainingTypeRepository, trainerMapper, usernameGenerator, passwordGenerator, trainerRepository);
   }
 
   @Test
@@ -162,7 +163,7 @@ class TrainerServiceImplTest {
     assertRequestViolation(request, "must not be blank");
 
     verifyNoInteractions(
-        trainingTypeDao, trainerMapper, usernameGenerator, passwordGenerator, trainerDao);
+        trainingTypeRepository, trainerMapper, usernameGenerator, passwordGenerator, trainerRepository);
   }
 
   @Test
@@ -182,7 +183,7 @@ class TrainerServiceImplTest {
   @Test
   void createShouldThrowEntityNotFoundExceptionWhenSpecializationDoesNotExist() {
     CreateTrainerRequest request = createTrainerRequest("Severus", "Snape", "Unknown", true);
-    when(trainingTypeDao.findByName("Unknown")).thenReturn(Optional.empty());
+    when(trainingTypeRepository.findByName("Unknown")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> trainerService.create(request))
         .isInstanceOf(EntityNotFoundException.class)
@@ -220,7 +221,7 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(trainer.getUser().getPassword()).isEqualTo("new-password"),
         () -> verify(authenticationService).authenticateTrainer("John.Coach", "old-password"),
-        () -> verify(trainerDao).save(trainer));
+        () -> verify(trainerRepository).save(trainer));
   }
 
   @Test
@@ -258,7 +259,7 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(trainer.getUser().getActive()).isTrue(),
         () -> verify(authenticationService).authenticateTrainer("John.Coach", "password"),
-        () -> verify(trainerDao).save(trainer));
+        () -> verify(trainerRepository).save(trainer));
   }
 
   @Test
@@ -272,7 +273,7 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(trainer.getUser().getActive()).isFalse(),
         () -> verify(authenticationService).authenticateTrainer("John.Coach", "password"),
-        () -> verify(trainerDao).save(trainer));
+        () -> verify(trainerRepository).save(trainer));
   }
 
   @Test
@@ -289,7 +290,7 @@ class TrainerServiceImplTest {
         () ->
             verify(authenticationService, org.mockito.Mockito.times(2))
                 .authenticateTrainer("John.Coach", "password"),
-        () -> verify(trainerDao, org.mockito.Mockito.times(2)).save(trainer));
+        () -> verify(trainerRepository, org.mockito.Mockito.times(2)).save(trainer));
   }
 
   @Test
@@ -300,7 +301,7 @@ class TrainerServiceImplTest {
         trainerSummaryResponse(1L, "Available.Trainer", "Available", "Trainer");
     when(authenticationService.authenticateTrainee("Jane.Doe", "password"))
         .thenReturn(com.epam.gymcrm.TestFixtures.trainee("Jane", "Doe", "Jane.Doe"));
-    when(trainerDao.findNotAssignedToTrainee("Jane.Doe")).thenReturn(List.of(trainer));
+    when(trainerRepository.findNotAssignedToTrainee("Jane.Doe")).thenReturn(List.of(trainer));
     when(trainerMapper.toSummaryResponse(trainer)).thenReturn(response);
 
     List<TrainerSummaryResponse> result = trainerService.getUnassignedTrainers(request);
@@ -308,7 +309,7 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(result).containsExactly(response),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
-        () -> verify(trainerDao).findNotAssignedToTrainee("Jane.Doe"),
+        () -> verify(trainerRepository).findNotAssignedToTrainee("Jane.Doe"),
         () -> verify(trainerMapper).toSummaryResponse(trainer));
   }
 
@@ -321,7 +322,7 @@ class TrainerServiceImplTest {
         trainerProfileResponse(22L, "Minerva.McGonagall", "Minnie", "McGonagall", "Yoga");
     when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password"))
         .thenReturn(authenticatedTrainer);
-    when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(specialization));
+    when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(specialization));
     when(trainerMapper.toProfileResponse(authenticatedTrainer)).thenReturn(response);
 
     TrainerProfileResponse result = trainerService.update(request);
@@ -331,10 +332,10 @@ class TrainerServiceImplTest {
         () -> assertThat(authenticatedTrainer.getSpecialization()).isSameAs(specialization),
         () -> verify(authenticationService).authenticateTrainer("Minerva.McGonagall", "password"),
         () -> verify(trainerMapper).updateFromRequest(request, authenticatedTrainer),
-        () -> verify(trainingTypeDao).findByName("Yoga"),
-        () -> verify(trainerDao).save(authenticatedTrainer),
+        () -> verify(trainingTypeRepository).findByName("Yoga"),
+        () -> verify(trainerRepository).save(authenticatedTrainer),
         () -> verify(trainerMapper).toProfileResponse(authenticatedTrainer),
-        () -> verifyNoMoreInteractions(trainerDao));
+        () -> verifyNoMoreInteractions(trainerRepository));
   }
 
   @Test
@@ -346,7 +347,7 @@ class TrainerServiceImplTest {
 
     assertThatThrownBy(() -> trainerService.update(request)).isSameAs(exception);
 
-    assertAll(() -> verifyNoInteractions(trainingTypeDao), () -> verifyNoInteractions(trainerDao));
+    assertAll(() -> verifyNoInteractions(trainingTypeRepository), () -> verifyNoInteractions(trainerRepository));
   }
 
   @Test
@@ -356,8 +357,8 @@ class TrainerServiceImplTest {
     RuntimeException exception = new RuntimeException("DAO failure");
     when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password"))
         .thenReturn(authenticatedTrainer);
-    when(trainingTypeDao.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
-    doThrow(exception).when(trainerDao).save(authenticatedTrainer);
+    when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
+    doThrow(exception).when(trainerRepository).save(authenticatedTrainer);
 
     assertThatThrownBy(() -> trainerService.update(request)).isSameAs(exception);
   }

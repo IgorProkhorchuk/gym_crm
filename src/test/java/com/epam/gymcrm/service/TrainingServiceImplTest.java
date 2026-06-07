@@ -12,21 +12,23 @@ import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingDao;
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.service.impl.TrainingServiceImpl;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -48,15 +50,17 @@ class TrainingServiceImplTest {
 
   @InjectMocks private TrainingServiceImpl trainingService;
 
-  @Mock private TrainingDao trainingDao;
+  @Mock private TrainingRepository trainingRepository;
 
-  @Mock private TrainerDao trainerDao;
+  @Mock private TrainerRepository trainerRepository;
 
-  @Mock private TrainingTypeDao trainingTypeDao;
+  @Mock private TrainingTypeRepository trainingTypeRepository;
 
   @Mock private AuthenticationService authenticationService;
 
   @Mock private TrainingMapper trainingMapper;
+
+  @Mock private GymMetrics gymMetrics;
 
   private AddTrainingRequest addTrainingRequest;
   private Validator validator;
@@ -88,18 +92,19 @@ class TrainingServiceImplTest {
             .build();
     when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
         .thenReturn(trainee);
-    when(trainerDao.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
-    when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(trainingType));
+    when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
+    when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(trainingType));
     when(trainingMapper.toEntity(addTrainingRequest)).thenReturn(training);
 
     trainingService.addTraining(addTrainingRequest);
 
     assertAll(
         () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
-        () -> verify(trainerDao).findByUsername("Training.Trainer"),
-        () -> verify(trainingTypeDao).findByName("Yoga"),
+        () -> verify(trainerRepository).findByUsername("Training.Trainer"),
+        () -> verify(trainingTypeRepository).findByName("Yoga"),
         () -> verify(trainingMapper).toEntity(addTrainingRequest),
-        () -> verify(trainingDao).save(training),
+        () -> verify(trainingRepository).save(training),
+        () -> verify(gymMetrics).recordTrainingCreationSucceeded(),
         () -> assertThat(training.getTrainee()).isSameAs(trainee),
         () -> assertThat(training.getTrainer()).isSameAs(trainer),
         () -> assertThat(training.getTrainingType()).isSameAs(trainingType),
@@ -113,11 +118,13 @@ class TrainingServiceImplTest {
     Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
     when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
         .thenReturn(trainee);
-    when(trainerDao.findByUsername("Training.Trainer")).thenReturn(Optional.empty());
+    when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
         .isInstanceOf(EntityNotFoundException.class)
         .hasMessage("Trainer profile not found");
+
+    verify(gymMetrics).recordTrainingCreationTrainerNotFound();
   }
 
   @Test
@@ -126,12 +133,25 @@ class TrainingServiceImplTest {
     Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
     when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
         .thenReturn(trainee);
-    when(trainerDao.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
-    when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.empty());
+    when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
+    when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
         .isInstanceOf(EntityNotFoundException.class)
         .hasMessage("Training type not found");
+
+    verify(gymMetrics).recordTrainingCreationTrainingTypeNotFound();
+  }
+
+  @Test
+  void addTrainingShouldRecordAuthFailureWhenTraineeAuthenticationFails() {
+    AuthenticationException exception = new AuthenticationException("Invalid username or password");
+    when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
+        .thenThrow(exception);
+
+    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest)).isSameAs(exception);
+
+    verify(gymMetrics).recordTrainingCreationAuthFailed();
   }
 
   @Test
@@ -293,7 +313,7 @@ class TrainingServiceImplTest {
     Training training = validTraining();
     TraineeTrainingResponse response = traineeTrainingResponse();
     when(trainingMapper.toCriteria(request)).thenReturn(criteria);
-    when(trainingDao.findByTraineeUsernameAndCriteria(
+    when(trainingRepository.findByTraineeUsernameAndCriteria(
             "Training.Trainee", criteria, PageRequest.firstPage()))
         .thenReturn(List.of(training));
     when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
@@ -305,7 +325,7 @@ class TrainingServiceImplTest {
         () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
         () -> verify(trainingMapper).toCriteria(request),
         () ->
-            verify(trainingDao)
+            verify(trainingRepository)
                 .findByTraineeUsernameAndCriteria(
                     "Training.Trainee", criteria, PageRequest.firstPage()),
         () -> verify(trainingMapper).toTraineeTrainingResponse(training));
@@ -318,7 +338,7 @@ class TrainingServiceImplTest {
     Training training = validTraining();
     TraineeTrainingResponse response = traineeTrainingResponse();
     when(trainingMapper.toCriteria(request)).thenReturn(null);
-    when(trainingDao.findByTraineeUsernameAndCriteria(
+    when(trainingRepository.findByTraineeUsernameAndCriteria(
             "Training.Trainee", TraineeTrainingCriteria.empty(), PageRequest.firstPage()))
         .thenReturn(List.of(training));
     when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
@@ -329,7 +349,7 @@ class TrainingServiceImplTest {
         () -> assertThat(result).containsExactly(response),
         () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
         () ->
-            verify(trainingDao)
+            verify(trainingRepository)
                 .findByTraineeUsernameAndCriteria(
                     "Training.Trainee", TraineeTrainingCriteria.empty(), PageRequest.firstPage()));
   }
@@ -349,7 +369,7 @@ class TrainingServiceImplTest {
     Training training = validTraining();
     TrainerTrainingResponse response = trainerTrainingResponse();
     when(trainingMapper.toCriteria(request)).thenReturn(criteria);
-    when(trainingDao.findByTrainerUsernameAndCriteria(
+    when(trainingRepository.findByTrainerUsernameAndCriteria(
             "Training.Trainer", criteria, PageRequest.firstPage()))
         .thenReturn(List.of(training));
     when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
@@ -361,7 +381,7 @@ class TrainingServiceImplTest {
         () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
         () -> verify(trainingMapper).toCriteria(request),
         () ->
-            verify(trainingDao)
+            verify(trainingRepository)
                 .findByTrainerUsernameAndCriteria(
                     "Training.Trainer", criteria, PageRequest.firstPage()),
         () -> verify(trainingMapper).toTrainerTrainingResponse(training));
@@ -374,7 +394,7 @@ class TrainingServiceImplTest {
     Training training = validTraining();
     TrainerTrainingResponse response = trainerTrainingResponse();
     when(trainingMapper.toCriteria(request)).thenReturn(null);
-    when(trainingDao.findByTrainerUsernameAndCriteria(
+    when(trainingRepository.findByTrainerUsernameAndCriteria(
             "Training.Trainer", TrainerTrainingCriteria.empty(), PageRequest.firstPage()))
         .thenReturn(List.of(training));
     when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
@@ -385,7 +405,7 @@ class TrainingServiceImplTest {
         () -> assertThat(result).containsExactly(response),
         () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
         () ->
-            verify(trainingDao)
+            verify(trainingRepository)
                 .findByTrainerUsernameAndCriteria(
                     "Training.Trainer", TrainerTrainingCriteria.empty(), PageRequest.firstPage()));
   }

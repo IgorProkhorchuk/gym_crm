@@ -84,14 +84,50 @@ services:
     networks:
       - gym-crm-net
     environment:
-      CATALINA_OPTS: >-
-        -Ddb.url=jdbc:postgresql://gym-pgpool:5432/gym_crm
-        -Ddb.username=${APP_DB_USERNAME:-gym_user}
-        -Ddb.password=${APP_DB_PASSWORD:-password}
-        -Ddb.driver=org.postgresql.Driver
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-pgpool:5432/gym_crm
+      SPRING_DATASOURCE_USERNAME: ${APP_DB_USERNAME:-gym_user}
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-password}
     depends_on:
       gym-pgpool:
         condition: service_healthy
+
+#==================MONITORING=================
+
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    container_name: gym-prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - gym-crm-net
+    volumes:
+      - ./monitoring/prometheus/${PROMETHEUS_CONFIG:-prometheus.yml}:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"
+
+  grafana:
+    image: docker.io/grafana/grafana-oss:latest
+    container_name: gym-grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - gym-crm-net
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
 
 networks:
   gym-crm-net:
@@ -100,3 +136,5 @@ networks:
 volumes:
   master_data:
   replica_data:
+  prometheus_data:
+  grafana_data:

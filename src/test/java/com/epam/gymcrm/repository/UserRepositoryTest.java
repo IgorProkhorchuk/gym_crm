@@ -1,11 +1,10 @@
-package com.epam.gymcrm.dao.impl;
+package com.epam.gymcrm.repository;
 
 import static com.epam.gymcrm.TestFixtures.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.epam.gymcrm.PostgresContainerTest;
-import com.epam.gymcrm.dao.UserDao;
 import com.epam.gymcrm.model.User;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
@@ -14,21 +13,21 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class UserDaoImplTest extends PostgresContainerTest {
+class UserRepositoryTest extends PostgresContainerTest {
 
   @PersistenceContext private EntityManager entityManager;
 
-  @Resource private UserDao userDao;
+  @Resource private UserRepository userRepository;
 
   @Test
   void saveShouldPersistUserAndFindByUsernameShouldReturnIt() {
     User user = user("John", "Doe", "John.Doe");
 
-    userDao.save(user);
+    userRepository.save(user);
     entityManager.flush();
     entityManager.clear();
 
-    Optional<User> found = userDao.findByUsername("John.Doe");
+    Optional<User> found = userRepository.findByUsername("John.Doe");
 
     assertAll(
         () -> assertThat(found).isPresent(),
@@ -45,18 +44,18 @@ class UserDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     user.setLastName("Updated");
-    userDao.save(user);
+    userRepository.save(user);
     entityManager.flush();
     entityManager.clear();
 
-    Optional<User> found = userDao.findByUsername("Jane.Doe");
+    Optional<User> found = userRepository.findByUsername("Jane.Doe");
 
     assertThat(found).isPresent().get().extracting(User::getLastName).isEqualTo("Updated");
   }
 
   @Test
   void findByUsernameShouldReturnEmptyOptionalWhenUserDoesNotExist() {
-    Optional<User> found = userDao.findByUsername("Unknown.User");
+    Optional<User> found = userRepository.findByUsername("Unknown.User");
 
     assertThat(found).isEmpty();
   }
@@ -70,7 +69,7 @@ class UserDaoImplTest extends PostgresContainerTest {
     entityManager.flush();
     entityManager.clear();
 
-    Set<String> usernames = userDao.findUsernamesByPattern("John.Doe%");
+    Set<String> usernames = userRepository.findUsernamesByPattern("John.Doe%");
 
     assertThat(usernames).containsExactlyInAnyOrder("John.Doe", "John.Doe1", "John.Doering");
   }

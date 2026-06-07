@@ -1,16 +1,14 @@
-package com.epam.gymcrm.dao.impl;
+package com.epam.gymcrm.repository;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
 import static com.epam.gymcrm.TestFixtures.training;
-import static com.epam.gymcrm.TestFixtures.trainingType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
-import com.epam.gymcrm.dao.TrainingDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
@@ -24,21 +22,21 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class TrainingDaoImplTest extends PostgresContainerTest {
+class TrainingRepositoryTest extends PostgresContainerTest {
 
   @PersistenceContext private EntityManager entityManager;
 
-  @Resource private TrainingDao trainingDao;
+  @Resource private TrainingRepository trainingRepository;
 
   @Test
   void saveShouldPersistTrainingAndFindByIdShouldReturnIt() {
     Training training = persistedTrainingGraph();
 
-    trainingDao.save(training);
+    trainingRepository.save(training);
     entityManager.flush();
     entityManager.clear();
 
-    Optional<Training> found = trainingDao.findById(training.getTrainingId());
+    Optional<Training> found = trainingRepository.findById(training.getTrainingId());
 
     assertAll(
         () -> assertThat(found).isPresent(),
@@ -62,11 +60,11 @@ class TrainingDaoImplTest extends PostgresContainerTest {
 
     training.setTrainingName("Updated Yoga");
     training.setTrainingDuration(90);
-    trainingDao.save(training);
+    trainingRepository.save(training);
     entityManager.flush();
     entityManager.clear();
 
-    Optional<Training> found = trainingDao.findById(training.getTrainingId());
+    Optional<Training> found = trainingRepository.findById(training.getTrainingId());
 
     assertAll(
         () -> assertThat(found).isPresent(),
@@ -76,7 +74,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
 
   @Test
   void findByIdShouldReturnEmptyOptionalWhenTrainingDoesNotExist() {
-    Optional<Training> found = trainingDao.findById(-1L);
+    Optional<Training> found = trainingRepository.findById(-1L);
 
     assertThat(found).isEmpty();
   }
@@ -101,7 +99,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTraineeUsernameAndCriteria(
+        trainingRepository.findByTraineeUsernameAndCriteria(
             "Target.Trainee",
             new TraineeTrainingCriteria(
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), "john", "Yoga"),
@@ -135,7 +133,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTraineeUsernameAndCriteria(
+        trainingRepository.findByTraineeUsernameAndCriteria(
             "Null.Criteria", null, PageRequest.firstPage());
 
     assertThat(result)
@@ -156,7 +154,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTraineeUsernameAndCriteria("Paged.Trainee", null, new PageRequest(1, 1));
+        trainingRepository.findByTraineeUsernameAndCriteria("Paged.Trainee", null, new PageRequest(1, 1));
 
     assertThat(result)
         .extracting(Training::getTrainingId)
@@ -181,7 +179,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTraineeUsernameAndCriteria(
+        trainingRepository.findByTraineeUsernameAndCriteria(
             "Blank.Criteria",
             new TraineeTrainingCriteria(null, null, " ", " "),
             PageRequest.firstPage());
@@ -209,7 +207,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTrainerUsernameAndCriteria(
+        trainingRepository.findByTrainerUsernameAndCriteria(
             "Target.Trainer",
             new TrainerTrainingCriteria(
                 LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28), "alice"),
@@ -245,7 +243,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTrainerUsernameAndCriteria(
+        trainingRepository.findByTrainerUsernameAndCriteria(
             "Null.Criteria.Trainer", null, PageRequest.firstPage());
 
     assertThat(result)
@@ -269,7 +267,7 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     entityManager.clear();
 
     List<Training> result =
-        trainingDao.findByTrainerUsernameAndCriteria("Paged.Coach", null, new PageRequest(1, 1));
+        trainingRepository.findByTrainerUsernameAndCriteria("Paged.Coach", null, new PageRequest(1, 1));
 
     assertThat(result)
         .extracting(Training::getTrainingId)
@@ -310,9 +308,9 @@ class TrainingDaoImplTest extends PostgresContainerTest {
     return entityManager
         .createQuery(
             """
-                        select tt
-                        from TrainingType tt
-                        where tt.trainingTypeName = :name
+                select tt
+                from TrainingType tt
+                where tt.trainingTypeName = :name
             """,
             TrainingType.class)
         .setParameter("name", name)

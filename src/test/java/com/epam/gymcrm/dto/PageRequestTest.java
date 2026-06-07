@@ -9,30 +9,30 @@ import org.junit.jupiter.api.Test;
 class PageRequestTest {
 
   @Test
-  void firstPageShouldUseDefaultLimit() {
+  void firstPageShouldUseDefaultSize() {
     PageRequest pageRequest = PageRequest.firstPage();
 
     assertAll(
-        () -> assertThat(pageRequest.offset()).isZero(),
-        () -> assertThat(pageRequest.limit()).isEqualTo(50));
+        () -> assertThat(pageRequest.page()).isZero(),
+        () -> assertThat(pageRequest.size()).isEqualTo(50));
   }
 
   @Test
-  void constructorShouldRejectNegativeOffset() {
+  void constructorShouldRejectNegativePage() {
     assertThatThrownBy(() -> new PageRequest(-1, 10))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Offset cannot be negative");
+        .hasMessage("Page cannot be negative");
   }
 
   @Test
-  void constructorShouldUseDefaultLimitWhenLimitIsNotPositive() {
+  void constructorShouldUseDefaultSizeWhenSizeIsNotPositive() {
     assertAll(
-        () -> assertThat(new PageRequest(0, 0).limit()).isEqualTo(50),
-        () -> assertThat(new PageRequest(0, -5).limit()).isEqualTo(50));
+        () -> assertThat(new PageRequest(0, 0).size()).isEqualTo(50),
+        () -> assertThat(new PageRequest(0, -5).size()).isEqualTo(50));
   }
 
   @Test
-  void constructorShouldClampLimitToMaximum() {
-    assertThat(new PageRequest(0, 500).limit()).isEqualTo(100);
+  void constructorShouldClampSizeToMaximum() {
+    assertThat(new PageRequest(0, 500).size()).isEqualTo(100);
   }
 }

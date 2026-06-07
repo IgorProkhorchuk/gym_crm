@@ -2,21 +2,23 @@ package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingDao;
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.TrainingService;
 import java.util.List;
@@ -33,34 +35,42 @@ import org.springframework.validation.annotation.Validated;
 @Transactional
 public class TrainingServiceImpl implements TrainingService {
 
-  private final TrainingDao trainingDao;
-  private final TrainerDao trainerDao;
-  private final TrainingTypeDao trainingTypeDao;
+  private final TrainingRepository trainingRepository;
+  private final TrainerRepository trainerRepository;
+  private final TrainingTypeRepository trainingTypeRepository;
   private final AuthenticationService authenticationService;
   private final TrainingMapper trainingMapper;
+  private final GymMetrics gymMetrics;
 
   @Override
   public void addTraining(AddTrainingRequest request) {
     log.info("Adding training");
 
-    Trainee trainee =
-        authenticationService.authenticateTrainee(
-            request.traineeUsername(), request.traineePassword());
+    Trainee trainee = authenticateTrainingTrainee(request);
     Trainer trainer =
-        trainerDao
+        trainerRepository
             .findByUsername(request.trainerUsername())
-            .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
+            .orElseThrow(
+                () -> {
+                  gymMetrics.recordTrainingCreationTrainerNotFound();
+                  return new EntityNotFoundException("Trainer profile not found");
+                });
     TrainingType trainingType =
-        trainingTypeDao
+        trainingTypeRepository
             .findByName(request.trainingTypeName())
-            .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
+            .orElseThrow(
+                () -> {
+                  gymMetrics.recordTrainingCreationTrainingTypeNotFound();
+                  return new EntityNotFoundException("Training type not found");
+                });
 
     Training training = trainingMapper.toEntity(request);
     training.setTrainee(trainee);
     training.setTrainer(trainer);
     training.setTrainingType(trainingType);
 
-    trainingDao.save(training);
+    trainingRepository.save(training);
+    gymMetrics.recordTrainingCreationSucceeded();
 
     log.info("Training added, trainingId={}", training.getTrainingId());
   }
@@ -72,7 +82,7 @@ public class TrainingServiceImpl implements TrainingService {
 
     authenticationService.authenticateTrainee(request.username(), request.password());
     TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
-    return trainingDao
+    return trainingRepository
         .findByTraineeUsernameAndCriteria(
             request.username(),
             criteria == null ? TraineeTrainingCriteria.empty() : criteria,
@@ -89,7 +99,7 @@ public class TrainingServiceImpl implements TrainingService {
 
     authenticationService.authenticateTrainer(request.username(), request.password());
     TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
-    return trainingDao
+    return trainingRepository
         .findByTrainerUsernameAndCriteria(
             request.username(),
             criteria == null ? TrainerTrainingCriteria.empty() : criteria,
@@ -101,5 +111,15 @@ public class TrainingServiceImpl implements TrainingService {
 
   private static PageRequest page(PageRequest pageRequest) {
     return pageRequest == null ? PageRequest.firstPage() : pageRequest;
+  }
+
+  private Trainee authenticateTrainingTrainee(AddTrainingRequest request) {
+    try {
+      return authenticationService.authenticateTrainee(
+          request.traineeUsername(), request.traineePassword());
+    } catch (AuthenticationException exception) {
+      gymMetrics.recordTrainingCreationAuthFailed();
+      throw exception;
+    }
   }
 }

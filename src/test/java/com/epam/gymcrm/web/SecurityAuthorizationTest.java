@@ -1,6 +1,7 @@
 package com.epam.gymcrm.web;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.epam.gymcrm.PostgresContainerTest;
 import com.epam.gymcrm.dto.auth.ProfileType;
@@ -29,37 +30,44 @@ class SecurityAuthorizationTest extends PostgresContainerTest {
   void traineeEndpointsShouldRejectTrainerRole() {
     String token = jwtTokenService.createToken("Mike.Stone", ProfileType.TRAINER);
 
-    assertThatThrownBy(
+    HttpClientErrorException.Forbidden exception =
+        catchThrowableOfType(
             () ->
                 restClient
                     .get()
                     .uri("/api/v1/trainees/profile?username=John.Doe")
                     .headers(headers -> headers.setBearerAuth(token))
                     .retrieve()
-                    .toBodilessEntity())
-        .isInstanceOf(HttpClientErrorException.Forbidden.class);
+                    .toBodilessEntity(),
+            HttpClientErrorException.Forbidden.class);
+
+    assertThat(exception.getResponseBodyAsString()).isEqualTo("{\"message\":\"Access is denied\"}");
   }
 
   @Test
   void trainerEndpointsShouldRejectTraineeRole() {
     String token = jwtTokenService.createToken("John.Doe", ProfileType.TRAINEE);
 
-    assertThatThrownBy(
+    HttpClientErrorException.Forbidden exception =
+        catchThrowableOfType(
             () ->
                 restClient
                     .get()
                     .uri("/api/v1/trainers/profile?username=Mike.Stone")
                     .headers(headers -> headers.setBearerAuth(token))
                     .retrieve()
-                    .toBodilessEntity())
-        .isInstanceOf(HttpClientErrorException.Forbidden.class);
+                    .toBodilessEntity(),
+            HttpClientErrorException.Forbidden.class);
+
+    assertThat(exception.getResponseBodyAsString()).isEqualTo("{\"message\":\"Access is denied\"}");
   }
 
   @Test
   void addTrainingShouldRejectTrainerRole() {
     String token = jwtTokenService.createToken("Mike.Stone", ProfileType.TRAINER);
 
-    assertThatThrownBy(
+    HttpClientErrorException.Forbidden exception =
+        catchThrowableOfType(
             () ->
                 restClient
                     .post()
@@ -68,16 +76,22 @@ class SecurityAuthorizationTest extends PostgresContainerTest {
                     .headers(headers -> headers.setBearerAuth(token))
                     .body(validAddTrainingRequest())
                     .retrieve()
-                    .toBodilessEntity())
-        .isInstanceOf(HttpClientErrorException.Forbidden.class);
+                    .toBodilessEntity(),
+            HttpClientErrorException.Forbidden.class);
+
+    assertThat(exception.getResponseBodyAsString()).isEqualTo("{\"message\":\"Access is denied\"}");
   }
 
   @Test
   void protectedReferenceEndpointShouldRejectMissingToken() {
-    assertThatThrownBy(
+    HttpClientErrorException.Unauthorized exception =
+        catchThrowableOfType(
             () ->
-                restClient.get().uri("/api/v1/training-types").retrieve().toBodilessEntity())
-        .isInstanceOf(HttpClientErrorException.Unauthorized.class);
+                restClient.get().uri("/api/v1/training-types").retrieve().toBodilessEntity(),
+            HttpClientErrorException.Unauthorized.class);
+
+    assertThat(exception.getResponseBodyAsString())
+        .isEqualTo("{\"message\":\"Authentication is required\"}");
   }
 
   private static String validAddTrainingRequest() {

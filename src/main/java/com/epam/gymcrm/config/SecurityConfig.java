@@ -63,6 +63,12 @@ public class SecurityConfig {
                         "/actuator/health",
                         "/actuator/info")
                     .permitAll()
+                    .requestMatchers("/v1/trainees/**")
+                    .hasRole("TRAINEE")
+                    .requestMatchers("/v1/trainers/**")
+                    .hasRole("TRAINER")
+                    .requestMatchers(HttpMethod.POST, "/v1/trainings")
+                    .hasRole("TRAINEE")
                     .anyRequest()
                     .authenticated())
         .build();

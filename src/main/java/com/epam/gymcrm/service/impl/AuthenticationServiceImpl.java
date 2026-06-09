@@ -10,6 +10,7 @@ import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
   private final TraineeRepository traineeRepository;
   private final TrainerRepository trainerRepository;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   @Transactional(readOnly = true)
@@ -33,7 +35,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     return traineeRepository
         .findByUsername(username)
-        .filter(trainee -> password.equals(trainee.getUser().getPassword()))
+        .filter(trainee -> passwordEncoder.matches(password, trainee.getUser().getPassword()))
         .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));
   }
 
@@ -47,7 +49,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     return trainerRepository
         .findByUsername(username)
-        .filter(trainer -> password.equals(trainer.getUser().getPassword()))
+        .filter(trainer -> passwordEncoder.matches(password, trainer.getUser().getPassword()))
         .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS_ERROR));
   }
 }

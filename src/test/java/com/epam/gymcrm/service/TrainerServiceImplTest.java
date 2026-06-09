@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerServiceImplTest {
@@ -59,6 +60,8 @@ class TrainerServiceImplTest {
 
   @Mock private PasswordGenerator passwordGenerator;
 
+  @Mock private PasswordEncoder passwordEncoder;
+
   @Mock private UsernameGenerator usernameGenerator;
 
   @Mock private TrainerMapper trainerMapper;
@@ -76,6 +79,7 @@ class TrainerServiceImplTest {
     when(trainerMapper.toEntity(request)).thenReturn(trainer);
     when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(specialization));
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(userRepository.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
     when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
         .thenReturn("Severus.Snape");
@@ -86,11 +90,12 @@ class TrainerServiceImplTest {
         () -> assertThat(result.username()).isEqualTo("Severus.Snape"),
         () -> assertThat(result.password()).isEqualTo("Passw0rd12"),
         () -> assertThat(trainer.getUser().getUsername()).isEqualTo("Severus.Snape"),
-        () -> assertThat(trainer.getUser().getPassword()).isEqualTo("Passw0rd12"),
+        () -> assertThat(trainer.getUser().getPassword()).isEqualTo("encoded-Passw0rd12"),
         () -> assertThat(trainer.getSpecialization()).isSameAs(specialization),
         () -> verify(trainerMapper).toEntity(request),
         () -> verify(usernameGenerator).generate("Severus", "Snape", Collections.emptySet()),
         () -> verify(passwordGenerator).generate(),
+        () -> verify(passwordEncoder).encode("Passw0rd12"),
         () -> verify(trainerRepository).save(trainer));
   }
 
@@ -107,6 +112,7 @@ class TrainerServiceImplTest {
     when(trainerMapper.toEntity(request)).thenReturn(newTrainer);
     when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(userRepository.findUsernamesByPattern("Severus.Snape%")).thenReturn(existingUsernames);
     when(usernameGenerator.generate("Severus", "Snape", existingUsernames))
         .thenReturn("Severus.Snape1");
@@ -133,6 +139,7 @@ class TrainerServiceImplTest {
     when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
     when(userRepository.findUsernamesByPattern("Severus.Snape%")).thenReturn(Collections.emptySet());
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(usernameGenerator.generate("Severus", "Snape", Collections.emptySet()))
         .thenReturn("Severus.Snape");
     doThrow(exception).when(trainerRepository).save(trainer);
@@ -215,12 +222,14 @@ class TrainerServiceImplTest {
     Trainer trainer = trainer("John", "Coach", "John.Coach");
     when(authenticationService.authenticateTrainer("John.Coach", "old-password"))
         .thenReturn(trainer);
+    when(passwordEncoder.encode("new-password")).thenReturn("encoded-new-password");
 
     trainerService.changePassword(request);
 
     assertAll(
-        () -> assertThat(trainer.getUser().getPassword()).isEqualTo("new-password"),
+        () -> assertThat(trainer.getUser().getPassword()).isEqualTo("encoded-new-password"),
         () -> verify(authenticationService).authenticateTrainer("John.Coach", "old-password"),
+        () -> verify(passwordEncoder).encode("new-password"),
         () -> verify(trainerRepository).save(trainer));
   }
 

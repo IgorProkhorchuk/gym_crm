@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class TraineeServiceImplTest {
@@ -62,6 +63,8 @@ class TraineeServiceImplTest {
 
   @Mock private PasswordGenerator passwordGenerator;
 
+  @Mock private PasswordEncoder passwordEncoder;
+
   @Mock private UsernameGenerator usernameGenerator;
 
   @Mock private TraineeMapper traineeMapper;
@@ -75,6 +78,7 @@ class TraineeServiceImplTest {
 
     when(traineeMapper.toEntity(request)).thenReturn(trainee);
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
     when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
 
@@ -84,10 +88,11 @@ class TraineeServiceImplTest {
         () -> assertThat(result.username()).isEqualTo("John.Doe"),
         () -> assertThat(result.password()).isEqualTo("Passw0rd12"),
         () -> assertThat(trainee.getUser().getUsername()).isEqualTo("John.Doe"),
-        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("Passw0rd12"),
+        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("encoded-Passw0rd12"),
         () -> verify(traineeMapper).toEntity(request),
         () -> verify(usernameGenerator).generate("John", "Doe", Collections.emptySet()),
         () -> verify(passwordGenerator).generate(),
+        () -> verify(passwordEncoder).encode("Passw0rd12"),
         () -> verify(traineeRepository).save(trainee));
   }
 
@@ -99,6 +104,7 @@ class TraineeServiceImplTest {
     Set<String> existingUsernames = Set.of("John.Doe", "John.Doe2", "John.Doering");
     when(traineeMapper.toEntity(request)).thenReturn(newTrainee);
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(existingUsernames);
     when(usernameGenerator.generate("John", "Doe", existingUsernames)).thenReturn("John.Doe1");
 
@@ -119,6 +125,7 @@ class TraineeServiceImplTest {
     when(traineeMapper.toEntity(request)).thenReturn(trainee);
     when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
     doThrow(exception).when(traineeRepository).save(trainee);
 
@@ -168,12 +175,14 @@ class TraineeServiceImplTest {
         new ChangePasswordRequest("Jane.Doe", "old-password", "new-password");
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
     when(authenticationService.authenticateTrainee("Jane.Doe", "old-password")).thenReturn(trainee);
+    when(passwordEncoder.encode("new-password")).thenReturn("encoded-new-password");
 
     traineeService.changePassword(request);
 
     assertAll(
-        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("new-password"),
+        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("encoded-new-password"),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "old-password"),
+        () -> verify(passwordEncoder).encode("new-password"),
         () -> verify(traineeRepository).save(trainee));
   }
 

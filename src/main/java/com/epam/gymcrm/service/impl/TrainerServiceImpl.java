@@ -22,6 +22,7 @@ import com.epam.gymcrm.service.UsernameGenerator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class TrainerServiceImpl implements TrainerService {
   private final TrainingTypeRepository trainingTypeRepository;
   private final AuthenticationService authenticationService;
   private final PasswordGenerator passwordGenerator;
+  private final PasswordEncoder passwordEncoder;
   private final UsernameGenerator usernameGenerator;
   private final TrainerMapper trainerMapper;
 
@@ -53,11 +55,12 @@ public class TrainerServiceImpl implements TrainerService {
             user.getLastName(),
             userRepository.findUsernamesByPattern(baseUsername + "%")));
 
-    user.setPassword(passwordGenerator.generate());
+    String generatedPassword = passwordGenerator.generate();
+    user.setPassword(passwordEncoder.encode(generatedPassword));
     trainerRepository.save(trainer);
     log.info("Trainer profile created, Id={}, userId={}", trainer.getId(), user.getUserId());
 
-    return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
+    return new UsernamePasswordResponse(user.getUsername(), generatedPassword);
   }
 
   @Override
@@ -74,7 +77,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     Trainer trainer =
         authenticationService.authenticateTrainer(request.username(), request.oldPassword());
-    trainer.getUser().setPassword(request.newPassword());
+    trainer.getUser().setPassword(passwordEncoder.encode(request.newPassword()));
     trainerRepository.save(trainer);
 
     log.info("Trainer password changed, userId={}", trainer.getId());

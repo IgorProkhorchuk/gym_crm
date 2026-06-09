@@ -25,7 +25,9 @@ class OpenApiDocumentationTest extends PostgresContainerTest {
 
     assertThat(apiDocs)
         .contains("\"title\":\"Gym CRM REST API\"")
-        .contains("\"name\":\"X-Auth-Token\"");
+        .contains("\"bearerAuth\"")
+        .contains("\"scheme\":\"bearer\"")
+        .contains("\"bearerFormat\":\"JWT\"");
   }
 
   @Test

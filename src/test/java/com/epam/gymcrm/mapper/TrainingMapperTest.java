@@ -32,7 +32,6 @@ class TrainingMapperTest {
     AddTrainingRequest request =
         new AddTrainingRequest(
             "Jane.Doe",
-            "password",
             "John.Smith",
             "Yoga Basics",
             "Yoga",
@@ -103,7 +102,6 @@ class TrainingMapperTest {
     TraineeTrainingsRequest request =
         new TraineeTrainingsRequest(
             "Jane.Doe",
-            "password",
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 31),
             "John",
@@ -123,7 +121,6 @@ class TrainingMapperTest {
     TrainerTrainingsRequest request =
         new TrainerTrainingsRequest(
             "John.Smith",
-            "password",
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 31),
             "Jane",

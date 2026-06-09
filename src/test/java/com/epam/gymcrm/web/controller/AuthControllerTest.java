@@ -117,7 +117,7 @@ class AuthControllerTest {
   }
 
   @Test
-  void loginUserShouldReturnUnauthorizedWhenAuthenticatedUserHasNoSupportedProfile() {
+  void loginUserShouldReturnUnauthorizedWhenAuthenticatedPrincipalHasNoSupportedProfile() {
     LoginRequest request = new LoginRequest(USERNAME, PASSWORD);
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(authentication("SCOPE_read", "ROLE_ADMIN"));

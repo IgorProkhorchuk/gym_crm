@@ -22,8 +22,8 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
-import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.TokenService;
+import com.epam.gymcrm.web.auth.AuthenticatedPrincipal;
+import com.epam.gymcrm.web.auth.AuthenticatedUserProvider;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
@@ -44,11 +44,11 @@ class TraineeControllerTest {
 
   @Mock private GymFacade gymFacade;
 
-  @Mock private TokenService tokenService;
+  @Mock private AuthenticatedUserProvider authenticatedUserProvider;
 
   @BeforeEach
   void setUp() {
-    standaloneSetup(new TraineeController(gymFacade, tokenService), new RestExceptionHandler());
+    standaloneSetup(new TraineeController(gymFacade, authenticatedUserProvider), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -106,8 +106,8 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeProfileShouldReturnProfileForTraineeToken() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
     TraineeProfileResponse response =
         new TraineeProfileResponse(
             USERNAME,
@@ -117,12 +117,10 @@ class TraineeControllerTest {
             LocalDate.of(1995, 1, 10),
             "Main Street, 123",
             List.of());
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.getTraineeProfile(request)).thenReturn(response);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", USERNAME)
+    given()        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -133,18 +131,16 @@ class TraineeControllerTest {
         .body("active", equalTo(true))
         .body("address", equalTo("Main Street, 123"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).getTraineeProfile(request);
   }
 
   @Test
   void getTraineeProfileShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", "Mike.Stone")
+    given()        .queryParam("username", "Mike.Stone")
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -156,12 +152,10 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeProfileShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", "Another.User")
+    given()        .queryParam("username", "Another.User")
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -173,12 +167,10 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeProfileShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
-    given()
-        .header("X-Auth-Token", "invalid-token")
-        .queryParam("username", USERNAME)
+    given()        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/profile")
         .then()
@@ -190,11 +182,10 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeProfileShouldReturnUpdatedProfile() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
     UpdateTraineeRequest request =
         new UpdateTraineeRequest(
             USERNAME,
-            PASSWORD,
             "Johnny",
             "Doe",
             LocalDate.of(1996, 2, 20),
@@ -209,13 +200,11 @@ class TraineeControllerTest {
             LocalDate.of(1996, 2, 20),
             "Updated Street, 7",
             List.of());
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.updateTrainee(request)).thenReturn(response);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe",
@@ -237,19 +226,17 @@ class TraineeControllerTest {
         .body("dateOfBirth", equalTo("1996-02-20"))
         .body("address", equalTo("Updated Street, 7"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).updateTrainee(request);
   }
 
   @Test
   void updateTraineeProfileShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Mike.Stone",
@@ -271,13 +258,11 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeProfileShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Another.User",
@@ -299,14 +284,12 @@ class TraineeControllerTest {
 
   @Test
   void changePasswordShouldReturnOkForTraineeToken() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
     ChangePasswordRequest request = new ChangePasswordRequest(USERNAME, PASSWORD, "new-password");
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe",
@@ -319,19 +302,15 @@ class TraineeControllerTest {
         .then()
         .statusCode(200);
 
-    verify(gymFacade).changeTraineePassword(request);
-    verify(tokenService).updatePassword(TOKEN, "new-password");
-  }
+    verify(gymFacade).changeTraineePassword(request);  }
 
   @Test
   void changePasswordShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Mike.Stone",
@@ -350,13 +329,11 @@ class TraineeControllerTest {
 
   @Test
   void changePasswordShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Another.User",
@@ -375,14 +352,12 @@ class TraineeControllerTest {
 
   @Test
   void switchActiveStatusShouldReturnOkForTraineeToken() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe",
@@ -394,19 +369,17 @@ class TraineeControllerTest {
         .then()
         .statusCode(200);
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).switchTraineeActiveStatus(request);
   }
 
   @Test
   void switchActiveStatusShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Mike.Stone",
@@ -424,13 +397,11 @@ class TraineeControllerTest {
 
   @Test
   void switchActiveStatusShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Another.User",
@@ -448,13 +419,11 @@ class TraineeControllerTest {
 
   @Test
   void switchActiveStatusShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", "invalid-token")
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe",
@@ -473,9 +442,7 @@ class TraineeControllerTest {
   @Test
   void switchActiveStatusShouldReturnBadRequestWhenActiveIsMissing() {
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe"
@@ -492,14 +459,12 @@ class TraineeControllerTest {
 
   @Test
   void deleteTraineeProfileShouldReturnOk() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe"
@@ -510,20 +475,18 @@ class TraineeControllerTest {
         .then()
         .statusCode(200);
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).deleteTraineeByUsername(request);
   }
 
   @Test
   void deleteTraineeProfileShouldRejectTrainerToken() {
-    AuthenticatedUser user =
-        new AuthenticatedUser("Petryk.Pjatochkyn", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user =
+        new AuthenticatedPrincipal("Petryk.Pjatochkyn", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Petryk.Pjatochkyn"
@@ -540,13 +503,11 @@ class TraineeControllerTest {
 
   @Test
   void deleteTraineeProfileShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "Another.User"
@@ -563,13 +524,11 @@ class TraineeControllerTest {
 
   @Test
   void deleteTraineeProfileShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", "invalid-token")
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "username": "John.Doe"
@@ -586,18 +545,16 @@ class TraineeControllerTest {
 
   @Test
   void getUnassignedTrainersShouldReturnTrainersForTraineeToken() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    AuthRequest request = new AuthRequest(USERNAME, PASSWORD);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
     List<TrainerSummaryResponse> response =
         List.of(
             new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
             new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.getUnassignedTrainers(request)).thenReturn(response);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", USERNAME)
+    given()        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()
@@ -612,18 +569,16 @@ class TraineeControllerTest {
         .body("[1].lastName", equalTo("Yoga"))
         .body("[1].specialization", equalTo("Yoga"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).getUnassignedTrainers(request);
   }
 
   @Test
   void getUnassignedTrainersShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", "Mike.Stone")
+    given()        .queryParam("username", "Mike.Stone")
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()
@@ -635,12 +590,10 @@ class TraineeControllerTest {
 
   @Test
   void getUnassignedTrainersShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", "Another.User")
+    given()        .queryParam("username", "Another.User")
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()
@@ -652,12 +605,10 @@ class TraineeControllerTest {
 
   @Test
   void getUnassignedTrainersShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
-    given()
-        .header("X-Auth-Token", "invalid-token")
-        .queryParam("username", USERNAME)
+    given()        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/trainers/unassigned")
         .then()
@@ -669,20 +620,18 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeTrainersShouldReturnUpdatedTrainerList() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
     UpdateTraineeTrainersRequest request =
-        new UpdateTraineeTrainersRequest(USERNAME, PASSWORD, List.of("Mike.Stone", "Kate.Yoga"));
+        new UpdateTraineeTrainersRequest(USERNAME, List.of("Mike.Stone", "Kate.Yoga"));
     List<TrainerSummaryResponse> response =
         List.of(
             new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
             new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.updateTraineeTrainers(request)).thenReturn(response);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "John.Doe",
@@ -706,19 +655,17 @@ class TraineeControllerTest {
         .body("[1].lastName", equalTo("Yoga"))
         .body("[1].specialization", equalTo("Yoga"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).updateTraineeTrainers(request);
   }
 
   @Test
   void updateTraineeTrainersShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "Mike.Stone",
@@ -738,13 +685,11 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeTrainersShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "Another.User",
@@ -764,13 +709,11 @@ class TraineeControllerTest {
 
   @Test
   void updateTraineeTrainersShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", "invalid-token")
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "John.Doe",
@@ -791,9 +734,7 @@ class TraineeControllerTest {
   @Test
   void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernamesAreMissing() {
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "John.Doe"
@@ -815,9 +756,7 @@ class TraineeControllerTest {
   @Test
   void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernameIsBlank() {
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "John.Doe",
@@ -839,11 +778,10 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeTrainingsShouldReturnFilteredTrainingsForTraineeToken() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
     TraineeTrainingsRequest request =
         new TraineeTrainingsRequest(
             USERNAME,
-            PASSWORD,
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 31),
             "Mike Stone",
@@ -853,12 +791,10 @@ class TraineeControllerTest {
         List.of(
             new TraineeTrainingResponse(
                 "Morning Training", "Fitness", LocalDate.of(2026, 1, 10), 60, "Mike Stone"));
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.getTraineeTrainings(request)).thenReturn(response);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", USERNAME)
+    given()        .queryParam("username", USERNAME)
         .queryParam("fromDate", "2026-01-01")
         .queryParam("toDate", "2026-01-31")
         .queryParam("trainerName", "Mike Stone")
@@ -874,18 +810,16 @@ class TraineeControllerTest {
         .body("[0].trainingDuration", equalTo(60))
         .body("[0].trainerName", equalTo("Mike Stone"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).getTraineeTrainings(request);
   }
 
   @Test
   void getTraineeTrainingsShouldRejectTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", "Mike.Stone")
+    given()        .queryParam("username", "Mike.Stone")
         .when()
         .get("/v1/trainees/trainings")
         .then()
@@ -897,12 +831,10 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeTrainingsShouldRejectAnotherUsername() {
-    AuthenticatedUser user = new AuthenticatedUser(USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .queryParam("username", "Another.User")
+    given()        .queryParam("username", "Another.User")
         .when()
         .get("/v1/trainees/trainings")
         .then()
@@ -914,12 +846,10 @@ class TraineeControllerTest {
 
   @Test
   void getTraineeTrainingsShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
-    given()
-        .header("X-Auth-Token", "invalid-token")
-        .queryParam("username", USERNAME)
+    given()        .queryParam("username", USERNAME)
         .when()
         .get("/v1/trainees/trainings")
         .then()

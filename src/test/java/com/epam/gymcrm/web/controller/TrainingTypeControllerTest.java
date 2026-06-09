@@ -12,8 +12,8 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
-import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.TokenService;
+import com.epam.gymcrm.web.auth.AuthenticatedPrincipal;
+import com.epam.gymcrm.web.auth.AuthenticatedUserProvider;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -30,12 +30,12 @@ class TrainingTypeControllerTest {
 
   @Mock private GymFacade gymFacade;
 
-  @Mock private TokenService tokenService;
+  @Mock private AuthenticatedUserProvider authenticatedUserProvider;
 
   @BeforeEach
   void setUp() {
     standaloneSetup(
-        new TrainingTypeController(gymFacade, tokenService), new RestExceptionHandler());
+        new TrainingTypeController(gymFacade, authenticatedUserProvider), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -45,15 +45,13 @@ class TrainingTypeControllerTest {
 
   @Test
   void getTrainingTypesShouldReturnReferenceDataForTraineeToken() {
-    AuthenticatedUser user = new AuthenticatedUser("John.Doe", "password", ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("John.Doe", ProfileType.TRAINEE);
     List<TrainingTypeResponse> response =
         List.of(new TrainingTypeResponse(1L, "Fitness"), new TrainingTypeResponse(2L, "Yoga"));
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.getTrainingTypes()).thenReturn(response);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .when()
+    given()        .when()
         .get("/v1/training-types")
         .then()
         .statusCode(200)
@@ -63,38 +61,34 @@ class TrainingTypeControllerTest {
         .body("[1].id", equalTo(2))
         .body("[1].trainingTypeName", equalTo("Yoga"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).getTrainingTypes();
   }
 
   @Test
   void getTrainingTypesShouldReturnReferenceDataForTrainerToken() {
-    AuthenticatedUser user = new AuthenticatedUser("Mike.Stone", "password", ProfileType.TRAINER);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
     List<TrainingTypeResponse> response = List.of(new TrainingTypeResponse(1L, "Fitness"));
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
     when(gymFacade.getTrainingTypes()).thenReturn(response);
 
-    given()
-        .header("X-Auth-Token", TOKEN)
-        .when()
+    given()        .when()
         .get("/v1/training-types")
         .then()
         .statusCode(200)
         .body("size()", equalTo(1))
         .body("[0].trainingTypeName", equalTo("Fitness"));
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).getTrainingTypes();
   }
 
   @Test
   void getTrainingTypesShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
-    given()
-        .header("X-Auth-Token", "invalid-token")
-        .when()
+    given()        .when()
         .get("/v1/training-types")
         .then()
         .statusCode(401)

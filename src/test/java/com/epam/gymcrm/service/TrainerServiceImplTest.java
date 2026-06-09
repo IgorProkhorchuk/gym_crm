@@ -19,11 +19,11 @@ import com.epam.gymcrm.dto.trainer.CreateTrainerRequest;
 import com.epam.gymcrm.dto.trainer.TrainerProfileResponse;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
 import com.epam.gymcrm.dto.trainer.UpdateTrainerRequest;
-import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.repository.UserRepository;
@@ -51,6 +51,8 @@ class TrainerServiceImplTest {
   @InjectMocks private TrainerServiceImpl trainerService;
 
   @Mock private TrainerRepository trainerRepository;
+
+  @Mock private TraineeRepository traineeRepository;
 
   @Mock private UserRepository userRepository;
 
@@ -199,20 +201,20 @@ class TrainerServiceImplTest {
 
   @Test
   void getProfileShouldReturnMappedAuthenticatedTrainer() {
-    AuthRequest request = new AuthRequest("John.Coach", "password");
+    AuthRequest request = new AuthRequest("John.Coach");
     Trainer trainer = trainer("John", "Coach", "John.Coach");
     TrainerProfileResponse response =
         trainerProfileResponse(1L, "John.Coach", "John", "Coach", "Fitness");
-    when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
+    when(trainerRepository.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
     when(trainerMapper.toProfileResponse(trainer)).thenReturn(response);
 
     TrainerProfileResponse result = trainerService.getProfile(request);
 
     assertAll(
         () -> assertThat(result).isSameAs(response),
-        () -> verify(authenticationService).authenticateTrainer("John.Coach", "password"),
+        () -> verify(trainerRepository).findByUsername("John.Coach"),
         () -> verify(trainerMapper).toProfileResponse(trainer),
-        () -> verifyNoMoreInteractions(authenticationService));
+        () -> verifyNoMoreInteractions(trainerRepository));
   }
 
   @Test
@@ -258,38 +260,38 @@ class TrainerServiceImplTest {
 
   @Test
   void switchActiveStatusShouldSetAuthenticatedTrainerActiveWhenCurrentlyInactive() {
-    AuthRequest request = new AuthRequest("John.Coach", "password");
+    AuthRequest request = new AuthRequest("John.Coach");
     Trainer trainer = trainer("John", "Coach", "John.Coach");
     trainer.getUser().setActive(false);
-    when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
+    when(trainerRepository.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
 
     trainerService.switchActiveStatus(request);
 
     assertAll(
         () -> assertThat(trainer.getUser().getActive()).isTrue(),
-        () -> verify(authenticationService).authenticateTrainer("John.Coach", "password"),
+        () -> verify(trainerRepository).findByUsername("John.Coach"),
         () -> verify(trainerRepository).save(trainer));
   }
 
   @Test
   void switchActiveStatusShouldSetAuthenticatedTrainerInactiveWhenCurrentlyActive() {
-    AuthRequest request = new AuthRequest("John.Coach", "password");
+    AuthRequest request = new AuthRequest("John.Coach");
     Trainer trainer = trainer("John", "Coach", "John.Coach");
-    when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
+    when(trainerRepository.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
 
     trainerService.switchActiveStatus(request);
 
     assertAll(
         () -> assertThat(trainer.getUser().getActive()).isFalse(),
-        () -> verify(authenticationService).authenticateTrainer("John.Coach", "password"),
+        () -> verify(trainerRepository).findByUsername("John.Coach"),
         () -> verify(trainerRepository).save(trainer));
   }
 
   @Test
   void switchActiveStatusShouldFlipStatusOnEveryCall() {
-    AuthRequest request = new AuthRequest("John.Coach", "password");
+    AuthRequest request = new AuthRequest("John.Coach");
     Trainer trainer = trainer("John", "Coach", "John.Coach");
-    when(authenticationService.authenticateTrainer("John.Coach", "password")).thenReturn(trainer);
+    when(trainerRepository.findByUsername("John.Coach")).thenReturn(Optional.of(trainer));
 
     trainerService.switchActiveStatus(request);
     trainerService.switchActiveStatus(request);
@@ -297,19 +299,18 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(trainer.getUser().getActive()).isTrue(),
         () ->
-            verify(authenticationService, org.mockito.Mockito.times(2))
-                .authenticateTrainer("John.Coach", "password"),
+            verify(trainerRepository, org.mockito.Mockito.times(2)).findByUsername("John.Coach"),
         () -> verify(trainerRepository, org.mockito.Mockito.times(2)).save(trainer));
   }
 
   @Test
   void getUnassignedTrainersShouldAuthenticateTraineeAndReturnMappedDaoResult() {
-    AuthRequest request = new AuthRequest("Jane.Doe", "password");
+    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainer trainer = trainer("Available", "Trainer", "Available.Trainer");
     TrainerSummaryResponse response =
         trainerSummaryResponse(1L, "Available.Trainer", "Available", "Trainer");
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password"))
-        .thenReturn(com.epam.gymcrm.TestFixtures.trainee("Jane", "Doe", "Jane.Doe"));
+    when(traineeRepository.findByUsername("Jane.Doe"))
+        .thenReturn(Optional.of(com.epam.gymcrm.TestFixtures.trainee("Jane", "Doe", "Jane.Doe")));
     when(trainerRepository.findNotAssignedToTrainee("Jane.Doe")).thenReturn(List.of(trainer));
     when(trainerMapper.toSummaryResponse(trainer)).thenReturn(response);
 
@@ -317,7 +318,7 @@ class TrainerServiceImplTest {
 
     assertAll(
         () -> assertThat(result).containsExactly(response),
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(trainerRepository).findNotAssignedToTrainee("Jane.Doe"),
         () -> verify(trainerMapper).toSummaryResponse(trainer));
   }
@@ -329,8 +330,7 @@ class TrainerServiceImplTest {
     TrainingType specialization = trainingType("Yoga");
     TrainerProfileResponse response =
         trainerProfileResponse(22L, "Minerva.McGonagall", "Minnie", "McGonagall", "Yoga");
-    when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password"))
-        .thenReturn(authenticatedTrainer);
+    when(trainerRepository.findByUsername("Minerva.McGonagall")).thenReturn(Optional.of(authenticatedTrainer));
     when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(specialization));
     when(trainerMapper.toProfileResponse(authenticatedTrainer)).thenReturn(response);
 
@@ -339,7 +339,7 @@ class TrainerServiceImplTest {
     assertAll(
         () -> assertThat(result).isSameAs(response),
         () -> assertThat(authenticatedTrainer.getSpecialization()).isSameAs(specialization),
-        () -> verify(authenticationService).authenticateTrainer("Minerva.McGonagall", "password"),
+        () -> verify(trainerRepository).findByUsername("Minerva.McGonagall"),
         () -> verify(trainerMapper).updateFromRequest(request, authenticatedTrainer),
         () -> verify(trainingTypeRepository).findByName("Yoga"),
         () -> verify(trainerRepository).save(authenticatedTrainer),
@@ -350,13 +350,16 @@ class TrainerServiceImplTest {
   @Test
   void updateShouldThrowAuthenticationExceptionWhenTrainerDoesNotExist() {
     UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Yoga");
-    AuthenticationException exception = new AuthenticationException("Invalid username or password");
-    when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password"))
-        .thenThrow(exception);
+    when(trainerRepository.findByUsername("Minerva.McGonagall")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> trainerService.update(request)).isSameAs(exception);
+    assertThatThrownBy(() -> trainerService.update(request))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainer profile not found");
 
-    assertAll(() -> verifyNoInteractions(trainingTypeRepository), () -> verifyNoInteractions(trainerRepository));
+    assertAll(
+        () -> verifyNoInteractions(trainingTypeRepository),
+        () -> verify(trainerRepository).findByUsername("Minerva.McGonagall"),
+        () -> verifyNoMoreInteractions(trainerRepository));
   }
 
   @Test
@@ -364,8 +367,7 @@ class TrainerServiceImplTest {
     UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Fitness");
     Trainer authenticatedTrainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");
     RuntimeException exception = new RuntimeException("DAO failure");
-    when(authenticationService.authenticateTrainer("Minerva.McGonagall", "password"))
-        .thenReturn(authenticatedTrainer);
+    when(trainerRepository.findByUsername("Minerva.McGonagall")).thenReturn(Optional.of(authenticatedTrainer));
     when(trainingTypeRepository.findByName("Fitness")).thenReturn(Optional.of(trainingType("Fitness")));
     doThrow(exception).when(trainerRepository).save(authenticatedTrainer);
 
@@ -386,7 +388,7 @@ class TrainerServiceImplTest {
   private static UpdateTrainerRequest updateTrainerRequest(
       Long id, String firstName, String lastName, String specialization) {
     return new UpdateTrainerRequest(
-        "Minerva.McGonagall", "password", firstName, lastName, specialization, true);
+        "Minerva.McGonagall", firstName, lastName, specialization, true);
   }
 
   private static TrainerProfileResponse trainerProfileResponse(

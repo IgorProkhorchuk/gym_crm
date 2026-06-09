@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateTrainerRequest(
     @NotBlank(message = "Username must not be blank") String username,
-    @NotBlank(message = "Password must not be blank") String password,
     @NotBlank(message = "First name must not be blank") String firstName,
     @NotBlank(message = "Last name must not be blank") String lastName,
     @NotBlank(message = "Trainer specialization must not be blank") String specialization,
@@ -13,7 +12,7 @@ public record UpdateTrainerRequest(
 
   @Override
   public String toString() {
-    return "UpdateTrainerRequest[username=[PROTECTED], password=[PROTECTED], "
+    return "UpdateTrainerRequest[username=[PROTECTED], "
         + "firstName=[PROTECTED], lastName=[PROTECTED], specialization="
         + specialization
         + ", active="

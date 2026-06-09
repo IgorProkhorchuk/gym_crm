@@ -71,7 +71,7 @@ public class TraineeServiceImpl implements TraineeService {
   @Transactional(readOnly = true)
   public TraineeProfileResponse getProfile(AuthRequest request) {
     log.info("Getting trainee profile");
-    return traineeMapper.toProfileResponse(authenticateTrainee(request));
+    return traineeMapper.toProfileResponse(findTrainee(request.username()));
   }
 
   @Override
@@ -92,7 +92,7 @@ public class TraineeServiceImpl implements TraineeService {
   public void switchActiveStatus(AuthRequest request) {
     log.info("Switching trainee active status");
 
-    Trainee trainee = authenticateTrainee(request);
+    Trainee trainee = findTrainee(request.username());
     trainee.getUser().switchActiveStatus();
     traineeRepository.save(trainee);
 
@@ -104,7 +104,7 @@ public class TraineeServiceImpl implements TraineeService {
   public void deleteByUsername(AuthRequest request) {
     log.info("Deleting trainee profile");
 
-    Trainee trainee = authenticateTrainee(request);
+    Trainee trainee = findTrainee(request.username());
     traineeRepository.delete(trainee.getId());
 
     log.info("Trainee profile deleted, userId={}", trainee.getId());
@@ -116,8 +116,7 @@ public class TraineeServiceImpl implements TraineeService {
     log.info("Updating trainee trainers list");
 
     Set<String> uniqueTrainerUsernames = normalizeTrainerUsernames(request.trainerUsernames());
-    Trainee trainee =
-        authenticationService.authenticateTrainee(request.username(), request.password());
+    Trainee trainee = findTrainee(request.username());
     List<Trainer> trainers =
         uniqueTrainerUsernames.stream()
             .map(
@@ -141,8 +140,7 @@ public class TraineeServiceImpl implements TraineeService {
   public TraineeProfileResponse update(UpdateTraineeRequest request) {
     log.info("Updating trainee profile");
 
-    Trainee authenticatedTrainee =
-        authenticationService.authenticateTrainee(request.username(), request.password());
+    Trainee authenticatedTrainee = findTrainee(request.username());
     traineeMapper.updateFromRequest(request, authenticatedTrainee);
     traineeRepository.save(authenticatedTrainee);
 
@@ -156,7 +154,9 @@ public class TraineeServiceImpl implements TraineeService {
     return uniqueTrainerUsernames;
   }
 
-  private Trainee authenticateTrainee(AuthRequest request) {
-    return authenticationService.authenticateTrainee(request.username(), request.password());
+  private Trainee findTrainee(String username) {
+    return traineeRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new EntityNotFoundException("Trainee profile not found"));
   }
 }

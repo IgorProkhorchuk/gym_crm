@@ -17,7 +17,7 @@ Gym CRM is a Spring Boot backend application for managing gym trainees, trainers
 
 * Java 25
 * Maven 3.9+
-* Podman or Docker for the PostgreSQL compose stack and Testcontainers-based tests
+* Podman or Docker for the PostgreSQL/Redis compose stack and Testcontainers-based tests
 
 ## Build And Test
 
@@ -121,13 +121,15 @@ The application starts on port `8080` by default. REST API endpoints are availab
 http://localhost:8080/api/v1
 ```
 
-## PostgreSQL Compose Stack
+## Infrastructure Compose Stack
 
-The `infra` compose stack starts the database infrastructure used by the `dev` and `prod` profiles:
+The `infra` compose stack starts the database and Redis infrastructure used by the `dev` and
+`prod` profiles:
 
 * PostgreSQL master on host port `5433`
 * PostgreSQL replica on host port `5434`
 * Pgpool on host port `5435`
+* Redis on host port `6379`
 
 Create a local compose environment file if you want to override defaults:
 
@@ -135,11 +137,11 @@ Create a local compose environment file if you want to override defaults:
 cp infra/.env.example infra/.env
 ```
 
-Start the database stack:
+Start the infrastructure stack:
 
 ```bash
 cd infra
-podman compose up -d gym-master gym-replica gym-pgpool
+podman compose up -d gym-master gym-replica gym-pgpool gym-redis
 ```
 
 The application connects to Pgpool through these default values:
@@ -148,6 +150,8 @@ The application connects to Pgpool through these default values:
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5435/gym_crm
 SPRING_DATASOURCE_USERNAME=gym_user
 SPRING_DATASOURCE_PASSWORD=password
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 From the project root, override them when needed:
@@ -156,6 +160,8 @@ From the project root, override them when needed:
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5435/gym_crm \
 SPRING_DATASOURCE_USERNAME=gym_user \
 SPRING_DATASOURCE_PASSWORD=password \
+REDIS_HOST=localhost \
+REDIS_PORT=6379 \
 java -jar target/gym-crm-1.0-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
@@ -165,6 +171,8 @@ PowerShell example:
 $env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5435/gym_crm"
 $env:SPRING_DATASOURCE_USERNAME = "gym_user"
 $env:SPRING_DATASOURCE_PASSWORD = "password"
+$env:REDIS_HOST = "localhost"
+$env:REDIS_PORT = "6379"
 java -jar target/gym-crm-1.0-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
@@ -172,7 +180,7 @@ If old volumes were created with previous credentials or schema settings, reset 
 
 ```bash
 podman compose down -v
-podman compose up -d gym-master gym-replica gym-pgpool
+podman compose up -d gym-master gym-replica gym-pgpool gym-redis
 ```
 
 ## Run With Docker Compose
@@ -200,6 +208,8 @@ Inside the compose network, the application connects to:
 
 ```properties
 SPRING_DATASOURCE_URL=jdbc:postgresql://gym-pgpool:5432/gym_crm
+REDIS_HOST=gym-redis
+REDIS_PORT=6379
 ```
 
 ## Actuator And Prometheus

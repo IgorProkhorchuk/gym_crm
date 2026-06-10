@@ -14,6 +14,7 @@ import com.epam.gymcrm.dto.auth.LoginRequest;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.monitoring.metrics.GymMetrics;
 import com.epam.gymcrm.web.auth.JwtTokenService;
+import com.epam.gymcrm.web.auth.LoginAttemptService;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
 import java.util.List;
@@ -41,10 +42,12 @@ class AuthControllerTest {
 
   @Mock private AuthenticationManager authenticationManager;
 
+  @Mock private LoginAttemptService loginAttemptService;
+
   @BeforeEach
   void setUp() {
     standaloneSetup(
-        new AuthController(gymMetrics, jwtTokenService, authenticationManager),
+        new AuthController(gymMetrics, jwtTokenService, authenticationManager, loginAttemptService),
         new RestExceptionHandler());
   }
 
@@ -72,6 +75,7 @@ class AuthControllerTest {
 
     verify(authenticationManager).authenticate(credentialsToken());
     verify(jwtTokenService).createToken(USERNAME, ProfileType.TRAINEE);
+    verify(loginAttemptService).loginSucceeded(USERNAME);
     verifyNoInteractions(gymMetrics);
   }
 
@@ -94,6 +98,7 @@ class AuthControllerTest {
 
     verify(authenticationManager).authenticate(credentialsToken());
     verify(jwtTokenService).createToken(USERNAME, ProfileType.TRAINER);
+    verify(loginAttemptService).loginSucceeded(USERNAME);
     verifyNoInteractions(gymMetrics);
   }
 
@@ -114,6 +119,53 @@ class AuthControllerTest {
 
     verifyNoInteractions(jwtTokenService);
     verify(gymMetrics).recordLoginFailedInvalidCredentials();
+    verify(loginAttemptService).loginFailed(USERNAME);
+  }
+
+  @Test
+  void loginUserShouldReturnLockedWhenUserIsAlreadyBlocked() {
+    LoginRequest request = new LoginRequest(USERNAME, PASSWORD);
+    when(loginAttemptService.isBlocked(USERNAME)).thenReturn(true);
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(request)
+        .when()
+        .post("/v1/auth/login")
+        .then()
+        .statusCode(423)
+        .body(
+            "message",
+            equalTo(
+                "User is temporarily blocked because of too many failed login attempts. "
+                    + "Try again later."));
+
+    verifyNoInteractions(authenticationManager, jwtTokenService, gymMetrics);
+  }
+
+  @Test
+  void loginUserShouldReturnLockedWhenFailedLoginReachesLimit() {
+    LoginRequest request = new LoginRequest(USERNAME, "wrong-password");
+    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        .thenThrow(new BadCredentialsException("Bad credentials"));
+    when(loginAttemptService.loginFailed(USERNAME)).thenReturn(true);
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(request)
+        .when()
+        .post("/v1/auth/login")
+        .then()
+        .statusCode(423)
+        .body(
+            "message",
+            equalTo(
+                "User is temporarily blocked because of too many failed login attempts. "
+                    + "Try again later."));
+
+    verifyNoInteractions(jwtTokenService);
+    verify(gymMetrics).recordLoginFailedInvalidCredentials();
+    verify(loginAttemptService).loginFailed(USERNAME);
   }
 
   @Test

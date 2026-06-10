@@ -4,7 +4,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(classes = Main.class)
 @Transactional
@@ -16,15 +18,21 @@ public abstract class PostgresContainerTest {
           .withUsername("gym_user")
           .withPassword("password");
 
+  private static final GenericContainer<?> REDIS =
+      new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
   static {
     POSTGRES.start();
+    REDIS.start();
   }
 
   @DynamicPropertySource
-  static void registerPostgresProperties(DynamicPropertyRegistry registry) {
+  static void registerContainerProperties(DynamicPropertyRegistry registry) {
     registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
     registry.add("spring.datasource.username", POSTGRES::getUsername);
     registry.add("spring.datasource.password", POSTGRES::getPassword);
     registry.add("spring.datasource.driver-class-name", POSTGRES::getDriverClassName);
+    registry.add("spring.data.redis.host", REDIS::getHost);
+    registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
   }
 }

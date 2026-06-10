@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -94,6 +96,26 @@ class SecurityAuthorizationTest extends PostgresContainerTest {
 
     assertThat(exception.getResponseBodyAsString())
         .isEqualTo("{\"message\":\"Authentication is required\"}");
+  }
+
+  @Test
+  void corsPreflightShouldAllowConfiguredOriginAndHeaders() {
+    ResponseEntity<Void> response =
+        restClient
+            .method(HttpMethod.OPTIONS)
+            .uri("/api/v1/training-types")
+            .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+            .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+            .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type")
+            .retrieve()
+            .toBodilessEntity();
+
+    HttpHeaders headers = response.getHeaders();
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(headers.getAccessControlAllowOrigin()).isEqualTo("http://localhost:3000");
+    assertThat(headers.getAccessControlAllowMethods()).contains(HttpMethod.GET);
+    assertThat(headers.getAccessControlAllowHeaders()).contains("Authorization", "Content-Type");
+    assertThat(headers.getAccessControlMaxAge()).isEqualTo(3600);
   }
 
   @Test

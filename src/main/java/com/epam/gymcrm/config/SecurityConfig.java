@@ -32,9 +32,16 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, LoginAttemptProperties.class})
+@EnableConfigurationProperties({
+  JwtProperties.class,
+  LoginAttemptProperties.class,
+  CorsProperties.class
+})
 public class SecurityConfig {
 
   @Bean
@@ -113,6 +120,20 @@ public class SecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
+  }
+
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
+    CorsConfiguration corsConfiguration = new CorsConfiguration();
+    corsConfiguration.setAllowedOrigins(corsProperties.allowedOrigins());
+    corsConfiguration.setAllowedMethods(corsProperties.allowedMethods());
+    corsConfiguration.setAllowedHeaders(corsProperties.allowedHeaders());
+    corsConfiguration.setAllowCredentials(corsProperties.allowCredentials());
+    corsConfiguration.setMaxAge(corsProperties.maxAge());
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", corsConfiguration);
+    return source;
   }
 
   private static JwtAuthenticationConverter jwtAuthenticationConverter() {

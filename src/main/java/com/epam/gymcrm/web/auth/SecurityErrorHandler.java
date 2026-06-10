@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -27,7 +28,7 @@ public class SecurityErrorHandler implements AuthenticationEntryPoint, AccessDen
       HttpServletResponse response,
       AuthenticationException authException)
       throws IOException {
-    write(response, HttpStatus.UNAUTHORIZED, AUTHENTICATION_REQUIRED);
+    write(response, HttpStatus.UNAUTHORIZED, authenticationErrorMessage(authException));
   }
 
   @Override
@@ -44,5 +45,11 @@ public class SecurityErrorHandler implements AuthenticationEntryPoint, AccessDen
     response.setStatus(status.value());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     objectMapper.writeValue(response.getWriter(), new ErrorResponse(message));
+  }
+
+  private static String authenticationErrorMessage(AuthenticationException authException) {
+    return authException instanceof OAuth2AuthenticationException oauthException
+        ? oauthException.getError().getDescription()
+        : AUTHENTICATION_REQUIRED;
   }
 }

@@ -13,10 +13,12 @@ import static org.mockito.Mockito.when;
 import com.epam.gymcrm.dto.auth.LoginRequest;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.monitoring.metrics.GymMetrics;
+import com.epam.gymcrm.web.auth.JwtRevocationService;
 import com.epam.gymcrm.web.auth.JwtTokenService;
 import com.epam.gymcrm.web.auth.LoginAttemptService;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
@@ -37,6 +42,8 @@ class AuthControllerTest {
   private static final String PASSWORD = "password";
 
   @Mock private JwtTokenService jwtTokenService;
+
+  @Mock private JwtRevocationService jwtRevocationService;
 
   @Mock private GymMetrics gymMetrics;
 
@@ -47,12 +54,18 @@ class AuthControllerTest {
   @BeforeEach
   void setUp() {
     standaloneSetup(
-        new AuthController(gymMetrics, jwtTokenService, authenticationManager, loginAttemptService),
+        new AuthController(
+            gymMetrics,
+            jwtTokenService,
+            jwtRevocationService,
+            authenticationManager,
+            loginAttemptService),
         new RestExceptionHandler());
   }
 
   @AfterEach
   void tearDown() {
+    SecurityContextHolder.clearContext();
     reset();
   }
 
@@ -186,6 +199,16 @@ class AuthControllerTest {
     verifyNoInteractions(jwtTokenService, gymMetrics);
   }
 
+  @Test
+  void logoutUserShouldRevokeCurrentJwt() {
+    Jwt jwt = jwt();
+    SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+
+    given().when().post("/v1/auth/logout").then().statusCode(204);
+
+    verify(jwtRevocationService).revoke(jwt);
+  }
+
   private static Authentication authentication(String role) {
     return authentication(new String[] {role});
   }
@@ -202,5 +225,17 @@ class AuthControllerTest {
         authentication ->
             USERNAME.equals(authentication.getPrincipal())
                 && PASSWORD.equals(authentication.getCredentials()));
+  }
+
+  private static Jwt jwt() {
+    Instant issuedAt = Instant.parse("2026-01-01T10:00:00Z");
+    return Jwt.withTokenValue("token")
+        .header("alg", "HS256")
+        .subject(USERNAME)
+        .issuedAt(issuedAt)
+        .expiresAt(issuedAt.plusSeconds(300))
+        .claim("jti", "jwt-id")
+        .claim("roles", List.of("TRAINEE"))
+        .build();
   }
 }

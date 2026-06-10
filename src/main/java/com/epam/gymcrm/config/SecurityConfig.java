@@ -1,5 +1,6 @@
 package com.epam.gymcrm.config;
 
+import com.epam.gymcrm.web.auth.JwtRevocationService;
 import com.epam.gymcrm.web.auth.SecurityErrorHandler;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
@@ -17,9 +18,15 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -54,8 +61,10 @@ public class SecurityConfig {
                     .accessDeniedHandler(securityErrorHandler))
         .oauth2ResourceServer(
             oauth2 ->
-                oauth2.jwt(
-                    jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                oauth2
+                    .authenticationEntryPoint(securityErrorHandler)
+                    .jwt(
+                        jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
         .authorizeHttpRequests(
             authorization ->
                 authorization
@@ -87,10 +96,18 @@ public class SecurityConfig {
   }
 
   @Bean
+  public JwtDecoder jwtDecoder(
+      JwtProperties jwtProperties, JwtRevocationService jwtRevocationService) {
+    NimbusJwtDecoder jwtDecoder = nimbusJwtDecoder(jwtProperties);
+    jwtDecoder.setJwtValidator(
+        new DelegatingOAuth2TokenValidator<>(
+            JwtValidators.createDefaultWithIssuer(jwtProperties.issuer()),
+            jwtRevocationValidator(jwtRevocationService)));
+    return jwtDecoder;
+  }
+
   public JwtDecoder jwtDecoder(JwtProperties jwtProperties) {
-    return NimbusJwtDecoder.withSecretKey(secretKey(jwtProperties))
-        .macAlgorithm(MacAlgorithm.HS256)
-        .build();
+    return nimbusJwtDecoder(jwtProperties);
   }
 
   @Bean
@@ -111,5 +128,27 @@ public class SecurityConfig {
   private static SecretKey secretKey(JwtProperties jwtProperties) {
     byte[] secret = jwtProperties.secret().getBytes(StandardCharsets.UTF_8);
     return new SecretKeySpec(secret, "HmacSHA256");
+  }
+
+  private static NimbusJwtDecoder nimbusJwtDecoder(JwtProperties jwtProperties) {
+    return NimbusJwtDecoder.withSecretKey(secretKey(jwtProperties))
+        .macAlgorithm(MacAlgorithm.HS256)
+        .build();
+  }
+
+  private static OAuth2TokenValidator<Jwt> jwtRevocationValidator(
+      JwtRevocationService jwtRevocationService) {
+    return jwt -> {
+      String tokenId = jwt.getId();
+      if (tokenId == null || tokenId.isBlank()) {
+        return OAuth2TokenValidatorResult.failure(
+            new OAuth2Error("invalid_token", "JWT token id is missing", null));
+      }
+      if (jwtRevocationService.isRevoked(tokenId)) {
+        return OAuth2TokenValidatorResult.failure(
+            new OAuth2Error("invalid_token", "JWT has been revoked", null));
+      }
+      return OAuth2TokenValidatorResult.success();
+    };
   }
 }

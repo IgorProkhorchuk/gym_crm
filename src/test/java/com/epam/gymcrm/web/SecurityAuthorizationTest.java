@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
@@ -92,6 +94,33 @@ class SecurityAuthorizationTest extends PostgresContainerTest {
 
     assertThat(exception.getResponseBodyAsString())
         .isEqualTo("{\"message\":\"Authentication is required\"}");
+  }
+
+  @Test
+  void protectedEndpointShouldRejectTokenAfterLogout() {
+    String token = jwtTokenService.createToken("John.Doe", ProfileType.TRAINEE);
+
+    ResponseEntity<Void> logoutResponse =
+        restClient
+            .post()
+            .uri("/api/v1/auth/logout")
+            .headers(headers -> headers.setBearerAuth(token))
+            .retrieve()
+            .toBodilessEntity();
+
+    HttpClientErrorException.Unauthorized exception =
+        catchThrowableOfType(
+            () ->
+                restClient
+                    .get()
+                    .uri("/api/v1/training-types")
+                    .headers(headers -> headers.setBearerAuth(token))
+                    .retrieve()
+                    .toBodilessEntity(),
+            HttpClientErrorException.Unauthorized.class);
+
+    assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    assertThat(exception.getResponseBodyAsString()).contains("JWT has been revoked");
   }
 
   private static String validAddTrainingRequest() {

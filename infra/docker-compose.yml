@@ -100,11 +100,16 @@ services:
       - gym-crm-net
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-pgpool:5432/gym_crm
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-pgpool:5432/${APP_DB_NAME:-gym_crm}
       SPRING_DATASOURCE_USERNAME: ${APP_DB_USERNAME:-gym_user}
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-password}
-      REDIS_HOST: gym-redis
-      REDIS_PORT: 6379
+      JWT_ISSUER: ${JWT_ISSUER:-https://gym-crm.local}
+      JWT_SECRET: ${JWT_SECRET:-GymCrmLocalDevelopmentJwtSecretKeyMustBeAtLeastThirtyTwoBytes}
+      JWT_TOKEN_LIFETIME: ${JWT_TOKEN_LIFETIME:-PT30M}
+      LOGIN_MAX_FAILED_ATTEMPTS: ${LOGIN_MAX_FAILED_ATTEMPTS:-3}
+      LOGIN_LOCK_DURATION: ${LOGIN_LOCK_DURATION:-PT5M}
+      REDIS_HOST: ${REDIS_HOST:-gym-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       gym-pgpool:
         condition: service_healthy

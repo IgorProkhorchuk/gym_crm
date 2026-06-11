@@ -399,6 +399,33 @@ The project follows a layered structure:
 * **DTOs:** request and response objects for API and service operations.
 * **Monitoring:** custom Actuator health indicators and Micrometer metrics.
 
+### Application Diagram
+
+```mermaid
+flowchart LR
+    client["REST Client / Frontend"] --> api["Gym CRM Spring Boot API"]
+
+    subgraph app["Application"]
+        api --> security["Spring Security"]
+        security --> jwt["JWT Issuer / Validator"]
+        api --> controllers["REST Controllers"]
+        controllers --> services["Services"]
+        services --> repositories["Spring Data JPA Repositories"]
+        api --> actuator["Actuator / Prometheus Metrics"]
+    end
+
+    repositories --> pgpool["Pgpool"]
+    pgpool --> master["PostgreSQL Master"]
+    pgpool --> replica["PostgreSQL Replica"]
+
+    security --> redis["Redis"]
+    redis -. stores .-> attempts["Failed Login Attempts"]
+    redis -. stores .-> revoked["Revoked JWT IDs"]
+
+    prometheus["Prometheus"] --> actuator
+    grafana["Grafana"] --> prometheus
+```
+
 ### Entity Relationships
 
 ```mermaid

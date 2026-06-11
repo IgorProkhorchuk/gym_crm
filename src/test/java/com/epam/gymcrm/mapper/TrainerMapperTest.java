@@ -86,7 +86,7 @@ class TrainerMapperTest {
     trainer.getUser().setActive(false);
     UpdateTrainerRequest request =
         new UpdateTrainerRequest(
-            "Ignored.Username", "ignored-password", "Johnny", "Done", "Yoga", true);
+            "Ignored.Username", "Johnny", "Done", "Yoga", true);
 
     trainerMapper.updateFromRequest(request, trainer);
 
@@ -104,7 +104,7 @@ class TrainerMapperTest {
     Trainer trainer = new Trainer();
     UpdateTrainerRequest request =
         new UpdateTrainerRequest(
-            "Ignored.Username", "ignored-password", "John", "Smith", "Fitness", true);
+            "Ignored.Username", "John", "Smith", "Fitness", true);
 
     trainerMapper.updateFromRequest(null, trainer);
     assertThat(trainer.getUser()).isNull();

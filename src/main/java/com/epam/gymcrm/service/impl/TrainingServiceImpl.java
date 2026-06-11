@@ -8,7 +8,6 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -16,10 +15,10 @@ import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.monitoring.metrics.GymMetrics;
+import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.TrainingTypeRepository;
-import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.TrainingService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +35,9 @@ import org.springframework.validation.annotation.Validated;
 public class TrainingServiceImpl implements TrainingService {
 
   private final TrainingRepository trainingRepository;
+  private final TraineeRepository traineeRepository;
   private final TrainerRepository trainerRepository;
   private final TrainingTypeRepository trainingTypeRepository;
-  private final AuthenticationService authenticationService;
   private final TrainingMapper trainingMapper;
   private final GymMetrics gymMetrics;
 
@@ -46,7 +45,7 @@ public class TrainingServiceImpl implements TrainingService {
   public void addTraining(AddTrainingRequest request) {
     log.info("Adding training");
 
-    Trainee trainee = authenticateTrainingTrainee(request);
+    Trainee trainee = findTrainingTrainee(request.traineeUsername());
     Trainer trainer =
         trainerRepository
             .findByUsername(request.trainerUsername())
@@ -80,7 +79,6 @@ public class TrainingServiceImpl implements TrainingService {
   public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
     log.info("Getting trainee trainings");
 
-    authenticationService.authenticateTrainee(request.username(), request.password());
     TraineeTrainingCriteria criteria = trainingMapper.toCriteria(request);
     return trainingRepository
         .findByTraineeUsernameAndCriteria(
@@ -97,7 +95,6 @@ public class TrainingServiceImpl implements TrainingService {
   public List<TrainerTrainingResponse> getTrainerTrainings(TrainerTrainingsRequest request) {
     log.info("Getting trainer trainings");
 
-    authenticationService.authenticateTrainer(request.username(), request.password());
     TrainerTrainingCriteria criteria = trainingMapper.toCriteria(request);
     return trainingRepository
         .findByTrainerUsernameAndCriteria(
@@ -113,13 +110,13 @@ public class TrainingServiceImpl implements TrainingService {
     return pageRequest == null ? PageRequest.firstPage() : pageRequest;
   }
 
-  private Trainee authenticateTrainingTrainee(AddTrainingRequest request) {
-    try {
-      return authenticationService.authenticateTrainee(
-          request.traineeUsername(), request.traineePassword());
-    } catch (AuthenticationException exception) {
-      gymMetrics.recordTrainingCreationAuthFailed();
-      throw exception;
-    }
+  private Trainee findTrainingTrainee(String username) {
+    return traineeRepository
+        .findByUsername(username)
+        .orElseThrow(
+            () -> {
+              gymMetrics.recordTrainingCreationAuthFailed();
+              return new EntityNotFoundException("Trainee profile not found");
+            });
   }
 }

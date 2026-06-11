@@ -12,6 +12,7 @@ import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.model.User;
+import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.repository.UserRepository;
@@ -22,6 +23,7 @@ import com.epam.gymcrm.service.UsernameGenerator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,10 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class TrainerServiceImpl implements TrainerService {
 
   private final TrainerRepository trainerRepository;
+  private final TraineeRepository traineeRepository;
   private final UserRepository userRepository;
   private final TrainingTypeRepository trainingTypeRepository;
   private final AuthenticationService authenticationService;
   private final PasswordGenerator passwordGenerator;
+  private final PasswordEncoder passwordEncoder;
   private final UsernameGenerator usernameGenerator;
   private final TrainerMapper trainerMapper;
 
@@ -53,18 +57,19 @@ public class TrainerServiceImpl implements TrainerService {
             user.getLastName(),
             userRepository.findUsernamesByPattern(baseUsername + "%")));
 
-    user.setPassword(passwordGenerator.generate());
+    String generatedPassword = passwordGenerator.generate();
+    user.setPassword(passwordEncoder.encode(generatedPassword));
     trainerRepository.save(trainer);
     log.info("Trainer profile created, Id={}, userId={}", trainer.getId(), user.getUserId());
 
-    return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
+    return new UsernamePasswordResponse(user.getUsername(), generatedPassword);
   }
 
   @Override
   @Transactional(readOnly = true)
   public TrainerProfileResponse getProfile(AuthRequest request) {
     log.info("Getting trainer profile");
-    return trainerMapper.toProfileResponse(authenticateTrainer(request));
+    return trainerMapper.toProfileResponse(findTrainer(request.username()));
   }
 
   @Override
@@ -74,7 +79,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     Trainer trainer =
         authenticationService.authenticateTrainer(request.username(), request.oldPassword());
-    trainer.getUser().setPassword(request.newPassword());
+    trainer.getUser().setPassword(passwordEncoder.encode(request.newPassword()));
     trainerRepository.save(trainer);
 
     log.info("Trainer password changed, userId={}", trainer.getId());
@@ -85,7 +90,7 @@ public class TrainerServiceImpl implements TrainerService {
   public void switchActiveStatus(AuthRequest request) {
     log.info("Switching trainer active status");
 
-    Trainer trainer = authenticateTrainer(request);
+    Trainer trainer = findTrainer(request.username());
     trainer.getUser().switchActiveStatus();
     trainerRepository.save(trainer);
 
@@ -97,7 +102,9 @@ public class TrainerServiceImpl implements TrainerService {
   public List<TrainerSummaryResponse> getUnassignedTrainers(AuthRequest request) {
     log.info("Getting active trainers not assigned to trainee");
 
-    authenticationService.authenticateTrainee(request.username(), request.password());
+    traineeRepository
+        .findByUsername(request.username())
+        .orElseThrow(() -> new EntityNotFoundException("Trainee profile not found"));
     return trainerRepository.findNotAssignedToTrainee(request.username()).stream()
         .map(trainerMapper::toSummaryResponse)
         .toList();
@@ -108,8 +115,7 @@ public class TrainerServiceImpl implements TrainerService {
   public TrainerProfileResponse update(UpdateTrainerRequest request) {
     log.info("Updating trainer profile");
 
-    Trainer authenticatedTrainer =
-        authenticationService.authenticateTrainer(request.username(), request.password());
+    Trainer authenticatedTrainer = findTrainer(request.username());
     trainerMapper.updateFromRequest(request, authenticatedTrainer);
     authenticatedTrainer.setSpecialization(resolveSpecializationName(request.specialization()));
     trainerRepository.save(authenticatedTrainer);
@@ -124,7 +130,9 @@ public class TrainerServiceImpl implements TrainerService {
         .orElseThrow(() -> new EntityNotFoundException("Training type not found"));
   }
 
-  private Trainer authenticateTrainer(AuthRequest request) {
-    return authenticationService.authenticateTrainer(request.username(), request.password());
+  private Trainer findTrainer(String username) {
+    return trainerRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found"));
   }
 }

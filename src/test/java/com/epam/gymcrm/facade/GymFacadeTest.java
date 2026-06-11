@@ -63,7 +63,7 @@ class GymFacadeTest {
 
   @Test
   void getTraineeProfileShouldReturnTraineeProfileFromService() {
-    AuthRequest request = new AuthRequest("John.Doe", "password");
+    AuthRequest request = new AuthRequest("John.Doe");
     TraineeProfileResponse response =
         new TraineeProfileResponse(
             "John.Doe",
@@ -94,7 +94,7 @@ class GymFacadeTest {
 
   @Test
   void switchTraineeActiveStatusShouldDelegateToTraineeService() {
-    AuthRequest request = new AuthRequest("John.Doe", "password");
+    AuthRequest request = new AuthRequest("John.Doe");
 
     gymFacade.switchTraineeActiveStatus(request);
 
@@ -103,7 +103,7 @@ class GymFacadeTest {
 
   @Test
   void deleteTraineeByUsernameShouldDelegateToTraineeService() {
-    AuthRequest request = new AuthRequest("John.Doe", "password");
+    AuthRequest request = new AuthRequest("John.Doe");
 
     gymFacade.deleteTraineeByUsername(request);
 
@@ -114,7 +114,7 @@ class GymFacadeTest {
   void updateTraineeTrainersShouldReturnTrainersFromService() {
     UpdateTraineeTrainersRequest request =
         new UpdateTraineeTrainersRequest(
-            "John.Doe", "password", List.of("First.Trainer", "Second.Trainer"));
+            "John.Doe", List.of("First.Trainer", "Second.Trainer"));
     List<TrainerSummaryResponse> trainers =
         List.of(
             new TrainerSummaryResponse("First.Trainer", "First", "Trainer", "Fitness"),
@@ -133,7 +133,6 @@ class GymFacadeTest {
     UpdateTraineeRequest request =
         new UpdateTraineeRequest(
             "John.Doe",
-            "password",
             "John",
             "Doe",
             LocalDate.of(1995, 1, 10),
@@ -170,7 +169,7 @@ class GymFacadeTest {
 
   @Test
   void getTrainerProfileShouldReturnTrainerProfileFromService() {
-    AuthRequest request = new AuthRequest("Mike.Stone", "password");
+    AuthRequest request = new AuthRequest("Mike.Stone");
     TrainerProfileResponse response =
         new TrainerProfileResponse("Mike.Stone", "Mike", "Stone", true, "Fitness");
     when(trainerService.getProfile(request)).thenReturn(response);
@@ -194,7 +193,7 @@ class GymFacadeTest {
 
   @Test
   void switchTrainerActiveStatusShouldDelegateToTrainerService() {
-    AuthRequest request = new AuthRequest("Mike.Stone", "password");
+    AuthRequest request = new AuthRequest("Mike.Stone");
 
     gymFacade.switchTrainerActiveStatus(request);
 
@@ -203,7 +202,7 @@ class GymFacadeTest {
 
   @Test
   void getUnassignedTrainersShouldReturnTrainersFromService() {
-    AuthRequest request = new AuthRequest("John.Doe", "password");
+    AuthRequest request = new AuthRequest("John.Doe");
     List<TrainerSummaryResponse> trainers =
         List.of(new TrainerSummaryResponse("Available.Trainer", "Available", "Trainer", "Fitness"));
     when(trainerService.getUnassignedTrainers(request)).thenReturn(trainers);
@@ -218,7 +217,7 @@ class GymFacadeTest {
   @Test
   void updateTrainerShouldDelegateToTrainerService() {
     UpdateTrainerRequest request =
-        new UpdateTrainerRequest("Mike.Stone", "password", "Mike", "Stone", "Fitness", true);
+        new UpdateTrainerRequest("Mike.Stone", "Mike", "Stone", "Fitness", true);
     TrainerProfileResponse response =
         new TrainerProfileResponse("Mike.Stone", "Mike", "Stone", true, "Fitness");
     when(trainerService.update(request)).thenReturn(response);
@@ -234,7 +233,6 @@ class GymFacadeTest {
     AddTrainingRequest request =
         new AddTrainingRequest(
             "John.Doe",
-            "password",
             "Mike.Stone",
             "Yoga Basics",
             "Yoga",
@@ -251,7 +249,6 @@ class GymFacadeTest {
     TraineeTrainingsRequest request =
         new TraineeTrainingsRequest(
             "John.Doe",
-            "password",
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 31),
             "Mike",
@@ -272,7 +269,6 @@ class GymFacadeTest {
     TrainerTrainingsRequest request =
         new TrainerTrainingsRequest(
             "Mike.Stone",
-            "password",
             LocalDate.of(2026, 2, 1),
             LocalDate.of(2026, 2, 28),
             "John",

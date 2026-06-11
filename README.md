@@ -9,7 +9,9 @@ Gym CRM is a Spring Boot backend application for managing gym trainees, trainers
 * **Password changes:** authenticated trainees and trainers can change their passwords.
 * **Training management:** add trainings and query trainee/trainer training lists with date and name/type criteria.
 * **Trainer assignment:** list trainers not assigned to a trainee and replace a trainee's trainer list.
+* **Spring Security:** stateless JWT bearer authentication, role-based access control, logout token revocation, and CORS configuration.
 * **Spring Data JPA persistence:** repositories are implemented with Spring Data JPA.
+* **Redis-backed security state:** failed login attempts and revoked JWT ids are stored in Redis.
 * **Actuator and Prometheus:** health, metrics, and Prometheus endpoints are exposed through Spring Boot Actuator.
 * **Testing and coverage:** unit and integration tests run with Maven, JUnit, Mockito, Testcontainers, and JaCoCo.
 
@@ -17,7 +19,7 @@ Gym CRM is a Spring Boot backend application for managing gym trainees, trainers
 
 * Java 25
 * Maven 3.9+
-* Podman or Docker for the PostgreSQL compose stack and Testcontainers-based tests
+* Podman or Docker for the PostgreSQL/Redis compose stack and Testcontainers-based tests
 
 ## Build And Test
 
@@ -121,13 +123,76 @@ The application starts on port `8080` by default. REST API endpoints are availab
 http://localhost:8080/api/v1
 ```
 
-## PostgreSQL Compose Stack
+## Authentication And Security
 
-The `infra` compose stack starts the database infrastructure used by the `dev` and `prod` profiles:
+Public endpoints:
+
+```text
+POST /api/v1/trainees
+POST /api/v1/trainers
+POST /api/v1/auth/login
+```
+
+All other API endpoints require a JWT bearer token:
+
+```http
+Authorization: Bearer <token>
+```
+
+Login returns a JWT token and profile type:
+
+```text
+POST /api/v1/auth/login
+```
+
+Logout revokes the current JWT until its natural expiration:
+
+```text
+POST /api/v1/auth/logout
+```
+
+JWT tokens are valid for 30 minutes by default. The lifetime, issuer, and signing secret are
+configured through environment variables:
+
+```properties
+JWT_ISSUER=https://gym-crm.local
+JWT_SECRET=GymCrmLocalDevelopmentJwtSecretKeyMustBeAtLeastThirtyTwoBytes
+JWT_TOKEN_LIFETIME=PT30M
+```
+
+Redis is required for security state:
+
+* failed login attempts are counted in Redis;
+* a user is temporarily blocked after 3 failed login attempts by default;
+* revoked JWT ids are stored in Redis until the original token expiration time.
+
+The default lockout settings are:
+
+```properties
+LOGIN_MAX_FAILED_ATTEMPTS=3
+LOGIN_LOCK_DURATION=PT5M
+```
+
+CORS is configured through environment variables. The default local origins are suitable for common
+frontend dev servers:
+
+```properties
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8080
+CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Authorization,Content-Type,Accept,Origin
+CORS_ALLOW_CREDENTIALS=false
+CORS_MAX_AGE=PT1H
+```
+
+## Infrastructure Compose Stack
+
+The `infra` compose stack starts the database and Redis infrastructure used by the `dev` and
+`prod` profiles:
 
 * PostgreSQL master on host port `5433`
 * PostgreSQL replica on host port `5434`
 * Pgpool on host port `5435`
+* Redis on host port `6379`
 
 Create a local compose environment file if you want to override defaults:
 
@@ -135,11 +200,11 @@ Create a local compose environment file if you want to override defaults:
 cp infra/.env.example infra/.env
 ```
 
-Start the database stack:
+Start the infrastructure stack:
 
 ```bash
 cd infra
-podman compose up -d gym-master gym-replica gym-pgpool
+podman compose up -d gym-master gym-replica gym-pgpool gym-redis
 ```
 
 The application connects to Pgpool through these default values:
@@ -148,6 +213,8 @@ The application connects to Pgpool through these default values:
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5435/gym_crm
 SPRING_DATASOURCE_USERNAME=gym_user
 SPRING_DATASOURCE_PASSWORD=password
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 From the project root, override them when needed:
@@ -156,6 +223,8 @@ From the project root, override them when needed:
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5435/gym_crm \
 SPRING_DATASOURCE_USERNAME=gym_user \
 SPRING_DATASOURCE_PASSWORD=password \
+REDIS_HOST=localhost \
+REDIS_PORT=6379 \
 java -jar target/gym-crm-1.0-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
@@ -165,6 +234,8 @@ PowerShell example:
 $env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5435/gym_crm"
 $env:SPRING_DATASOURCE_USERNAME = "gym_user"
 $env:SPRING_DATASOURCE_PASSWORD = "password"
+$env:REDIS_HOST = "localhost"
+$env:REDIS_PORT = "6379"
 java -jar target/gym-crm-1.0-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
@@ -172,7 +243,7 @@ If old volumes were created with previous credentials or schema settings, reset 
 
 ```bash
 podman compose down -v
-podman compose up -d gym-master gym-replica gym-pgpool
+podman compose up -d gym-master gym-replica gym-pgpool gym-redis
 ```
 
 ## Run With Docker Compose
@@ -200,6 +271,8 @@ Inside the compose network, the application connects to:
 
 ```properties
 SPRING_DATASOURCE_URL=jdbc:postgresql://gym-pgpool:5432/gym_crm
+REDIS_HOST=gym-redis
+REDIS_PORT=6379
 ```
 
 ## Actuator And Prometheus

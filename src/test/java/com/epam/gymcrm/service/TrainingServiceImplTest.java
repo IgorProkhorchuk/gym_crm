@@ -18,7 +18,6 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TrainingMapper;
 import com.epam.gymcrm.model.Trainee;
@@ -26,6 +25,7 @@ import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
 import com.epam.gymcrm.monitoring.metrics.GymMetrics;
+import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
 import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.TrainingTypeRepository;
@@ -52,6 +52,8 @@ class TrainingServiceImplTest {
 
   @Mock private TrainingRepository trainingRepository;
 
+  @Mock private TraineeRepository traineeRepository;
+
   @Mock private TrainerRepository trainerRepository;
 
   @Mock private TrainingTypeRepository trainingTypeRepository;
@@ -71,7 +73,6 @@ class TrainingServiceImplTest {
     addTrainingRequest =
         new AddTrainingRequest(
             "Training.Trainee",
-            "password",
             "Training.Trainer",
             "Yoga Basics",
             "Yoga",
@@ -90,8 +91,7 @@ class TrainingServiceImplTest {
             .trainingDate(LocalDate.of(2026, 5, 3))
             .trainingDuration(60)
             .build();
-    when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
-        .thenReturn(trainee);
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
     when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(trainingType));
     when(trainingMapper.toEntity(addTrainingRequest)).thenReturn(training);
@@ -99,7 +99,7 @@ class TrainingServiceImplTest {
     trainingService.addTraining(addTrainingRequest);
 
     assertAll(
-        () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
+        () -> verify(traineeRepository).findByUsername("Training.Trainee"),
         () -> verify(trainerRepository).findByUsername("Training.Trainer"),
         () -> verify(trainingTypeRepository).findByName("Yoga"),
         () -> verify(trainingMapper).toEntity(addTrainingRequest),
@@ -116,8 +116,7 @@ class TrainingServiceImplTest {
   @Test
   void addTrainingShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
     Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
-    when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
-        .thenReturn(trainee);
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
@@ -131,8 +130,7 @@ class TrainingServiceImplTest {
   void addTrainingShouldThrowEntityNotFoundExceptionWhenTrainingTypeDoesNotExist() {
     Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
     Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
-    when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
-        .thenReturn(trainee);
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
     when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.empty());
 
@@ -144,12 +142,12 @@ class TrainingServiceImplTest {
   }
 
   @Test
-  void addTrainingShouldRecordAuthFailureWhenTraineeAuthenticationFails() {
-    AuthenticationException exception = new AuthenticationException("Invalid username or password");
-    when(authenticationService.authenticateTrainee("Training.Trainee", "password"))
-        .thenThrow(exception);
+  void addTrainingShouldRecordAuthFailureWhenTraineeProfileDoesNotExist() {
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest)).isSameAs(exception);
+    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainee profile not found");
 
     verify(gymMetrics).recordTrainingCreationAuthFailed();
   }
@@ -180,21 +178,6 @@ class TrainingServiceImplTest {
             60);
 
     assertAddTrainingRequestViolation(request, "Trainee username must not be blank");
-  }
-
-  @Test
-  void addTrainingShouldThrowIllegalArgumentExceptionWhenTraineePasswordIsBlank() {
-    AddTrainingRequest request =
-        addTrainingRequest(
-            "Training.Trainee",
-            " ",
-            "Training.Trainer",
-            "Yoga Basics",
-            "Yoga",
-            LocalDate.of(2026, 5, 3),
-            60);
-
-    assertAddTrainingRequestViolation(request, "Trainee password must not be blank");
   }
 
   @Test
@@ -301,7 +284,6 @@ class TrainingServiceImplTest {
     TraineeTrainingsRequest request =
         new TraineeTrainingsRequest(
             "Training.Trainee",
-            "password",
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 31),
             "Coach",
@@ -322,7 +304,6 @@ class TrainingServiceImplTest {
 
     assertAll(
         () -> assertThat(result).containsExactly(response),
-        () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
         () -> verify(trainingMapper).toCriteria(request),
         () ->
             verify(trainingRepository)
@@ -334,7 +315,7 @@ class TrainingServiceImplTest {
   @Test
   void getTraineeTrainingsShouldUseEmptyCriteriaWhenMapperReturnsNull() {
     TraineeTrainingsRequest request =
-        new TraineeTrainingsRequest("Training.Trainee", "password", null, null, null, null, null);
+        new TraineeTrainingsRequest("Training.Trainee", null, null, null, null, null);
     Training training = validTraining();
     TraineeTrainingResponse response = traineeTrainingResponse();
     when(trainingMapper.toCriteria(request)).thenReturn(null);
@@ -347,7 +328,6 @@ class TrainingServiceImplTest {
 
     assertAll(
         () -> assertThat(result).containsExactly(response),
-        () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
         () ->
             verify(trainingRepository)
                 .findByTraineeUsernameAndCriteria(
@@ -359,7 +339,6 @@ class TrainingServiceImplTest {
     TrainerTrainingsRequest request =
         new TrainerTrainingsRequest(
             "Training.Trainer",
-            "password",
             LocalDate.of(2026, 2, 1),
             LocalDate.of(2026, 2, 28),
             "Trainee",
@@ -378,7 +357,6 @@ class TrainingServiceImplTest {
 
     assertAll(
         () -> assertThat(result).containsExactly(response),
-        () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
         () -> verify(trainingMapper).toCriteria(request),
         () ->
             verify(trainingRepository)
@@ -390,7 +368,7 @@ class TrainingServiceImplTest {
   @Test
   void getTrainerTrainingsShouldUseEmptyCriteriaWhenMapperReturnsNull() {
     TrainerTrainingsRequest request =
-        new TrainerTrainingsRequest("Training.Trainer", "password", null, null, null, null);
+        new TrainerTrainingsRequest("Training.Trainer", null, null, null, null);
     Training training = validTraining();
     TrainerTrainingResponse response = trainerTrainingResponse();
     when(trainingMapper.toCriteria(request)).thenReturn(null);
@@ -403,7 +381,6 @@ class TrainingServiceImplTest {
 
     assertAll(
         () -> assertThat(result).containsExactly(response),
-        () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
         () ->
             verify(trainingRepository)
                 .findByTrainerUsernameAndCriteria(
@@ -420,7 +397,6 @@ class TrainingServiceImplTest {
       Integer trainingDuration) {
     return new AddTrainingRequest(
         traineeUsername,
-        traineePassword,
         trainerUsername,
         trainingName,
         trainingTypeName,

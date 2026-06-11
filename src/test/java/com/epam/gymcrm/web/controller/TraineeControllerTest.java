@@ -1,0 +1,861 @@
+package com.epam.gymcrm.web.controller;
+
+import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
+import static io.restassured.module.mockmvc.RestAssuredMockMvc.reset;
+import static io.restassured.module.mockmvc.RestAssuredMockMvc.standaloneSetup;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import com.epam.gymcrm.dto.AuthRequest;
+import com.epam.gymcrm.dto.ChangePasswordRequest;
+import com.epam.gymcrm.dto.PageRequest;
+import com.epam.gymcrm.dto.UsernamePasswordResponse;
+import com.epam.gymcrm.dto.auth.ProfileType;
+import com.epam.gymcrm.dto.trainee.CreateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
+import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
+import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
+import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
+import com.epam.gymcrm.exception.AuthenticationException;
+import com.epam.gymcrm.facade.GymFacade;
+import com.epam.gymcrm.web.auth.AuthenticatedPrincipal;
+import com.epam.gymcrm.web.auth.AuthenticatedUserProvider;
+import com.epam.gymcrm.web.exception.RestExceptionHandler;
+import io.restassured.http.ContentType;
+import java.time.LocalDate;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TraineeControllerTest {
+
+  private static final String TOKEN = "token";
+  private static final String USERNAME = "John.Doe";
+  private static final String PASSWORD = "password";
+
+  @Mock private GymFacade gymFacade;
+
+  @Mock private AuthenticatedUserProvider authenticatedUserProvider;
+
+  @BeforeEach
+  void setUp() {
+    standaloneSetup(new TraineeController(gymFacade, authenticatedUserProvider), new RestExceptionHandler());
+  }
+
+  @AfterEach
+  void tearDown() {
+    reset();
+  }
+
+  @Test
+  void createTraineeShouldReturnCreatedCredentials() {
+    CreateTraineeRequest request =
+        new CreateTraineeRequest("John", "Doe", LocalDate.of(1995, 1, 10), "Main Street, 123");
+    UsernamePasswordResponse response = new UsernamePasswordResponse(USERNAME, PASSWORD);
+    when(gymFacade.createTrainee(request)).thenReturn(response);
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(
+            """
+                        {
+                          "firstName": "John",
+                          "lastName": "Doe",
+                          "dateOfBirth": "1995-01-10",
+                          "address": "Main Street, 123"
+                        }
+            """)
+        .when()
+        .post("/v1/trainees")
+        .then()
+        .statusCode(201)
+        .body("username", equalTo(USERNAME))
+        .body("password", equalTo(PASSWORD));
+
+    verify(gymFacade).createTrainee(request);
+  }
+
+  @Test
+  void createTraineeShouldReturnBadRequestWhenRequestIsInvalid() {
+    given()
+        .contentType(ContentType.JSON)
+        .body(
+            """
+                        {
+                          "firstName": "",
+                          "lastName": "Doe"
+                        }
+            """)
+        .when()
+        .post("/v1/trainees")
+        .then()
+        .statusCode(400)
+        .body("message", equalTo("Invalid request body: field 'firstName' must not be blank"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeProfileShouldReturnProfileForTraineeToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
+    TraineeProfileResponse response =
+        new TraineeProfileResponse(
+            USERNAME,
+            "John",
+            "Doe",
+            true,
+            LocalDate.of(1995, 1, 10),
+            "Main Street, 123",
+            List.of());
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+    when(gymFacade.getTraineeProfile(request)).thenReturn(response);
+
+    given()        .queryParam("username", USERNAME)
+        .when()
+        .get("/v1/trainees/profile")
+        .then()
+        .statusCode(200)
+        .body("username", equalTo(USERNAME))
+        .body("firstName", equalTo("John"))
+        .body("lastName", equalTo("Doe"))
+        .body("active", equalTo(true))
+        .body("address", equalTo("Main Street, 123"));
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).getTraineeProfile(request);
+  }
+
+  @Test
+  void getTraineeProfileShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()        .queryParam("username", "Mike.Stone")
+        .when()
+        .get("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeProfileShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()        .queryParam("username", "Another.User")
+        .when()
+        .get("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeProfileShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()        .queryParam("username", USERNAME)
+        .when()
+        .get("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeProfileShouldReturnUpdatedProfile() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    UpdateTraineeRequest request =
+        new UpdateTraineeRequest(
+            USERNAME,
+            "Johnny",
+            "Doe",
+            LocalDate.of(1996, 2, 20),
+            "Updated Street, 7",
+            false);
+    TraineeProfileResponse response =
+        new TraineeProfileResponse(
+            USERNAME,
+            "Johnny",
+            "Doe",
+            false,
+            LocalDate.of(1996, 2, 20),
+            "Updated Street, 7",
+            List.of());
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+    when(gymFacade.updateTrainee(request)).thenReturn(response);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "firstName": "Johnny",
+                          "lastName": "Doe",
+                          "dateOfBirth": "1996-02-20",
+                          "address": "Updated Street, 7",
+                          "active": false
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/profile")
+        .then()
+        .statusCode(200)
+        .body("username", equalTo(USERNAME))
+        .body("firstName", equalTo("Johnny"))
+        .body("lastName", equalTo("Doe"))
+        .body("active", equalTo(false))
+        .body("dateOfBirth", equalTo("1996-02-20"))
+        .body("address", equalTo("Updated Street, 7"));
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).updateTrainee(request);
+  }
+
+  @Test
+  void updateTraineeProfileShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Mike.Stone",
+                          "firstName": "Mike",
+                          "lastName": "Stone",
+                          "dateOfBirth": "1996-02-20",
+                          "address": "Updated Street, 7",
+                          "active": true
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeProfileShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Another.User",
+                          "firstName": "Johnny",
+                          "lastName": "Doe",
+                          "dateOfBirth": "1996-02-20",
+                          "address": "Updated Street, 7",
+                          "active": true
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void changePasswordShouldReturnOkForTraineeToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    ChangePasswordRequest request = new ChangePasswordRequest(USERNAME, PASSWORD, "new-password");
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "oldPassword": "password",
+                          "newPassword": "new-password"
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/password")
+        .then()
+        .statusCode(200);
+
+    verify(gymFacade).changeTraineePassword(request);  }
+
+  @Test
+  void changePasswordShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Mike.Stone",
+                          "oldPassword": "password",
+                          "newPassword": "new-password"
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/password")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void changePasswordShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Another.User",
+                          "oldPassword": "password",
+                          "newPassword": "new-password"
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/password")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldReturnOkForTraineeToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(200);
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).switchTraineeActiveStatus(request);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Mike.Stone",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Another.User",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe",
+                          "active": false
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void switchActiveStatusShouldReturnBadRequestWhenActiveIsMissing() {
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe"
+                        }
+            """)
+        .when()
+        .patch("/v1/trainees/profile/status")
+        .then()
+        .statusCode(400)
+        .body("message", equalTo("Invalid request body: field 'active' must not be null"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void deleteTraineeProfileShouldReturnOk() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe"
+                        }
+            """)
+        .when()
+        .delete("/v1/trainees/profile")
+        .then()
+        .statusCode(200);
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).deleteTraineeByUsername(request);
+  }
+
+  @Test
+  void deleteTraineeProfileShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user =
+        new AuthenticatedPrincipal("Petryk.Pjatochkyn", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Petryk.Pjatochkyn"
+                        }
+            """)
+        .when()
+        .delete("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void deleteTraineeProfileShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "Another.User"
+                        }
+            """)
+        .when()
+        .delete("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void deleteTraineeProfileShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "username": "John.Doe"
+                        }
+            """)
+        .when()
+        .delete("/v1/trainees/profile")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getUnassignedTrainersShouldReturnTrainersForTraineeToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    AuthRequest request = new AuthRequest(USERNAME);
+    List<TrainerSummaryResponse> response =
+        List.of(
+            new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
+            new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+    when(gymFacade.getUnassignedTrainers(request)).thenReturn(response);
+
+    given()        .queryParam("username", USERNAME)
+        .when()
+        .get("/v1/trainees/trainers/unassigned")
+        .then()
+        .statusCode(200)
+        .body("size()", equalTo(2))
+        .body("[0].username", equalTo("Mike.Stone"))
+        .body("[0].firstName", equalTo("Mike"))
+        .body("[0].lastName", equalTo("Stone"))
+        .body("[0].specialization", equalTo("Fitness"))
+        .body("[1].username", equalTo("Kate.Yoga"))
+        .body("[1].firstName", equalTo("Kate"))
+        .body("[1].lastName", equalTo("Yoga"))
+        .body("[1].specialization", equalTo("Yoga"));
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).getUnassignedTrainers(request);
+  }
+
+  @Test
+  void getUnassignedTrainersShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()        .queryParam("username", "Mike.Stone")
+        .when()
+        .get("/v1/trainees/trainers/unassigned")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getUnassignedTrainersShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()        .queryParam("username", "Another.User")
+        .when()
+        .get("/v1/trainees/trainers/unassigned")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getUnassignedTrainersShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()        .queryParam("username", USERNAME)
+        .when()
+        .get("/v1/trainees/trainers/unassigned")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldReturnUpdatedTrainerList() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    UpdateTraineeTrainersRequest request =
+        new UpdateTraineeTrainersRequest(USERNAME, List.of("Mike.Stone", "Kate.Yoga"));
+    List<TrainerSummaryResponse> response =
+        List.of(
+            new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness"),
+            new TrainerSummaryResponse("Kate.Yoga", "Kate", "Yoga", "Yoga"));
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+    when(gymFacade.updateTraineeTrainers(request)).thenReturn(response);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe",
+                          "trainerUsernames": [
+                            "Mike.Stone",
+                            "Kate.Yoga"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(200)
+        .body("size()", equalTo(2))
+        .body("[0].username", equalTo("Mike.Stone"))
+        .body("[0].firstName", equalTo("Mike"))
+        .body("[0].lastName", equalTo("Stone"))
+        .body("[0].specialization", equalTo("Fitness"))
+        .body("[1].username", equalTo("Kate.Yoga"))
+        .body("[1].firstName", equalTo("Kate"))
+        .body("[1].lastName", equalTo("Yoga"))
+        .body("[1].specialization", equalTo("Yoga"));
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).updateTraineeTrainers(request);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "traineeUsername": "Mike.Stone",
+                          "trainerUsernames": [
+                            "Kate.Yoga"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "traineeUsername": "Another.User",
+                          "trainerUsernames": [
+                            "Mike.Stone"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe",
+                          "trainerUsernames": [
+                            "Mike.Stone"
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernamesAreMissing() {
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe"
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(400)
+        .body(
+            "message",
+            equalTo(
+                "Invalid request body: field 'trainerUsernames' "
+                    + "must contain at least one trainer username"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void updateTraineeTrainersShouldReturnBadRequestWhenTrainerUsernameIsBlank() {
+    given()
+        .contentType(ContentType.JSON)        .body(
+            """
+                        {
+                          "traineeUsername": "John.Doe",
+                          "trainerUsernames": [
+                            ""
+                          ]
+                        }
+            """)
+        .when()
+        .put("/v1/trainees/trainers")
+        .then()
+        .statusCode(400)
+        .body(
+            "message",
+            equalTo("Invalid request body: field 'trainerUsernames[0]' must not be blank"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldReturnFilteredTrainingsForTraineeToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    TraineeTrainingsRequest request =
+        new TraineeTrainingsRequest(
+            USERNAME,
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 1, 31),
+            "Mike Stone",
+            "Fitness",
+            PageRequest.firstPage());
+    List<TraineeTrainingResponse> response =
+        List.of(
+            new TraineeTrainingResponse(
+                "Morning Training", "Fitness", LocalDate.of(2026, 1, 10), 60, "Mike Stone"));
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+    when(gymFacade.getTraineeTrainings(request)).thenReturn(response);
+
+    given()        .queryParam("username", USERNAME)
+        .queryParam("fromDate", "2026-01-01")
+        .queryParam("toDate", "2026-01-31")
+        .queryParam("trainerName", "Mike Stone")
+        .queryParam("trainingType", "Fitness")
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(200)
+        .body("size()", equalTo(1))
+        .body("[0].trainingName", equalTo("Morning Training"))
+        .body("[0].trainingType", equalTo("Fitness"))
+        .body("[0].trainingDate", equalTo("2026-01-10"))
+        .body("[0].trainingDuration", equalTo(60))
+        .body("[0].trainerName", equalTo("Mike Stone"));
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).getTraineeTrainings(request);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldRejectTrainerToken() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal("Mike.Stone", ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()        .queryParam("username", "Mike.Stone")
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("This operation is available only for trainee profiles"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldRejectAnotherUsername() {
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()        .queryParam("username", "Another.User")
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Authenticated trainee can perform this operation only for own profile"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
+  @Test
+  void getTraineeTrainingsShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()        .queryParam("username", USERNAME)
+        .when()
+        .get("/v1/trainees/trainings")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+}

@@ -1,5 +1,10 @@
 package com.epam.gymcrm.facade;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.PageRequest;
@@ -17,327 +22,287 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.training.TrainingTypeResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
 import com.epam.gymcrm.service.TrainingService;
+import com.epam.gymcrm.service.TrainingTypeService;
+import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class GymFacadeTest {
 
-    @InjectMocks
-    private GymFacade gymFacade;
+  @InjectMocks private GymFacade gymFacade;
 
-    @Mock
-    private TraineeService traineeService;
+  @Mock private TraineeService traineeService;
 
-    @Mock
-    private TrainerService trainerService;
+  @Mock private TrainerService trainerService;
 
-    @Mock
-    private TrainingService trainingService;
+  @Mock private TrainingService trainingService;
 
-    @Test
-    void createTraineeShouldDelegateToTraineeService() {
-        CreateTraineeRequest request = new CreateTraineeRequest(
-                "John",
-                "Doe",
-                LocalDate.of(1995, 1, 10),
-                "Main Street, 123"
-        );
-        UsernamePasswordResponse response = new UsernamePasswordResponse("John.Doe", "Passw0rd12");
-        when(traineeService.create(request)).thenReturn(response);
+  @Mock private TrainingTypeService trainingTypeService;
 
-        UsernamePasswordResponse result = gymFacade.createTrainee(request);
+  @Test
+  void createTraineeShouldDelegateToTraineeService() {
+    CreateTraineeRequest request =
+        new CreateTraineeRequest("John", "Doe", LocalDate.of(1995, 1, 10), "Main Street, 123");
+    UsernamePasswordResponse response = new UsernamePasswordResponse("John.Doe", "Passw0rd12");
+    when(traineeService.create(request)).thenReturn(response);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(response),
-                () -> verify(traineeService).create(request)
-        );
-    }
+    UsernamePasswordResponse result = gymFacade.createTrainee(request);
 
-    @Test
-    void getTraineeProfileShouldReturnTraineeProfileFromService() {
-        AuthRequest request = new AuthRequest("John.Doe", "password");
-        TraineeProfileResponse response = new TraineeProfileResponse(
-                "John.Doe",
-                "John",
-                "Doe",
-                true,
-                LocalDate.of(1995, 1, 10),
-                "Main Street, 123",
-                List.of()
-        );
-        when(traineeService.getProfile(request)).thenReturn(response);
+    assertAll(
+        () -> assertThat(result).isSameAs(response), () -> verify(traineeService).create(request));
+  }
 
-        TraineeProfileResponse result = gymFacade.getTraineeProfile(request);
+  @Test
+  void getTraineeProfileShouldReturnTraineeProfileFromService() {
+    AuthRequest request = new AuthRequest("John.Doe");
+    TraineeProfileResponse response =
+        new TraineeProfileResponse(
+            "John.Doe",
+            "John",
+            "Doe",
+            true,
+            LocalDate.of(1995, 1, 10),
+            "Main Street, 123",
+            List.of());
+    when(traineeService.getProfile(request)).thenReturn(response);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(response),
-                () -> verify(traineeService).getProfile(request)
-        );
-    }
+    TraineeProfileResponse result = gymFacade.getTraineeProfile(request);
 
-    @Test
-    void changeTraineePasswordShouldDelegateToTraineeService() {
-        ChangePasswordRequest request = new ChangePasswordRequest("John.Doe", "old-password", "new-password");
+    assertAll(
+        () -> assertThat(result).isSameAs(response),
+        () -> verify(traineeService).getProfile(request));
+  }
 
-        gymFacade.changeTraineePassword(request);
+  @Test
+  void changeTraineePasswordShouldDelegateToTraineeService() {
+    ChangePasswordRequest request =
+        new ChangePasswordRequest("John.Doe", "old-password", "new-password");
 
-        verify(traineeService).changePassword(request);
-    }
+    gymFacade.changeTraineePassword(request);
 
-    @Test
-    void switchTraineeActiveStatusShouldDelegateToTraineeService() {
-        AuthRequest request = new AuthRequest("John.Doe", "password");
+    verify(traineeService).changePassword(request);
+  }
 
-        gymFacade.switchTraineeActiveStatus(request);
+  @Test
+  void switchTraineeActiveStatusShouldDelegateToTraineeService() {
+    AuthRequest request = new AuthRequest("John.Doe");
 
-        verify(traineeService).switchActiveStatus(request);
-    }
+    gymFacade.switchTraineeActiveStatus(request);
 
-    @Test
-    void deleteTraineeByUsernameShouldDelegateToTraineeService() {
-        AuthRequest request = new AuthRequest("John.Doe", "password");
+    verify(traineeService).switchActiveStatus(request);
+  }
 
-        gymFacade.deleteTraineeByUsername(request);
+  @Test
+  void deleteTraineeByUsernameShouldDelegateToTraineeService() {
+    AuthRequest request = new AuthRequest("John.Doe");
 
-        verify(traineeService).deleteByUsername(request);
-    }
+    gymFacade.deleteTraineeByUsername(request);
 
-    @Test
-    void updateTraineeTrainersShouldReturnTrainersFromService() {
-        UpdateTraineeTrainersRequest request = new UpdateTraineeTrainersRequest(
-                "John.Doe",
-                "password",
-                List.of("First.Trainer", "Second.Trainer")
-        );
-        List<TrainerSummaryResponse> trainers = List.of(
-                new TrainerSummaryResponse("First.Trainer", "First", "Trainer", "Fitness"),
-                new TrainerSummaryResponse("Second.Trainer", "Second", "Trainer", "Fitness")
-        );
-        when(traineeService.updateTrainers(request)).thenReturn(trainers);
+    verify(traineeService).deleteByUsername(request);
+  }
 
-        List<TrainerSummaryResponse> result = gymFacade.updateTraineeTrainers(request);
+  @Test
+  void updateTraineeTrainersShouldReturnTrainersFromService() {
+    UpdateTraineeTrainersRequest request =
+        new UpdateTraineeTrainersRequest(
+            "John.Doe", List.of("First.Trainer", "Second.Trainer"));
+    List<TrainerSummaryResponse> trainers =
+        List.of(
+            new TrainerSummaryResponse("First.Trainer", "First", "Trainer", "Fitness"),
+            new TrainerSummaryResponse("Second.Trainer", "Second", "Trainer", "Fitness"));
+    when(traineeService.updateTrainers(request)).thenReturn(trainers);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(trainers),
-                () -> verify(traineeService).updateTrainers(request)
-        );
-    }
+    List<TrainerSummaryResponse> result = gymFacade.updateTraineeTrainers(request);
 
-    @Test
-    void updateTraineeShouldDelegateToTraineeService() {
-        UpdateTraineeRequest request = new UpdateTraineeRequest(
-                "John.Doe",
-                "password",
-                "John",
-                "Doe",
-                LocalDate.of(1995, 1, 10),
-                "Main Street, 123"
-        );
-        TraineeProfileResponse response = new TraineeProfileResponse(
-                "John.Doe",
-                "John",
-                "Doe",
-                true,
-                LocalDate.of(1995, 1, 10),
-                "Main Street, 123",
-                List.of()
-        );
-        when(traineeService.update(request)).thenReturn(response);
+    assertAll(
+        () -> assertThat(result).isSameAs(trainers),
+        () -> verify(traineeService).updateTrainers(request));
+  }
 
-        TraineeProfileResponse result = gymFacade.updateTrainee(request);
+  @Test
+  void updateTraineeShouldDelegateToTraineeService() {
+    UpdateTraineeRequest request =
+        new UpdateTraineeRequest(
+            "John.Doe",
+            "John",
+            "Doe",
+            LocalDate.of(1995, 1, 10),
+            "Main Street, 123",
+            true);
+    TraineeProfileResponse response =
+        new TraineeProfileResponse(
+            "John.Doe",
+            "John",
+            "Doe",
+            true,
+            LocalDate.of(1995, 1, 10),
+            "Main Street, 123",
+            List.of());
+    when(traineeService.update(request)).thenReturn(response);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(response),
-                () -> verify(traineeService).update(request)
-        );
-    }
+    TraineeProfileResponse result = gymFacade.updateTrainee(request);
 
-    @Test
-    void createTrainerShouldDelegateToTrainerService() {
-        CreateTrainerRequest request = new CreateTrainerRequest("Mike", "Stone", "Fitness");
-        UsernamePasswordResponse response = new UsernamePasswordResponse("Mike.Stone", "Passw0rd12");
-        when(trainerService.create(request)).thenReturn(response);
+    assertAll(
+        () -> assertThat(result).isSameAs(response), () -> verify(traineeService).update(request));
+  }
 
-        UsernamePasswordResponse result = gymFacade.createTrainer(request);
+  @Test
+  void createTrainerShouldDelegateToTrainerService() {
+    CreateTrainerRequest request = new CreateTrainerRequest("Mike", "Stone", "Fitness");
+    UsernamePasswordResponse response = new UsernamePasswordResponse("Mike.Stone", "Passw0rd12");
+    when(trainerService.create(request)).thenReturn(response);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(response),
-                () -> verify(trainerService).create(request)
-        );
-    }
+    UsernamePasswordResponse result = gymFacade.createTrainer(request);
 
-    @Test
-    void getTrainerProfileShouldReturnTrainerProfileFromService() {
-        AuthRequest request = new AuthRequest("Mike.Stone", "password");
-        TrainerProfileResponse response = new TrainerProfileResponse(
-                "Mike.Stone",
-                "Mike",
-                "Stone",
-                true,
-                "Fitness"
-        );
-        when(trainerService.getProfile(request)).thenReturn(response);
+    assertAll(
+        () -> assertThat(result).isSameAs(response), () -> verify(trainerService).create(request));
+  }
 
-        TrainerProfileResponse result = gymFacade.getTrainerProfile(request);
+  @Test
+  void getTrainerProfileShouldReturnTrainerProfileFromService() {
+    AuthRequest request = new AuthRequest("Mike.Stone");
+    TrainerProfileResponse response =
+        new TrainerProfileResponse("Mike.Stone", "Mike", "Stone", true, "Fitness");
+    when(trainerService.getProfile(request)).thenReturn(response);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(response),
-                () -> verify(trainerService).getProfile(request)
-        );
-    }
+    TrainerProfileResponse result = gymFacade.getTrainerProfile(request);
 
-    @Test
-    void changeTrainerPasswordShouldDelegateToTrainerService() {
-        ChangePasswordRequest request = new ChangePasswordRequest("Mike.Stone", "old-password", "new-password");
+    assertAll(
+        () -> assertThat(result).isSameAs(response),
+        () -> verify(trainerService).getProfile(request));
+  }
 
-        gymFacade.changeTrainerPassword(request);
+  @Test
+  void changeTrainerPasswordShouldDelegateToTrainerService() {
+    ChangePasswordRequest request =
+        new ChangePasswordRequest("Mike.Stone", "old-password", "new-password");
 
-        verify(trainerService).changePassword(request);
-    }
+    gymFacade.changeTrainerPassword(request);
 
-    @Test
-    void switchTrainerActiveStatusShouldDelegateToTrainerService() {
-        AuthRequest request = new AuthRequest("Mike.Stone", "password");
+    verify(trainerService).changePassword(request);
+  }
 
-        gymFacade.switchTrainerActiveStatus(request);
+  @Test
+  void switchTrainerActiveStatusShouldDelegateToTrainerService() {
+    AuthRequest request = new AuthRequest("Mike.Stone");
 
-        verify(trainerService).switchActiveStatus(request);
-    }
+    gymFacade.switchTrainerActiveStatus(request);
 
-    @Test
-    void getUnassignedTrainersShouldReturnTrainersFromService() {
-        AuthRequest request = new AuthRequest("John.Doe", "password");
-        List<TrainerSummaryResponse> trainers = List.of(
-                new TrainerSummaryResponse("Available.Trainer", "Available", "Trainer", "Fitness")
-        );
-        when(trainerService.getUnassignedTrainers(request)).thenReturn(trainers);
+    verify(trainerService).switchActiveStatus(request);
+  }
 
-        List<TrainerSummaryResponse> result = gymFacade.getUnassignedTrainers(request);
+  @Test
+  void getUnassignedTrainersShouldReturnTrainersFromService() {
+    AuthRequest request = new AuthRequest("John.Doe");
+    List<TrainerSummaryResponse> trainers =
+        List.of(new TrainerSummaryResponse("Available.Trainer", "Available", "Trainer", "Fitness"));
+    when(trainerService.getUnassignedTrainers(request)).thenReturn(trainers);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(trainers),
-                () -> verify(trainerService).getUnassignedTrainers(request)
-        );
-    }
+    List<TrainerSummaryResponse> result = gymFacade.getUnassignedTrainers(request);
 
-    @Test
-    void updateTrainerShouldDelegateToTrainerService() {
-        UpdateTrainerRequest request = new UpdateTrainerRequest(
-                "Mike.Stone",
-                "password",
-                "Mike",
-                "Stone",
-                "Fitness"
-        );
-        TrainerProfileResponse response = new TrainerProfileResponse(
-                "Mike.Stone",
-                "Mike",
-                "Stone",
-                true,
-                "Fitness"
-        );
-        when(trainerService.update(request)).thenReturn(response);
+    assertAll(
+        () -> assertThat(result).isSameAs(trainers),
+        () -> verify(trainerService).getUnassignedTrainers(request));
+  }
 
-        TrainerProfileResponse result = gymFacade.updateTrainer(request);
+  @Test
+  void updateTrainerShouldDelegateToTrainerService() {
+    UpdateTrainerRequest request =
+        new UpdateTrainerRequest("Mike.Stone", "Mike", "Stone", "Fitness", true);
+    TrainerProfileResponse response =
+        new TrainerProfileResponse("Mike.Stone", "Mike", "Stone", true, "Fitness");
+    when(trainerService.update(request)).thenReturn(response);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(response),
-                () -> verify(trainerService).update(request)
-        );
-    }
+    TrainerProfileResponse result = gymFacade.updateTrainer(request);
 
-    @Test
-    void addTrainingShouldDelegateToTrainingService() {
-        AddTrainingRequest request = new AddTrainingRequest(
-                "John.Doe",
-                "password",
-                "Mike.Stone",
-                "Yoga Basics",
-                "Yoga",
-                LocalDate.of(2026, 5, 3),
-                60
-        );
+    assertAll(
+        () -> assertThat(result).isSameAs(response), () -> verify(trainerService).update(request));
+  }
 
-        gymFacade.addTraining(request);
+  @Test
+  void addTrainingShouldDelegateToTrainingService() {
+    AddTrainingRequest request =
+        new AddTrainingRequest(
+            "John.Doe",
+            "Mike.Stone",
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            60);
 
-        verify(trainingService).addTraining(request);
-    }
+    gymFacade.addTraining(request);
 
-    @Test
-    void getTraineeTrainingsShouldReturnTrainingResponsesFromService() {
-        TraineeTrainingsRequest request = new TraineeTrainingsRequest(
-                "John.Doe",
-                "password",
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 1, 31),
-                "Mike",
-                "Yoga",
-                PageRequest.firstPage()
-        );
-        List<TraineeTrainingResponse> trainings = List.of(traineeTrainingResponse());
-        when(trainingService.getTraineeTrainings(request)).thenReturn(trainings);
+    verify(trainingService).addTraining(request);
+  }
 
-        List<TraineeTrainingResponse> result = gymFacade.getTraineeTrainings(request);
+  @Test
+  void getTraineeTrainingsShouldReturnTrainingResponsesFromService() {
+    TraineeTrainingsRequest request =
+        new TraineeTrainingsRequest(
+            "John.Doe",
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 1, 31),
+            "Mike",
+            "Yoga",
+            PageRequest.firstPage());
+    List<TraineeTrainingResponse> trainings = List.of(traineeTrainingResponse());
+    when(trainingService.getTraineeTrainings(request)).thenReturn(trainings);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(trainings),
-                () -> verify(trainingService).getTraineeTrainings(request)
-        );
-    }
+    List<TraineeTrainingResponse> result = gymFacade.getTraineeTrainings(request);
 
-    @Test
-    void getTrainerTrainingsShouldReturnTrainingResponsesFromService() {
-        TrainerTrainingsRequest request = new TrainerTrainingsRequest(
-                "Mike.Stone",
-                "password",
-                LocalDate.of(2026, 2, 1),
-                LocalDate.of(2026, 2, 28),
-                "John",
-                PageRequest.firstPage()
-        );
-        List<TrainerTrainingResponse> trainings = List.of(trainerTrainingResponse());
-        when(trainingService.getTrainerTrainings(request)).thenReturn(trainings);
+    assertAll(
+        () -> assertThat(result).isSameAs(trainings),
+        () -> verify(trainingService).getTraineeTrainings(request));
+  }
 
-        List<TrainerTrainingResponse> result = gymFacade.getTrainerTrainings(request);
+  @Test
+  void getTrainerTrainingsShouldReturnTrainingResponsesFromService() {
+    TrainerTrainingsRequest request =
+        new TrainerTrainingsRequest(
+            "Mike.Stone",
+            LocalDate.of(2026, 2, 1),
+            LocalDate.of(2026, 2, 28),
+            "John",
+            PageRequest.firstPage());
+    List<TrainerTrainingResponse> trainings = List.of(trainerTrainingResponse());
+    when(trainingService.getTrainerTrainings(request)).thenReturn(trainings);
 
-        assertAll(
-                () -> assertThat(result).isSameAs(trainings),
-                () -> verify(trainingService).getTrainerTrainings(request)
-        );
-    }
+    List<TrainerTrainingResponse> result = gymFacade.getTrainerTrainings(request);
 
-    private static TraineeTrainingResponse traineeTrainingResponse() {
-        return new TraineeTrainingResponse(
-                "Yoga Basics",
-                "Yoga",
-                LocalDate.of(2026, 5, 3),
-                60,
-                "Mike Stone"
-        );
-    }
+    assertAll(
+        () -> assertThat(result).isSameAs(trainings),
+        () -> verify(trainingService).getTrainerTrainings(request));
+  }
 
-    private static TrainerTrainingResponse trainerTrainingResponse() {
-        return new TrainerTrainingResponse(
-                "Yoga Basics",
-                "Yoga",
-                LocalDate.of(2026, 5, 3),
-                60,
-                "John Doe"
-        );
-    }
+  @Test
+  void getTrainingTypesShouldReturnTrainingTypesFromService() {
+    List<TrainingTypeResponse> trainingTypes =
+        List.of(new TrainingTypeResponse(1L, "Fitness"), new TrainingTypeResponse(2L, "Yoga"));
+    when(trainingTypeService.getTrainingTypes()).thenReturn(trainingTypes);
+
+    List<TrainingTypeResponse> result = gymFacade.getTrainingTypes();
+
+    assertAll(
+        () -> assertThat(result).isSameAs(trainingTypes),
+        () -> verify(trainingTypeService).getTrainingTypes());
+  }
+
+  private static TraineeTrainingResponse traineeTrainingResponse() {
+    return new TraineeTrainingResponse(
+        "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 60, "Mike Stone");
+  }
+
+  private static TrainerTrainingResponse trainerTrainingResponse() {
+    return new TrainerTrainingResponse(
+        "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 60, "John Doe");
+  }
 }

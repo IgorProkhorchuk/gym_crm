@@ -1,23 +1,25 @@
 package com.epam.gymcrm.dto.training;
 
 import com.epam.gymcrm.dto.PageRequest;
-
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
 public record TrainerTrainingsRequest(
-        String username,
-        String password,
-        LocalDate fromDate,
-        LocalDate toDate,
-        String traineeName,
-        PageRequest pageRequest
-) {
+    @NotBlank(message = "Username must not be blank") String username,
+    LocalDate fromDate,
+    LocalDate toDate,
+    String traineeName,
+    PageRequest pageRequest) {
 
-    @Override
-    public String toString() {
-        return "TrainerTrainingsRequest[username=[PROTECTED], password=[PROTECTED], "
-                + "fromDate=" + fromDate
-                + ", toDate=" + toDate
-                + ", traineeName=[PROTECTED], pageRequest=" + pageRequest + "]";
-    }
+  @Override
+  public String toString() {
+    return "TrainerTrainingsRequest[username=[PROTECTED], "
+        + "fromDate="
+        + fromDate
+        + ", toDate="
+        + toDate
+        + ", traineeName=[PROTECTED], pageRequest="
+        + pageRequest
+        + "]";
+  }
 }

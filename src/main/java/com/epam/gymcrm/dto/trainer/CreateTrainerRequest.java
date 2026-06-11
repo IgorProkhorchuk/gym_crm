@@ -1,12 +1,16 @@
 package com.epam.gymcrm.dto.trainer;
 
-public record CreateTrainerRequest(
-        String firstName,
-        String lastName,
-        String specialization) {
+import jakarta.validation.constraints.NotBlank;
 
-    @Override
-    public String toString() {
-        return "CreateTrainerRequest[firstName=[PROTECTED], lastName=[PROTECTED], specialization=" + specialization + "]";
-    }
+public record CreateTrainerRequest(
+    @NotBlank(message = "must not be blank") String firstName,
+    @NotBlank(message = "must not be blank") String lastName,
+    @NotBlank(message = "must not be blank") String specialization) {
+
+  @Override
+  public String toString() {
+    return "CreateTrainerRequest[firstName=[PROTECTED], lastName=[PROTECTED], specialization="
+        + specialization
+        + "]";
+  }
 }

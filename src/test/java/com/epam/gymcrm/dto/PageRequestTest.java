@@ -1,40 +1,38 @@
 package com.epam.gymcrm.dto;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import org.junit.jupiter.api.Test;
+
 class PageRequestTest {
 
-    @Test
-    void firstPageShouldUseDefaultLimit() {
-        PageRequest pageRequest = PageRequest.firstPage();
+  @Test
+  void firstPageShouldUseDefaultSize() {
+    PageRequest pageRequest = PageRequest.firstPage();
 
-        assertAll(
-                () -> assertThat(pageRequest.offset()).isZero(),
-                () -> assertThat(pageRequest.limit()).isEqualTo(50)
-        );
-    }
+    assertAll(
+        () -> assertThat(pageRequest.page()).isZero(),
+        () -> assertThat(pageRequest.size()).isEqualTo(50));
+  }
 
-    @Test
-    void constructorShouldRejectNegativeOffset() {
-        assertThatThrownBy(() -> new PageRequest(-1, 10))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Offset cannot be negative");
-    }
+  @Test
+  void constructorShouldRejectNegativePage() {
+    assertThatThrownBy(() -> new PageRequest(-1, 10))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Page cannot be negative");
+  }
 
-    @Test
-    void constructorShouldUseDefaultLimitWhenLimitIsNotPositive() {
-        assertAll(
-                () -> assertThat(new PageRequest(0, 0).limit()).isEqualTo(50),
-                () -> assertThat(new PageRequest(0, -5).limit()).isEqualTo(50)
-        );
-    }
+  @Test
+  void constructorShouldUseDefaultSizeWhenSizeIsNotPositive() {
+    assertAll(
+        () -> assertThat(new PageRequest(0, 0).size()).isEqualTo(50),
+        () -> assertThat(new PageRequest(0, -5).size()).isEqualTo(50));
+  }
 
-    @Test
-    void constructorShouldClampLimitToMaximum() {
-        assertThat(new PageRequest(0, 500).limit()).isEqualTo(100);
-    }
+  @Test
+  void constructorShouldClampSizeToMaximum() {
+    assertThat(new PageRequest(0, 500).size()).isEqualTo(100);
+  }
 }

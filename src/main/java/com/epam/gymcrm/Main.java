@@ -1,19 +1,12 @@
 package com.epam.gymcrm;
 
-import org.springframework.context.annotation.*;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@ComponentScan("com.epam.gymcrm")
-@Configuration
-@PropertySource("classpath:application.properties")
-@PropertySource(value = "file:${user.dir}/.env", ignoreResourceNotFound = true)
+@SpringBootApplication
 public class Main {
 
-    @Bean
-    public static PropertySourcesPlaceholderConfigurer propertyConfigurer() {
-        return new PropertySourcesPlaceholderConfigurer();
-    }
-    public static void main(String[] args) {
-        new AnnotationConfigApplicationContext(Main.class);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(Main.class, args);
+  }
 }

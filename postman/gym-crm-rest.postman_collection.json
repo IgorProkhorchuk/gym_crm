@@ -1,0 +1,1594 @@
+{
+  "info": {
+    "_postman_id": "7b1f34db-8a76-4d1f-91ad-gymcrmrest001",
+    "name": "Gym CRM REST API",
+    "description": "Collection runner checks for Gym CRM REST endpoints. Run from top to bottom against a running app. The collection creates test trainee/trainer profiles, logs in, stores Bearer JWT tokens, and verifies positive and negative security scenarios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:8080/api');",
+          "}",
+          "if (!pm.collectionVariables.get('runId')) {",
+          "  pm.collectionVariables.set('runId', Date.now().toString());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traineeUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traineePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traineeToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Setup Profiles",
+      "item": [
+        {
+          "name": "Create Trainee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainee credentials are returned', function () {",
+                  "  pm.expect(body.username).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.password).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('traineeUsername', body.username);",
+                  "pm.collectionVariables.set('traineePassword', body.password);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"PostmanTrainee{{runId}}\",\n  \"lastName\": \"User\",\n  \"dateOfBirth\": \"1995-05-15\",\n  \"address\": \"Kyiv\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainer credentials are returned', function () {",
+                  "  pm.expect(body.username).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.password).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('trainerUsername', body.username);",
+                  "pm.collectionVariables.set('trainerPassword', body.password);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"PostmanTrainer{{runId}}\",\n  \"lastName\": \"Coach\",\n  \"specialization\": \"Fitness\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Trainee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainee token is returned', function () {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.profileType).to.eql('TRAINEE');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('traineeToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"password\": \"{{traineePassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainer token is returned', function () {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.profileType).to.eql('TRAINER');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('trainerToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"password\": \"{{trainerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Positive Flow",
+      "item": [
+        {
+          "name": "Get Training Types",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Training types list is returned', function () {",
+                  "  pm.expect(body).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/training-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trainee Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainee profile belongs to created trainee', function () {",
+                  "  pm.expect(body.username).to.eql(pm.collectionVariables.get('traineeUsername'));",
+                  "  pm.expect(body.firstName).to.include('PostmanTrainee');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile?username={{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trainer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainer profile belongs to created trainer', function () {",
+                  "  pm.expect(body.username).to.eql(pm.collectionVariables.get('trainerUsername'));",
+                  "  pm.expect(body.specialization).to.eql('Fitness');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile?username={{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unassigned Trainers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Unassigned trainers response is an array', function () {",
+                  "  pm.expect(body).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/trainers/unassigned?username={{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "trainers",
+                "unassigned"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Trainee Trainers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Assigned trainer is returned', function () {",
+                  "  pm.expect(body).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.map(function (trainer) { return trainer.username; })).to.include(pm.collectionVariables.get('trainerUsername'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsernames\": [\n    \"{{trainerUsername}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/trainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Training",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Postman training {{runId}}\",\n  \"trainingTypeName\": \"Fitness\",\n  \"trainingDate\": \"2026-06-01\",\n  \"trainingDuration\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trainee Trainings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainee trainings list contains added training', function () {",
+                  "  pm.expect(body).to.be.an('array');",
+                  "  pm.expect(body.some(function (training) { return training.trainingName === 'Postman training ' + pm.collectionVariables.get('runId'); })).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/trainings?username={{traineeUsername}}&fromDate=2026-01-01&toDate=2026-12-31&trainerName=PostmanTrainer{{runId}}&trainingType=Fitness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "trainings"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "trainerName",
+                  "value": "PostmanTrainer{{runId}}"
+                },
+                {
+                  "key": "trainingType",
+                  "value": "Fitness"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trainer Trainings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Trainer trainings list contains added training', function () {",
+                  "  pm.expect(body).to.be.an('array');",
+                  "  pm.expect(body.some(function (training) { return training.trainingName === 'Postman training ' + pm.collectionVariables.get('runId'); })).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/trainings?username={{trainerUsername}}&fromDate=2026-01-01&toDate=2026-12-31&traineeName=PostmanTrainee{{runId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "trainings"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "traineeName",
+                  "value": "PostmanTrainee{{runId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Trainee Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Updated trainee profile is returned', function () {",
+                  "  pm.expect(body.username).to.eql(pm.collectionVariables.get('traineeUsername'));",
+                  "  pm.expect(body.address).to.eql('Lviv');",
+                  "  pm.expect(body.active).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"firstName\": \"UpdatedTrainee{{runId}}\",\n  \"lastName\": \"User\",\n  \"dateOfBirth\": \"1996-06-16\",\n  \"address\": \"Lviv\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Trainer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Updated trainer profile is returned', function () {",
+                  "  pm.expect(body.username).to.eql(pm.collectionVariables.get('trainerUsername'));",
+                  "  pm.expect(body.specialization).to.eql('Yoga');",
+                  "  pm.expect(body.active).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"firstName\": \"UpdatedTrainer{{runId}}\",\n  \"lastName\": \"Coach\",\n  \"specialization\": \"Yoga\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Trainee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"active\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Activate Trainee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"active\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Activate Trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Password And Cleanup",
+      "item": [
+        {
+          "name": "Change Trainee Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('traineePassword', 'ChangedTraineePassword123');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"oldPassword\": \"{{traineePassword}}\",\n  \"newPassword\": \"ChangedTraineePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Trainee With Changed Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('New trainee token is returned', function () {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.profileType).to.eql('TRAINEE');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('traineeToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"password\": \"{{traineePassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Trainee Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Negative Checks",
+      "item": [
+        {
+          "name": "Login With Wrong Password Should Return 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains invalid credentials without exposing details', function () {",
+                  "  pm.expect(body.message).to.eql('Invalid username or password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{trainerUsername}}\",\n  \"password\": \"wrong-password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Trainee With Invalid Body Should Return 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Validation error explains invalid field', function () {",
+                  "  pm.expect(body.message).to.include('Invalid request body');",
+                  "  pm.expect(body.message).to.include('firstName');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"\",\n  \"lastName\": \"Invalid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Protected Endpoint With Invalid Token Should Return 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401 Unauthorized\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error explains invalid token\", function () {",
+                  "  pm.expect(body.message).to.be.a(\"string\");",
+                  "  pm.expect(body.message.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile?username={{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trainer Token Cannot Access Trainee Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error explains access denial\", function () {",
+                  "  pm.expect(body.message).to.eql(\"Access is denied\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile?username={{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trainee Token Cannot Access Trainer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403 Forbidden\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error explains access denial\", function () {",
+                  "  pm.expect(body.message).to.eql(\"Access is denied\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainers/profile?username={{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trainee Token Cannot Access Another Username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains own profile requirement', function () {",
+                  "  pm.expect(body.message).to.eql('Authenticated trainee can perform this operation only for own profile');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile?username={{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{trainerUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Missing Auth Header Should Return 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401 Unauthorized\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error explains missing authentication\", function () {",
+                  "  pm.expect(body.message).to.eql(\"Authentication is required\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/profile?username={{traineeUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Date Query Parameter Should Return 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Error explains expected date format', function () {",
+                  "  pm.expect(body.message).to.eql(\"Invalid request parameter 'fromDate': value 'wrong-date' cannot be converted to date in yyyy-MM-dd format\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainees/trainings?username={{traineeUsername}}&fromDate=wrong-date",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "trainings"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "{{traineeUsername}}"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "wrong-date"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Malformed JSON Should Return 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Malformed body error is readable', function () {",
+                  "  pm.expect(body.message).to.include('Malformed request body');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"broken-json\",\n  \"password\":"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout Trainer Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204 No Content\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Protected Endpoint With Revoked Token Should Return 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401 Unauthorized\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error explains revoked token\", function () {",
+                  "  pm.expect(body.message).to.include(\"JWT has been revoked\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/training-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "training-types"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

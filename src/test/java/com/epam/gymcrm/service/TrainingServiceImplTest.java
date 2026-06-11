@@ -1,10 +1,17 @@
 package com.epam.gymcrm.service;
 
+import static com.epam.gymcrm.TestFixtures.trainee;
+import static com.epam.gymcrm.TestFixtures.trainer;
+import static com.epam.gymcrm.TestFixtures.training;
+import static com.epam.gymcrm.TestFixtures.trainingType;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
-import com.epam.gymcrm.dao.TrainerDao;
-import com.epam.gymcrm.dao.TrainingDao;
-import com.epam.gymcrm.dao.TrainingTypeDao;
 import com.epam.gymcrm.dto.PageRequest;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
@@ -17,7 +24,20 @@ import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.TrainingType;
+import com.epam.gymcrm.monitoring.metrics.GymMetrics;
+import com.epam.gymcrm.repository.TraineeRepository;
+import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
+import com.epam.gymcrm.repository.TrainingTypeRepository;
 import com.epam.gymcrm.service.impl.TrainingServiceImpl;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,402 +45,383 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-import static com.epam.gymcrm.TestFixtures.trainee;
-import static com.epam.gymcrm.TestFixtures.trainer;
-import static com.epam.gymcrm.TestFixtures.training;
-import static com.epam.gymcrm.TestFixtures.trainingType;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class TrainingServiceImplTest {
 
-    @InjectMocks
-    private TrainingServiceImpl trainingService;
+  @InjectMocks private TrainingServiceImpl trainingService;
 
-    @Mock
-    private TrainingDao trainingDao;
+  @Mock private TrainingRepository trainingRepository;
 
-    @Mock
-    private TrainerDao trainerDao;
+  @Mock private TraineeRepository traineeRepository;
 
-    @Mock
-    private TrainingTypeDao trainingTypeDao;
+  @Mock private TrainerRepository trainerRepository;
 
-    @Mock
-    private AuthenticationService authenticationService;
+  @Mock private TrainingTypeRepository trainingTypeRepository;
 
-    @Mock
-    private TrainingMapper trainingMapper;
+  @Mock private AuthenticationService authenticationService;
 
-    private AddTrainingRequest addTrainingRequest;
+  @Mock private TrainingMapper trainingMapper;
 
-    @BeforeEach
-    void setUp() {
-        addTrainingRequest = new AddTrainingRequest(
-                "Training.Trainee",
-                "password",
-                "Training.Trainer",
-                "Yoga Basics",
-                "Yoga",
-                LocalDate.of(2026, 5, 3),
-                60
-        );
-    }
+  @Mock private GymMetrics gymMetrics;
 
-    @Test
-    void addTrainingShouldAuthenticateTraineeAndSaveTraining() {
-        Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
-        Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
-        TrainingType trainingType = trainingType("Yoga");
-        Training training = Training.builder()
-                .trainingName("Yoga Basics")
-                .trainingDate(LocalDate.of(2026, 5, 3))
-                .trainingDuration(60)
-                .build();
-        when(authenticationService.authenticateTrainee("Training.Trainee", "password")).thenReturn(trainee);
-        when(trainerDao.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.of(trainingType));
-        when(trainingMapper.toEntity(addTrainingRequest)).thenReturn(training);
+  private AddTrainingRequest addTrainingRequest;
+  private Validator validator;
 
-        trainingService.addTraining(addTrainingRequest);
+  @BeforeEach
+  void setUp() {
+    validator = Validation.buildDefaultValidatorFactory().getValidator();
+    addTrainingRequest =
+        new AddTrainingRequest(
+            "Training.Trainee",
+            "Training.Trainer",
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            60);
+  }
 
-        assertAll(
-                () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
-                () -> verify(trainerDao).findByUsername("Training.Trainer"),
-                () -> verify(trainingTypeDao).findByName("Yoga"),
-                () -> verify(trainingMapper).toEntity(addTrainingRequest),
-                () -> verify(trainingDao).save(training),
-                () -> assertThat(training.getTrainee()).isSameAs(trainee),
-                () -> assertThat(training.getTrainer()).isSameAs(trainer),
-                () -> assertThat(training.getTrainingType()).isSameAs(trainingType),
-                () -> assertThat(training.getTrainingName()).isEqualTo("Yoga Basics"),
-                () -> assertThat(training.getTrainingDate()).isEqualTo(LocalDate.of(2026, 5, 3)),
-                () -> assertThat(training.getTrainingDuration()).isEqualTo(60)
-        );
-    }
+  @Test
+  void addTrainingShouldAuthenticateTraineeAndSaveTraining() {
+    Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
+    Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
+    TrainingType trainingType = trainingType("Yoga");
+    Training training =
+        Training.builder()
+            .trainingName("Yoga Basics")
+            .trainingDate(LocalDate.of(2026, 5, 3))
+            .trainingDuration(60)
+            .build();
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
+    when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
+    when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(trainingType));
+    when(trainingMapper.toEntity(addTrainingRequest)).thenReturn(training);
 
-    @Test
-    void addTrainingShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
-        Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
-        when(authenticationService.authenticateTrainee("Training.Trainee", "password")).thenReturn(trainee);
-        when(trainerDao.findByUsername("Training.Trainer")).thenReturn(Optional.empty());
+    trainingService.addTraining(addTrainingRequest);
 
-        assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trainer profile not found");
-    }
+    assertAll(
+        () -> verify(traineeRepository).findByUsername("Training.Trainee"),
+        () -> verify(trainerRepository).findByUsername("Training.Trainer"),
+        () -> verify(trainingTypeRepository).findByName("Yoga"),
+        () -> verify(trainingMapper).toEntity(addTrainingRequest),
+        () -> verify(trainingRepository).save(training),
+        () -> verify(gymMetrics).recordTrainingCreationSucceeded(),
+        () -> assertThat(training.getTrainee()).isSameAs(trainee),
+        () -> assertThat(training.getTrainer()).isSameAs(trainer),
+        () -> assertThat(training.getTrainingType()).isSameAs(trainingType),
+        () -> assertThat(training.getTrainingName()).isEqualTo("Yoga Basics"),
+        () -> assertThat(training.getTrainingDate()).isEqualTo(LocalDate.of(2026, 5, 3)),
+        () -> assertThat(training.getTrainingDuration()).isEqualTo(60));
+  }
 
-    @Test
-    void addTrainingShouldThrowEntityNotFoundExceptionWhenTrainingTypeDoesNotExist() {
-        Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
-        Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
-        when(authenticationService.authenticateTrainee("Training.Trainee", "password")).thenReturn(trainee);
-        when(trainerDao.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
-        when(trainingTypeDao.findByName("Yoga")).thenReturn(Optional.empty());
+  @Test
+  void addTrainingShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
+    Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
+    when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Training type not found");
-    }
+    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainer profile not found");
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenRequestIsNull() {
-        assertThatThrownBy(() -> trainingService.addTraining(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training request must not be null");
+    verify(gymMetrics).recordTrainingCreationTrainerNotFound();
+  }
 
-        verifyNoInteractions(authenticationService, trainerDao, trainingTypeDao, trainingDao, trainingMapper);
-    }
+  @Test
+  void addTrainingShouldThrowEntityNotFoundExceptionWhenTrainingTypeDoesNotExist() {
+    Trainee trainee = trainee("Training", "Trainee", "Training.Trainee");
+    Trainer trainer = trainer("Training", "Trainer", "Training.Trainer");
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
+    when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
+    when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.empty());
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTraineeUsernameIsBlank() {
-        AddTrainingRequest request = addTrainingRequest(" ", "password", "Training.Trainer", "Yoga Basics", "Yoga",
-                LocalDate.of(2026, 5, 3), 60);
+    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Training type not found");
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainee username must not be blank");
-    }
+    verify(gymMetrics).recordTrainingCreationTrainingTypeNotFound();
+  }
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTraineePasswordIsBlank() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", " ", "Training.Trainer", "Yoga Basics",
-                "Yoga", LocalDate.of(2026, 5, 3), 60);
+  @Test
+  void addTrainingShouldRecordAuthFailureWhenTraineeProfileDoesNotExist() {
+    when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainee password must not be blank");
-    }
+    assertThatThrownBy(() -> trainingService.addTraining(addTrainingRequest))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainee profile not found");
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainerUsernameIsBlank() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", " ", "Yoga Basics", "Yoga",
-                LocalDate.of(2026, 5, 3), 60);
+    verify(gymMetrics).recordTrainingCreationAuthFailed();
+  }
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer username must not be blank");
-    }
+  @Test
+  void addTrainingShouldHaveBeanValidationViolationWhenRequestIsNull() throws Exception {
+    TrainingService target = trainingService;
+    Method method = TrainingService.class.getMethod("addTraining", AddTrainingRequest.class);
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainerUsernameIsNull() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", null, "Yoga Basics", "Yoga",
-                LocalDate.of(2026, 5, 3), 60);
+    Set<ConstraintViolation<TrainingService>> violations =
+        validator.forExecutables().validateParameters(target, method, new Object[] {null});
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Trainer username must not be blank");
-    }
+    assertThat(violations)
+        .extracting(ConstraintViolation::getMessage)
+        .containsExactly("Training request must not be null");
+  }
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingNameIsBlank() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", "Training.Trainer", " ",
-                "Yoga", LocalDate.of(2026, 5, 3), 60);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTraineeUsernameIsBlank() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            " ",
+            "password",
+            "Training.Trainer",
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            60);
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training name must not be blank");
-    }
+    assertAddTrainingRequestViolation(request, "Trainee username must not be blank");
+  }
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingTypeIsBlank() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", "Training.Trainer",
-                "Yoga Basics", " ", LocalDate.of(2026, 5, 3), 60);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainerUsernameIsBlank() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee",
+            "password",
+            " ",
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            60);
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training type must not be blank");
-    }
+    assertAddTrainingRequestViolation(request, "Trainer username must not be blank");
+  }
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingDateIsNull() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", "Training.Trainer",
-                "Yoga Basics", "Yoga", null, 60);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainerUsernameIsNull() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee",
+            "password",
+            null,
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            60);
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training date must not be null");
-    }
+    assertAddTrainingRequestViolation(request, "Trainer username must not be blank");
+  }
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingDurationIsNull() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", "Training.Trainer",
-                "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), null);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingNameIsBlank() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee",
+            "password",
+            "Training.Trainer",
+            " ",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            60);
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training duration must be positive");
-    }
+    assertAddTrainingRequestViolation(request, "Training name must not be blank");
+  }
 
-    @Test
-    void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingDurationIsZero() {
-        AddTrainingRequest request = addTrainingRequest("Training.Trainee", "password", "Training.Trainer",
-                "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 0);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingTypeIsBlank() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee",
+            "password",
+            "Training.Trainer",
+            "Yoga Basics",
+            " ",
+            LocalDate.of(2026, 5, 3),
+            60);
 
-        assertThatThrownBy(() -> trainingService.addTraining(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Training duration must be positive");
-    }
+    assertAddTrainingRequestViolation(request, "Training type must not be blank");
+  }
 
-    @Test
-    void getTraineeTrainingsShouldAuthenticateTraineeAndReturnMappedTrainings() {
-        TraineeTrainingsRequest request = new TraineeTrainingsRequest(
-                "Training.Trainee",
-                "password",
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 1, 31),
-                "Coach",
-                "Yoga",
-                PageRequest.firstPage()
-        );
-        TraineeTrainingCriteria criteria = new TraineeTrainingCriteria(
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 1, 31),
-                "Coach",
-                "Yoga"
-        );
-        Training training = validTraining();
-        TraineeTrainingResponse response = traineeTrainingResponse();
-        when(trainingMapper.toCriteria(request)).thenReturn(criteria);
-        when(trainingDao.findByTraineeUsernameAndCriteria("Training.Trainee", criteria, PageRequest.firstPage()))
-                .thenReturn(List.of(training));
-        when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingDateIsNull() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee", "password", "Training.Trainer", "Yoga Basics", "Yoga", null, 60);
 
-        List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
+    assertAddTrainingRequestViolation(request, "Training date must not be null");
+  }
 
-        assertAll(
-                () -> assertThat(result).containsExactly(response),
-                () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
-                () -> verify(trainingMapper).toCriteria(request),
-                () -> verify(trainingDao).findByTraineeUsernameAndCriteria(
-                        "Training.Trainee",
-                        criteria,
-                        PageRequest.firstPage()
-                ),
-                () -> verify(trainingMapper).toTraineeTrainingResponse(training)
-        );
-    }
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingDurationIsNull() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee",
+            "password",
+            "Training.Trainer",
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            null);
 
-    @Test
-    void getTraineeTrainingsShouldUseEmptyCriteriaWhenMapperReturnsNull() {
-        TraineeTrainingsRequest request = new TraineeTrainingsRequest(
-                "Training.Trainee",
-                "password",
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-        Training training = validTraining();
-        TraineeTrainingResponse response = traineeTrainingResponse();
-        when(trainingMapper.toCriteria(request)).thenReturn(null);
-        when(trainingDao.findByTraineeUsernameAndCriteria(
-                "Training.Trainee",
-                TraineeTrainingCriteria.empty(),
-                PageRequest.firstPage()
-        ))
-                .thenReturn(List.of(training));
-        when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
+    assertAddTrainingRequestViolation(request, "Training duration must not be null");
+  }
 
-        List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
+  @Test
+  void addTrainingShouldThrowIllegalArgumentExceptionWhenTrainingDurationIsZero() {
+    AddTrainingRequest request =
+        addTrainingRequest(
+            "Training.Trainee",
+            "password",
+            "Training.Trainer",
+            "Yoga Basics",
+            "Yoga",
+            LocalDate.of(2026, 5, 3),
+            0);
 
-        assertAll(
-                () -> assertThat(result).containsExactly(response),
-                () -> verify(authenticationService).authenticateTrainee("Training.Trainee", "password"),
-                () -> verify(trainingDao).findByTraineeUsernameAndCriteria(
-                        "Training.Trainee",
-                        TraineeTrainingCriteria.empty(),
-                        PageRequest.firstPage()
-                )
-        );
-    }
+    assertAddTrainingRequestViolation(request, "Training duration must be positive");
+  }
 
-    @Test
-    void getTrainerTrainingsShouldAuthenticateTrainerAndReturnMappedTrainings() {
-        TrainerTrainingsRequest request = new TrainerTrainingsRequest(
-                "Training.Trainer",
-                "password",
-                LocalDate.of(2026, 2, 1),
-                LocalDate.of(2026, 2, 28),
-                "Trainee",
-                PageRequest.firstPage()
-        );
-        TrainerTrainingCriteria criteria = new TrainerTrainingCriteria(
-                LocalDate.of(2026, 2, 1),
-                LocalDate.of(2026, 2, 28),
-                "Trainee"
-        );
-        Training training = validTraining();
-        TrainerTrainingResponse response = trainerTrainingResponse();
-        when(trainingMapper.toCriteria(request)).thenReturn(criteria);
-        when(trainingDao.findByTrainerUsernameAndCriteria("Training.Trainer", criteria, PageRequest.firstPage()))
-                .thenReturn(List.of(training));
-        when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
+  @Test
+  void getTraineeTrainingsShouldAuthenticateTraineeAndReturnMappedTrainings() {
+    TraineeTrainingsRequest request =
+        new TraineeTrainingsRequest(
+            "Training.Trainee",
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 1, 31),
+            "Coach",
+            "Yoga",
+            PageRequest.firstPage());
+    TraineeTrainingCriteria criteria =
+        new TraineeTrainingCriteria(
+            LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), "Coach", "Yoga");
+    Training training = validTraining();
+    TraineeTrainingResponse response = traineeTrainingResponse();
+    when(trainingMapper.toCriteria(request)).thenReturn(criteria);
+    when(trainingRepository.findByTraineeUsernameAndCriteria(
+            "Training.Trainee", criteria, PageRequest.firstPage()))
+        .thenReturn(List.of(training));
+    when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
 
-        List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
+    List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
 
-        assertAll(
-                () -> assertThat(result).containsExactly(response),
-                () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
-                () -> verify(trainingMapper).toCriteria(request),
-                () -> verify(trainingDao).findByTrainerUsernameAndCriteria(
-                        "Training.Trainer",
-                        criteria,
-                        PageRequest.firstPage()
-                ),
-                () -> verify(trainingMapper).toTrainerTrainingResponse(training)
-        );
-    }
+    assertAll(
+        () -> assertThat(result).containsExactly(response),
+        () -> verify(trainingMapper).toCriteria(request),
+        () ->
+            verify(trainingRepository)
+                .findByTraineeUsernameAndCriteria(
+                    "Training.Trainee", criteria, PageRequest.firstPage()),
+        () -> verify(trainingMapper).toTraineeTrainingResponse(training));
+  }
 
-    @Test
-    void getTrainerTrainingsShouldUseEmptyCriteriaWhenMapperReturnsNull() {
-        TrainerTrainingsRequest request = new TrainerTrainingsRequest(
-                "Training.Trainer",
-                "password",
-                null,
-                null,
-                null,
-                null
-        );
-        Training training = validTraining();
-        TrainerTrainingResponse response = trainerTrainingResponse();
-        when(trainingMapper.toCriteria(request)).thenReturn(null);
-        when(trainingDao.findByTrainerUsernameAndCriteria(
-                "Training.Trainer",
-                TrainerTrainingCriteria.empty(),
-                PageRequest.firstPage()
-        ))
-                .thenReturn(List.of(training));
-        when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
+  @Test
+  void getTraineeTrainingsShouldUseEmptyCriteriaWhenMapperReturnsNull() {
+    TraineeTrainingsRequest request =
+        new TraineeTrainingsRequest("Training.Trainee", null, null, null, null, null);
+    Training training = validTraining();
+    TraineeTrainingResponse response = traineeTrainingResponse();
+    when(trainingMapper.toCriteria(request)).thenReturn(null);
+    when(trainingRepository.findByTraineeUsernameAndCriteria(
+            "Training.Trainee", TraineeTrainingCriteria.empty(), PageRequest.firstPage()))
+        .thenReturn(List.of(training));
+    when(trainingMapper.toTraineeTrainingResponse(training)).thenReturn(response);
 
-        List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
+    List<TraineeTrainingResponse> result = trainingService.getTraineeTrainings(request);
 
-        assertAll(
-                () -> assertThat(result).containsExactly(response),
-                () -> verify(authenticationService).authenticateTrainer("Training.Trainer", "password"),
-                () -> verify(trainingDao).findByTrainerUsernameAndCriteria(
-                        "Training.Trainer",
-                        TrainerTrainingCriteria.empty(),
-                        PageRequest.firstPage()
-                )
-        );
-    }
+    assertAll(
+        () -> assertThat(result).containsExactly(response),
+        () ->
+            verify(trainingRepository)
+                .findByTraineeUsernameAndCriteria(
+                    "Training.Trainee", TraineeTrainingCriteria.empty(), PageRequest.firstPage()));
+  }
 
-    private static AddTrainingRequest addTrainingRequest(
-            String traineeUsername,
-            String traineePassword,
-            String trainerUsername,
-            String trainingName,
-            String trainingTypeName,
-            LocalDate trainingDate,
-            Integer trainingDuration
-    ) {
-        return new AddTrainingRequest(
-                traineeUsername,
-                traineePassword,
-                trainerUsername,
-                trainingName,
-                trainingTypeName,
-                trainingDate,
-                trainingDuration
-        );
-    }
+  @Test
+  void getTrainerTrainingsShouldAuthenticateTrainerAndReturnMappedTrainings() {
+    TrainerTrainingsRequest request =
+        new TrainerTrainingsRequest(
+            "Training.Trainer",
+            LocalDate.of(2026, 2, 1),
+            LocalDate.of(2026, 2, 28),
+            "Trainee",
+            PageRequest.firstPage());
+    TrainerTrainingCriteria criteria =
+        new TrainerTrainingCriteria(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28), "Trainee");
+    Training training = validTraining();
+    TrainerTrainingResponse response = trainerTrainingResponse();
+    when(trainingMapper.toCriteria(request)).thenReturn(criteria);
+    when(trainingRepository.findByTrainerUsernameAndCriteria(
+            "Training.Trainer", criteria, PageRequest.firstPage()))
+        .thenReturn(List.of(training));
+    when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
 
-    private static Training validTraining() {
-        return training(
-                trainee("Training", "Trainee", "Training.Trainee"),
-                trainer("Training", "Trainer", "Training.Trainer"),
-                trainingType("Yoga")
-        );
-    }
+    List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
 
-    private static TraineeTrainingResponse traineeTrainingResponse() {
-        return new TraineeTrainingResponse(
-                "Yoga Basics",
-                "Yoga",
-                LocalDate.of(2026, 5, 3),
-                60,
-                "Training Trainer"
-        );
-    }
+    assertAll(
+        () -> assertThat(result).containsExactly(response),
+        () -> verify(trainingMapper).toCriteria(request),
+        () ->
+            verify(trainingRepository)
+                .findByTrainerUsernameAndCriteria(
+                    "Training.Trainer", criteria, PageRequest.firstPage()),
+        () -> verify(trainingMapper).toTrainerTrainingResponse(training));
+  }
 
-    private static TrainerTrainingResponse trainerTrainingResponse() {
-        return new TrainerTrainingResponse(
-                "Yoga Basics",
-                "Yoga",
-                LocalDate.of(2026, 5, 3),
-                60,
-                "Training Trainee"
-        );
-    }
+  @Test
+  void getTrainerTrainingsShouldUseEmptyCriteriaWhenMapperReturnsNull() {
+    TrainerTrainingsRequest request =
+        new TrainerTrainingsRequest("Training.Trainer", null, null, null, null);
+    Training training = validTraining();
+    TrainerTrainingResponse response = trainerTrainingResponse();
+    when(trainingMapper.toCriteria(request)).thenReturn(null);
+    when(trainingRepository.findByTrainerUsernameAndCriteria(
+            "Training.Trainer", TrainerTrainingCriteria.empty(), PageRequest.firstPage()))
+        .thenReturn(List.of(training));
+    when(trainingMapper.toTrainerTrainingResponse(training)).thenReturn(response);
+
+    List<TrainerTrainingResponse> result = trainingService.getTrainerTrainings(request);
+
+    assertAll(
+        () -> assertThat(result).containsExactly(response),
+        () ->
+            verify(trainingRepository)
+                .findByTrainerUsernameAndCriteria(
+                    "Training.Trainer", TrainerTrainingCriteria.empty(), PageRequest.firstPage()));
+  }
+
+  private static AddTrainingRequest addTrainingRequest(
+      String traineeUsername,
+      String traineePassword,
+      String trainerUsername,
+      String trainingName,
+      String trainingTypeName,
+      LocalDate trainingDate,
+      Integer trainingDuration) {
+    return new AddTrainingRequest(
+        traineeUsername,
+        trainerUsername,
+        trainingName,
+        trainingTypeName,
+        trainingDate,
+        trainingDuration);
+  }
+
+  private void assertAddTrainingRequestViolation(AddTrainingRequest request, String message) {
+    assertThat(validator.validate(request)).extracting(ConstraintViolation::getMessage).contains(message);
+  }
+
+  private static Training validTraining() {
+    return training(
+        trainee("Training", "Trainee", "Training.Trainee"),
+        trainer("Training", "Trainer", "Training.Trainer"),
+        trainingType("Yoga"));
+  }
+
+  private static TraineeTrainingResponse traineeTrainingResponse() {
+    return new TraineeTrainingResponse(
+        "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 60, "Training Trainer");
+  }
+
+  private static TrainerTrainingResponse trainerTrainingResponse() {
+    return new TrainerTrainingResponse(
+        "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 60, "Training Trainee");
+  }
 }

@@ -87,7 +87,6 @@ class TraineeMapperTest {
     UpdateTraineeRequest request =
         new UpdateTraineeRequest(
             "Ignored.Username",
-            "ignored-password",
             "Janet",
             "Done",
             LocalDate.of(1996, 2, 11),
@@ -112,7 +111,6 @@ class TraineeMapperTest {
     UpdateTraineeRequest request =
         new UpdateTraineeRequest(
             "Ignored.Username",
-            "ignored-password",
             "Jane",
             "Doe",
             LocalDate.of(1995, 1, 10),

@@ -72,6 +72,21 @@ services:
       timeout: 5s
       retries: 10
 
+#==================REDIS=================
+
+  gym-redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: gym-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - gym-crm-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 #==================APP=================
 
   gym-app:
@@ -85,11 +100,25 @@ services:
       - gym-crm-net
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-pgpool:5432/gym_crm
+      SPRING_DATASOURCE_URL: jdbc:postgresql://gym-pgpool:5432/${APP_DB_NAME:-gym_crm}
       SPRING_DATASOURCE_USERNAME: ${APP_DB_USERNAME:-gym_user}
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-password}
+      JWT_ISSUER: ${JWT_ISSUER:-https://gym-crm.local}
+      JWT_SECRET: ${JWT_SECRET:-GymCrmLocalDevelopmentJwtSecretKeyMustBeAtLeastThirtyTwoBytes}
+      JWT_TOKEN_LIFETIME: ${JWT_TOKEN_LIFETIME:-PT30M}
+      LOGIN_MAX_FAILED_ATTEMPTS: ${LOGIN_MAX_FAILED_ATTEMPTS:-3}
+      LOGIN_LOCK_DURATION: ${LOGIN_LOCK_DURATION:-PT5M}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS:-Authorization,Content-Type,Accept,Origin}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-false}
+      CORS_MAX_AGE: ${CORS_MAX_AGE:-PT1H}
+      REDIS_HOST: ${REDIS_HOST:-gym-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       gym-pgpool:
+        condition: service_healthy
+      gym-redis:
         condition: service_healthy
 
 #==================MONITORING=================

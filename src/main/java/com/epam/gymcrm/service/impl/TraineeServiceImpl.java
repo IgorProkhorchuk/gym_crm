@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ public class TraineeServiceImpl implements TraineeService {
   private final UserRepository userRepository;
   private final AuthenticationService authenticationService;
   private final PasswordGenerator passwordGenerator;
+  private final PasswordEncoder passwordEncoder;
   private final UsernameGenerator usernameGenerator;
   private final TraineeMapper traineeMapper;
   private final TrainerMapper trainerMapper;
@@ -57,18 +59,19 @@ public class TraineeServiceImpl implements TraineeService {
             user.getFirstName(),
             user.getLastName(),
             userRepository.findUsernamesByPattern(baseUsername + "%")));
-    user.setPassword(passwordGenerator.generate());
+    String generatedPassword = passwordGenerator.generate();
+    user.setPassword(passwordEncoder.encode(generatedPassword));
     traineeRepository.save(trainee);
     log.info("Trainee profile created, userId={}", trainee.getId());
 
-    return new UsernamePasswordResponse(user.getUsername(), user.getPassword());
+    return new UsernamePasswordResponse(user.getUsername(), generatedPassword);
   }
 
   @Override
   @Transactional(readOnly = true)
   public TraineeProfileResponse getProfile(AuthRequest request) {
     log.info("Getting trainee profile");
-    return traineeMapper.toProfileResponse(authenticateTrainee(request));
+    return traineeMapper.toProfileResponse(findTrainee(request.username()));
   }
 
   @Override
@@ -78,7 +81,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     Trainee trainee =
         authenticationService.authenticateTrainee(request.username(), request.oldPassword());
-    trainee.getUser().setPassword(request.newPassword());
+    trainee.getUser().setPassword(passwordEncoder.encode(request.newPassword()));
     traineeRepository.save(trainee);
 
     log.info("Trainee password changed, userId={}", trainee.getId());
@@ -89,7 +92,7 @@ public class TraineeServiceImpl implements TraineeService {
   public void switchActiveStatus(AuthRequest request) {
     log.info("Switching trainee active status");
 
-    Trainee trainee = authenticateTrainee(request);
+    Trainee trainee = findTrainee(request.username());
     trainee.getUser().switchActiveStatus();
     traineeRepository.save(trainee);
 
@@ -101,7 +104,7 @@ public class TraineeServiceImpl implements TraineeService {
   public void deleteByUsername(AuthRequest request) {
     log.info("Deleting trainee profile");
 
-    Trainee trainee = authenticateTrainee(request);
+    Trainee trainee = findTrainee(request.username());
     traineeRepository.delete(trainee.getId());
 
     log.info("Trainee profile deleted, userId={}", trainee.getId());
@@ -113,8 +116,7 @@ public class TraineeServiceImpl implements TraineeService {
     log.info("Updating trainee trainers list");
 
     Set<String> uniqueTrainerUsernames = normalizeTrainerUsernames(request.trainerUsernames());
-    Trainee trainee =
-        authenticationService.authenticateTrainee(request.username(), request.password());
+    Trainee trainee = findTrainee(request.username());
     List<Trainer> trainers =
         uniqueTrainerUsernames.stream()
             .map(
@@ -138,8 +140,7 @@ public class TraineeServiceImpl implements TraineeService {
   public TraineeProfileResponse update(UpdateTraineeRequest request) {
     log.info("Updating trainee profile");
 
-    Trainee authenticatedTrainee =
-        authenticationService.authenticateTrainee(request.username(), request.password());
+    Trainee authenticatedTrainee = findTrainee(request.username());
     traineeMapper.updateFromRequest(request, authenticatedTrainee);
     traineeRepository.save(authenticatedTrainee);
 
@@ -153,7 +154,9 @@ public class TraineeServiceImpl implements TraineeService {
     return uniqueTrainerUsernames;
   }
 
-  private Trainee authenticateTrainee(AuthRequest request) {
-    return authenticationService.authenticateTrainee(request.username(), request.password());
+  private Trainee findTrainee(String username) {
+    return traineeRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new EntityNotFoundException("Trainee profile not found"));
   }
 }

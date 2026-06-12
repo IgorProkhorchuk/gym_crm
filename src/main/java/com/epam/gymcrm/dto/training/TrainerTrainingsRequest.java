@@ -6,7 +6,6 @@ import java.time.LocalDate;
 
 public record TrainerTrainingsRequest(
     @NotBlank(message = "Username must not be blank") String username,
-    @NotBlank(message = "Password must not be blank") String password,
     LocalDate fromDate,
     LocalDate toDate,
     String traineeName,
@@ -14,7 +13,7 @@ public record TrainerTrainingsRequest(
 
   @Override
   public String toString() {
-    return "TrainerTrainingsRequest[username=[PROTECTED], password=[PROTECTED], "
+    return "TrainerTrainingsRequest[username=[PROTECTED], "
         + "fromDate="
         + fromDate
         + ", toDate="

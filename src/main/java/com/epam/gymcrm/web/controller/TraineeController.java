@@ -17,8 +17,8 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
 import com.epam.gymcrm.web.api.TraineeApi;
-import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.TokenService;
+import com.epam.gymcrm.web.auth.AuthenticatedPrincipal;
+import com.epam.gymcrm.web.auth.AuthenticatedUserProvider;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
 import com.epam.gymcrm.web.dto.SwitchProfileStatusRestRequest;
@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -53,7 +52,7 @@ public class TraineeController implements TraineeApi {
       "Authenticated trainee can perform this operation only for own profile";
 
   private final GymFacade gymFacade;
-  private final TokenService tokenService;
+  private final AuthenticatedUserProvider authenticatedUserProvider;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
@@ -65,10 +64,8 @@ public class TraineeController implements TraineeApi {
   @GetMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
   @Override
-  public TraineeProfileResponse getTraineeProfile(
-      @RequestHeader("X-Auth-Token") String token,
-      @RequestParam(name = "username") String username) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+  public TraineeProfileResponse getTraineeProfile(@RequestParam(name = "username") String username) {
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -77,7 +74,7 @@ public class TraineeController implements TraineeApi {
       throw new AuthenticationException(OWN_TRAINEE_PROFILE_REQUIRED);
     }
 
-    AuthRequest request = new AuthRequest(username, user.password());
+    AuthRequest request = new AuthRequest(username);
     return gymFacade.getTraineeProfile(request);
   }
 
@@ -85,9 +82,8 @@ public class TraineeController implements TraineeApi {
   @ResponseStatus(HttpStatus.OK)
   @Override
   public TraineeProfileResponse updateTraineeProfile(
-      @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody UpdateTraineeProfileRestRequest traineeRequest) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -98,7 +94,6 @@ public class TraineeController implements TraineeApi {
     UpdateTraineeRequest request =
         new UpdateTraineeRequest(
             traineeRequest.username(),
-            user.password(),
             traineeRequest.firstName(),
             traineeRequest.lastName(),
             traineeRequest.dateOfBirth(),
@@ -110,27 +105,23 @@ public class TraineeController implements TraineeApi {
   @DeleteMapping("/profile")
   @ResponseStatus(HttpStatus.OK)
   @Override
-  public void deleteProfile(
-      @RequestHeader("X-Auth-Token") String token,
-      @Valid @RequestBody DeleteProfileRestRequest request) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+  public void deleteProfile(@Valid @RequestBody DeleteProfileRestRequest request) {
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
     if (!user.username().equals(request.username())) {
       throw new AuthenticationException(OWN_TRAINEE_PROFILE_REQUIRED);
     }
-    AuthRequest authRequest = new AuthRequest(user.username(), user.password());
+    AuthRequest authRequest = new AuthRequest(user.username());
     gymFacade.deleteTraineeByUsername(authRequest);
   }
 
   @PutMapping("/password")
   @ResponseStatus(HttpStatus.OK)
   @Override
-  public void changePassword(
-      @RequestHeader("X-Auth-Token") String token,
-      @Valid @RequestBody ChangePasswordRestRequest body) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+  public void changePassword(@Valid @RequestBody ChangePasswordRestRequest body) {
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -141,16 +132,13 @@ public class TraineeController implements TraineeApi {
     ChangePasswordRequest request =
         new ChangePasswordRequest(body.username(), body.oldPassword(), body.newPassword());
     gymFacade.changeTraineePassword(request);
-    tokenService.updatePassword(token, body.newPassword());
   }
 
   @PatchMapping("/profile/status")
   @ResponseStatus(HttpStatus.OK)
   @Override
-  public void switchActiveStatus(
-      @RequestHeader("X-Auth-Token") String token,
-      @Valid @RequestBody SwitchProfileStatusRestRequest request) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+  public void switchActiveStatus(@Valid @RequestBody SwitchProfileStatusRestRequest request) {
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -158,16 +146,15 @@ public class TraineeController implements TraineeApi {
       throw new AuthenticationException(OWN_TRAINEE_PROFILE_REQUIRED);
     }
 
-    gymFacade.switchTraineeActiveStatus(new AuthRequest(user.username(), user.password()));
+    gymFacade.switchTraineeActiveStatus(new AuthRequest(user.username()));
   }
 
   @GetMapping("/trainers/unassigned")
   @ResponseStatus(HttpStatus.OK)
   @Override
   public List<TrainerSummaryResponse> getUnassignedTrainers(
-      @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -175,16 +162,15 @@ public class TraineeController implements TraineeApi {
     if (!user.username().equals(username)) {
       throw new AuthenticationException(OWN_TRAINEE_PROFILE_REQUIRED);
     }
-    return gymFacade.getUnassignedTrainers(new AuthRequest(username, user.password()));
+    return gymFacade.getUnassignedTrainers(new AuthRequest(username));
   }
 
   @PutMapping("/trainers")
   @ResponseStatus(HttpStatus.OK)
   @Override
   public List<TrainerSummaryResponse> updateTraineeTrainers(
-      @RequestHeader("X-Auth-Token") String token,
       @Valid @RequestBody UpdateTraineeTrainersRestRequest request) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -193,15 +179,13 @@ public class TraineeController implements TraineeApi {
     }
 
     return gymFacade.updateTraineeTrainers(
-        new UpdateTraineeTrainersRequest(
-            request.traineeUsername(), user.password(), request.trainerUsernames()));
+        new UpdateTraineeTrainersRequest(request.traineeUsername(), request.trainerUsernames()));
   }
 
   @GetMapping("/trainings")
   @ResponseStatus(HttpStatus.OK)
   @Override
   public List<TraineeTrainingResponse> getTraineeTrainings(
-      @RequestHeader("X-Auth-Token") String token,
       @RequestParam(name = "username") String username,
       @RequestParam(name = "fromDate", required = false)
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -211,7 +195,7 @@ public class TraineeController implements TraineeApi {
           LocalDate toDate,
       @RequestParam(name = "trainerName", required = false) String trainerName,
       @RequestParam(name = "trainingType", required = false) String trainingType) {
-    AuthenticatedUser user = tokenService.getUserByToken(token);
+    AuthenticatedPrincipal user = authenticatedUserProvider.currentUser();
     if (user.profileType() != ProfileType.TRAINEE) {
       throw new AuthenticationException(TRAINEE_PROFILE_REQUIRED);
     }
@@ -223,7 +207,6 @@ public class TraineeController implements TraineeApi {
     return gymFacade.getTraineeTrainings(
         new TraineeTrainingsRequest(
             username,
-            user.password(),
             fromDate,
             toDate,
             trainerName,

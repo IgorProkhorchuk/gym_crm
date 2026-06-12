@@ -20,7 +20,6 @@ import com.epam.gymcrm.dto.trainee.TraineeProfileResponse;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeRequest;
 import com.epam.gymcrm.dto.trainee.UpdateTraineeTrainersRequest;
 import com.epam.gymcrm.dto.trainer.TrainerSummaryResponse;
-import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
@@ -44,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class TraineeServiceImplTest {
@@ -62,6 +62,8 @@ class TraineeServiceImplTest {
 
   @Mock private PasswordGenerator passwordGenerator;
 
+  @Mock private PasswordEncoder passwordEncoder;
+
   @Mock private UsernameGenerator usernameGenerator;
 
   @Mock private TraineeMapper traineeMapper;
@@ -75,6 +77,7 @@ class TraineeServiceImplTest {
 
     when(traineeMapper.toEntity(request)).thenReturn(trainee);
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
     when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
 
@@ -84,10 +87,11 @@ class TraineeServiceImplTest {
         () -> assertThat(result.username()).isEqualTo("John.Doe"),
         () -> assertThat(result.password()).isEqualTo("Passw0rd12"),
         () -> assertThat(trainee.getUser().getUsername()).isEqualTo("John.Doe"),
-        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("Passw0rd12"),
+        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("encoded-Passw0rd12"),
         () -> verify(traineeMapper).toEntity(request),
         () -> verify(usernameGenerator).generate("John", "Doe", Collections.emptySet()),
         () -> verify(passwordGenerator).generate(),
+        () -> verify(passwordEncoder).encode("Passw0rd12"),
         () -> verify(traineeRepository).save(trainee));
   }
 
@@ -99,6 +103,7 @@ class TraineeServiceImplTest {
     Set<String> existingUsernames = Set.of("John.Doe", "John.Doe2", "John.Doering");
     when(traineeMapper.toEntity(request)).thenReturn(newTrainee);
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(existingUsernames);
     when(usernameGenerator.generate("John", "Doe", existingUsernames)).thenReturn("John.Doe1");
 
@@ -119,6 +124,7 @@ class TraineeServiceImplTest {
     when(traineeMapper.toEntity(request)).thenReturn(trainee);
     when(userRepository.findUsernamesByPattern("John.Doe%")).thenReturn(Collections.emptySet());
     when(passwordGenerator.generate()).thenReturn("Passw0rd12");
+    when(passwordEncoder.encode("Passw0rd12")).thenReturn("encoded-Passw0rd12");
     when(usernameGenerator.generate("John", "Doe", Collections.emptySet())).thenReturn("John.Doe");
     doThrow(exception).when(traineeRepository).save(trainee);
 
@@ -147,17 +153,17 @@ class TraineeServiceImplTest {
 
   @Test
   void getProfileShouldReturnMappedAuthenticatedTrainee() {
-    AuthRequest request = new AuthRequest("Jane.Doe", "password");
+    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
     TraineeProfileResponse response = traineeProfileResponse(1L, "Jane.Doe", "Jane", "Doe");
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
     when(traineeMapper.toProfileResponse(trainee)).thenReturn(response);
 
     TraineeProfileResponse result = traineeService.getProfile(request);
 
     assertAll(
         () -> assertThat(result).isSameAs(response),
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(traineeMapper).toProfileResponse(trainee),
         () -> verifyNoMoreInteractions(authenticationService));
   }
@@ -168,12 +174,14 @@ class TraineeServiceImplTest {
         new ChangePasswordRequest("Jane.Doe", "old-password", "new-password");
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
     when(authenticationService.authenticateTrainee("Jane.Doe", "old-password")).thenReturn(trainee);
+    when(passwordEncoder.encode("new-password")).thenReturn("encoded-new-password");
 
     traineeService.changePassword(request);
 
     assertAll(
-        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("new-password"),
+        () -> assertThat(trainee.getUser().getPassword()).isEqualTo("encoded-new-password"),
         () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "old-password"),
+        () -> verify(passwordEncoder).encode("new-password"),
         () -> verify(traineeRepository).save(trainee));
   }
 
@@ -202,38 +210,38 @@ class TraineeServiceImplTest {
 
   @Test
   void switchActiveStatusShouldSetAuthenticatedTraineeActiveWhenCurrentlyInactive() {
-    AuthRequest request = new AuthRequest("Jane.Doe", "password");
+    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
     trainee.getUser().setActive(false);
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     traineeService.switchActiveStatus(request);
 
     assertAll(
         () -> assertThat(trainee.getUser().getActive()).isTrue(),
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
   void switchActiveStatusShouldSetAuthenticatedTraineeInactiveWhenCurrentlyActive() {
-    AuthRequest request = new AuthRequest("Jane.Doe", "password");
+    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     traineeService.switchActiveStatus(request);
 
     assertAll(
         () -> assertThat(trainee.getUser().getActive()).isFalse(),
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(traineeRepository).save(trainee));
   }
 
   @Test
   void switchActiveStatusShouldFlipStatusOnEveryCall() {
-    AuthRequest request = new AuthRequest("Jane.Doe", "password");
+    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee("Jane", "Doe", "Jane.Doe");
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     traineeService.switchActiveStatus(request);
     traineeService.switchActiveStatus(request);
@@ -241,43 +249,42 @@ class TraineeServiceImplTest {
     assertAll(
         () -> assertThat(trainee.getUser().getActive()).isTrue(),
         () ->
-            verify(authenticationService, org.mockito.Mockito.times(2))
-                .authenticateTrainee("Jane.Doe", "password"),
+            verify(traineeRepository, org.mockito.Mockito.times(2)).findByUsername("Jane.Doe"),
         () -> verify(traineeRepository, org.mockito.Mockito.times(2)).save(trainee));
   }
 
   @Test
   void deleteByUsernameShouldDeleteAuthenticatedTraineeById() {
-    AuthRequest request = new AuthRequest("Jane.Doe", "password");
+    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee(15L, "Jane", "Doe", "Jane.Doe");
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     traineeService.deleteByUsername(request);
 
     assertAll(
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(traineeRepository).delete(15L));
   }
 
   @Test
   void deleteByUsernameShouldNotDeleteWhenAuthenticationFails() {
-    AuthRequest request = new AuthRequest("Deleted.Trainee", "password");
-    AuthenticationException exception = new AuthenticationException("Invalid username or password");
-    when(authenticationService.authenticateTrainee("Deleted.Trainee", "password"))
-        .thenThrow(exception);
+    AuthRequest request = new AuthRequest("Deleted.Trainee");
+    when(traineeRepository.findByUsername("Deleted.Trainee")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> traineeService.deleteByUsername(request)).isSameAs(exception);
+    assertThatThrownBy(() -> traineeService.deleteByUsername(request))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainee profile not found");
 
     assertAll(
-        () -> verify(authenticationService).authenticateTrainee("Deleted.Trainee", "password"),
-        () -> verifyNoInteractions(traineeRepository));
+        () -> verify(traineeRepository).findByUsername("Deleted.Trainee"),
+        () -> verifyNoMoreInteractions(traineeRepository));
   }
 
   @Test
   void updateTrainersShouldReplaceAuthenticatedTraineeTrainers() {
     UpdateTraineeTrainersRequest request =
         new UpdateTraineeTrainersRequest(
-            "Jane.Doe", "password", List.of("First.Trainer", "Second.Trainer"));
+            "Jane.Doe", List.of("First.Trainer", "Second.Trainer"));
     Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
     Trainer oldTrainer = trainer(19L, "Old", "Trainer", "Old.Trainer");
     Trainer firstTrainer = trainer(20L, "First", "Trainer", "First.Trainer");
@@ -288,7 +295,7 @@ class TraineeServiceImplTest {
         trainerSummaryResponse(21L, "Second.Trainer", "Second", "Trainer");
     trainee.getTrainers().add(oldTrainer);
 
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("First.Trainer")).thenReturn(Optional.of(firstTrainer));
     when(trainerRepository.findByUsername("Second.Trainer")).thenReturn(Optional.of(secondTrainer));
     when(trainerMapper.toSummaryResponse(firstTrainer)).thenReturn(firstResponse);
@@ -301,7 +308,7 @@ class TraineeServiceImplTest {
         () ->
             assertThat(trainee.getTrainers())
                 .containsExactlyInAnyOrder(firstTrainer, secondTrainer),
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(trainerRepository).findByUsername("First.Trainer"),
         () -> verify(trainerRepository).findByUsername("Second.Trainer"),
         () -> verify(traineeRepository).save(trainee));
@@ -311,13 +318,13 @@ class TraineeServiceImplTest {
   void updateTrainersShouldIgnoreDuplicateTrainerUsernames() {
     UpdateTraineeTrainersRequest request =
         new UpdateTraineeTrainersRequest(
-            "Jane.Doe", "password", List.of("First.Trainer", "First.Trainer"));
+            "Jane.Doe", List.of("First.Trainer", "First.Trainer"));
     Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
     Trainer trainer = trainer(20L, "First", "Trainer", "First.Trainer");
     TrainerSummaryResponse response =
         trainerSummaryResponse(20L, "First.Trainer", "First", "Trainer");
 
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("First.Trainer")).thenReturn(Optional.of(trainer));
     when(trainerMapper.toSummaryResponse(trainer)).thenReturn(response);
 
@@ -333,18 +340,18 @@ class TraineeServiceImplTest {
   @Test
   void updateTrainersShouldClearTrainersWhenTrainerUsernamesAreEmpty() {
     UpdateTraineeTrainersRequest request =
-        new UpdateTraineeTrainersRequest("Jane.Doe", "password", Collections.emptyList());
+        new UpdateTraineeTrainersRequest("Jane.Doe", Collections.emptyList());
     Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
     trainee.getTrainers().add(trainer(19L, "Old", "Trainer", "Old.Trainer"));
 
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     List<TrainerSummaryResponse> result = traineeService.updateTrainers(request);
 
     assertAll(
         () -> assertThat(result).isEmpty(),
         () -> assertThat(trainee.getTrainers()).isEmpty(),
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verifyNoInteractions(trainerRepository),
         () -> verify(traineeRepository).save(trainee));
   }
@@ -352,9 +359,9 @@ class TraineeServiceImplTest {
   @Test
   void updateTrainersShouldThrowEntityNotFoundExceptionWhenTrainerDoesNotExist() {
     UpdateTraineeTrainersRequest request =
-        new UpdateTraineeTrainersRequest("Jane.Doe", "password", List.of("Unknown.Trainer"));
+        new UpdateTraineeTrainersRequest("Jane.Doe", List.of("Unknown.Trainer"));
     Trainee trainee = trainee(17L, "Jane", "Doe", "Jane.Doe");
-    when(authenticationService.authenticateTrainee("Jane.Doe", "password")).thenReturn(trainee);
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("Unknown.Trainer")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> traineeService.updateTrainers(request))
@@ -362,7 +369,7 @@ class TraineeServiceImplTest {
         .hasMessage("Trainer profile not found");
 
     assertAll(
-        () -> verify(authenticationService).authenticateTrainee("Jane.Doe", "password"),
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
         () -> verify(trainerRepository).findByUsername("Unknown.Trainer"),
         () -> verifyNoMoreInteractions(traineeRepository));
   }
@@ -370,27 +377,27 @@ class TraineeServiceImplTest {
   @Test
   void updateTrainersShouldHaveBeanValidationViolationWhenTrainerUsernamesAreNull() {
     UpdateTraineeTrainersRequest request =
-        new UpdateTraineeTrainersRequest("Jane.Doe", "password", null);
+        new UpdateTraineeTrainersRequest("Jane.Doe", null);
 
     assertRequestViolation(request, "Trainer usernames must not be null");
 
     assertAll(
         () -> verifyNoInteractions(authenticationService),
         () -> verifyNoInteractions(trainerRepository),
-        () -> verifyNoInteractions(traineeRepository));
+        () -> verifyNoMoreInteractions(traineeRepository));
   }
 
   @Test
   void updateTrainersShouldHaveBeanValidationViolationWhenTrainerUsernameIsBlank() {
     UpdateTraineeTrainersRequest request =
-        new UpdateTraineeTrainersRequest("Jane.Doe", "password", List.of(" "));
+        new UpdateTraineeTrainersRequest("Jane.Doe", List.of(" "));
 
     assertRequestViolation(request, "Trainer username must not be blank");
 
     assertAll(
         () -> verifyNoInteractions(authenticationService),
         () -> verifyNoInteractions(trainerRepository),
-        () -> verifyNoInteractions(traineeRepository));
+        () -> verifyNoMoreInteractions(traineeRepository));
   }
 
   @Test
@@ -399,15 +406,14 @@ class TraineeServiceImplTest {
     Trainee authenticatedTrainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
     TraineeProfileResponse response =
         traineeProfileResponse(10L, "Hermione.Granger", "Jean", "Granger-Weasley");
-    when(authenticationService.authenticateTrainee("Hermione.Granger", "password"))
-        .thenReturn(authenticatedTrainee);
+    when(traineeRepository.findByUsername("Hermione.Granger")).thenReturn(Optional.of(authenticatedTrainee));
     when(traineeMapper.toProfileResponse(authenticatedTrainee)).thenReturn(response);
 
     TraineeProfileResponse result = traineeService.update(request);
 
     assertAll(
         () -> assertThat(result).isSameAs(response),
-        () -> verify(authenticationService).authenticateTrainee("Hermione.Granger", "password"),
+        () -> verify(traineeRepository).findByUsername("Hermione.Granger"),
         () -> verify(traineeMapper).updateFromRequest(request, authenticatedTrainee),
         () -> verify(traineeRepository).save(authenticatedTrainee),
         () -> verify(traineeMapper).toProfileResponse(authenticatedTrainee),
@@ -417,13 +423,15 @@ class TraineeServiceImplTest {
   @Test
   void updateShouldThrowAuthenticationExceptionWhenTraineeDoesNotExist() {
     UpdateTraineeRequest request = updateTraineeRequest(10L, "Jean", "Granger");
-    AuthenticationException exception = new AuthenticationException("Invalid username or password");
-    when(authenticationService.authenticateTrainee("Hermione.Granger", "password"))
-        .thenThrow(exception);
+    when(traineeRepository.findByUsername("Hermione.Granger")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> traineeService.update(request)).isSameAs(exception);
+    assertThatThrownBy(() -> traineeService.update(request))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainee profile not found");
 
-    verifyNoInteractions(traineeRepository);
+    assertAll(
+        () -> verify(traineeRepository).findByUsername("Hermione.Granger"),
+        () -> verifyNoMoreInteractions(traineeRepository));
   }
 
   @Test
@@ -431,8 +439,7 @@ class TraineeServiceImplTest {
     UpdateTraineeRequest request = updateTraineeRequest(10L, "Jean", "Granger");
     Trainee authenticatedTrainee = trainee(10L, "Hermione", "Granger", "Hermione.Granger");
     RuntimeException exception = new RuntimeException("DAO failure");
-    when(authenticationService.authenticateTrainee("Hermione.Granger", "password"))
-        .thenReturn(authenticatedTrainee);
+    when(traineeRepository.findByUsername("Hermione.Granger")).thenReturn(Optional.of(authenticatedTrainee));
     doThrow(exception).when(traineeRepository).save(authenticatedTrainee);
 
     assertThatThrownBy(() -> traineeService.update(request)).isSameAs(exception);
@@ -454,7 +461,6 @@ class TraineeServiceImplTest {
       Long id, String firstName, String lastName) {
     return new UpdateTraineeRequest(
         "Hermione.Granger",
-        "password",
         firstName,
         lastName,
         LocalDate.of(1994, 9, 19),

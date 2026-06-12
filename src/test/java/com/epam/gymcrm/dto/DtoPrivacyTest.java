@@ -19,7 +19,6 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
-import com.epam.gymcrm.web.auth.AuthenticatedUser;
 import com.epam.gymcrm.web.dto.AddTrainingRestRequest;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
@@ -80,10 +79,9 @@ class DtoPrivacyTest {
   void dtoToStringShouldRedactSensitiveValues() {
     List<String> representations =
         List.of(
-            new AuthRequest("John.Doe", "secret").toString(),
+            new AuthRequest("John.Doe").toString(),
             new LoginRequest("John.Doe", "secret").toString(),
             new LoginResponse("auth-token", ProfileType.TRAINEE).toString(),
-            new AuthenticatedUser("John.Doe", "secret", ProfileType.TRAINEE).toString(),
             new ChangePasswordRequest("John.Doe", "old-secret", "new-secret").toString(),
             new ChangePasswordRestRequest("John.Doe", "old-secret", "new-secret").toString(),
             new DeleteProfileRestRequest("John.Doe").toString(),
@@ -92,7 +90,6 @@ class DtoPrivacyTest {
                 .toString(),
             new UpdateTraineeRequest(
                     "John.Doe",
-                    "secret",
                     "John",
                     "Doe",
                     LocalDate.of(1995, 1, 10),
@@ -102,7 +99,7 @@ class DtoPrivacyTest {
             new UpdateTraineeProfileRestRequest(
                     "John.Doe", "John", "Doe", LocalDate.of(1995, 1, 10), "Main Street, 123", true)
                 .toString(),
-            new UpdateTraineeTrainersRequest("John.Doe", "secret", List.of("Trainer.User"))
+            new UpdateTraineeTrainersRequest("John.Doe", List.of("Trainer.User"))
                 .toString(),
             new UpdateTraineeTrainersRestRequest("John.Doe", List.of("Trainer.User")).toString(),
             new TraineeProfileResponse(
@@ -115,7 +112,7 @@ class DtoPrivacyTest {
                     List.of())
                 .toString(),
             new CreateTrainerRequest("Mike", "Stone", "Fitness").toString(),
-            new UpdateTrainerRequest("Mike.Stone", "secret", "Mike", "Stone", "Fitness", true)
+            new UpdateTrainerRequest("Mike.Stone", "Mike", "Stone", "Fitness", true)
                 .toString(),
             new UpdateTrainerProfileRestRequest("Mike.Stone", "Mike", "Stone", "Fitness", true)
                 .toString(),
@@ -124,7 +121,6 @@ class DtoPrivacyTest {
             new TrainerSummaryResponse("Mike.Stone", "Mike", "Stone", "Fitness").toString(),
             new AddTrainingRequest(
                     "John.Doe",
-                    "secret",
                     "Mike.Stone",
                     "Yoga Basics",
                     "Yoga",
@@ -141,7 +137,6 @@ class DtoPrivacyTest {
                 .toString(),
             new TraineeTrainingsRequest(
                     "John.Doe",
-                    "secret",
                     LocalDate.of(2026, 1, 1),
                     LocalDate.of(2026, 1, 31),
                     "Mike",
@@ -150,7 +145,6 @@ class DtoPrivacyTest {
                 .toString(),
             new TrainerTrainingsRequest(
                     "Mike.Stone",
-                    "secret",
                     LocalDate.of(2026, 2, 1),
                     LocalDate.of(2026, 2, 28),
                     "John",

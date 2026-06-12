@@ -12,8 +12,8 @@ import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.dto.training.AddTrainingRequest;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.facade.GymFacade;
-import com.epam.gymcrm.web.auth.AuthenticatedUser;
-import com.epam.gymcrm.web.auth.TokenService;
+import com.epam.gymcrm.web.auth.AuthenticatedPrincipal;
+import com.epam.gymcrm.web.auth.AuthenticatedUserProvider;
 import com.epam.gymcrm.web.exception.RestExceptionHandler;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
@@ -34,11 +34,11 @@ class TrainingControllerTest {
 
   @Mock private GymFacade gymFacade;
 
-  @Mock private TokenService tokenService;
+  @Mock private AuthenticatedUserProvider authenticatedUserProvider;
 
   @BeforeEach
   void setUp() {
-    standaloneSetup(new TrainingController(gymFacade, tokenService), new RestExceptionHandler());
+    standaloneSetup(new TrainingController(gymFacade, authenticatedUserProvider), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -48,23 +48,20 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldReturnOkForTraineeToken() {
-    AuthenticatedUser user =
-        new AuthenticatedUser(TRAINEE_USERNAME, PASSWORD, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user =
+        new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
     AddTrainingRequest request =
         new AddTrainingRequest(
             TRAINEE_USERNAME,
-            PASSWORD,
             TRAINER_USERNAME,
             "Morning Training",
             "Fitness",
             LocalDate.of(2026, 1, 10),
             60);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "John.Doe",
@@ -80,20 +77,18 @@ class TrainingControllerTest {
         .then()
         .statusCode(200);
 
-    verify(tokenService).getUserByToken(TOKEN);
+    verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).addTraining(request);
   }
 
   @Test
   void addTrainingShouldRejectTrainerToken() {
-    AuthenticatedUser user =
-        new AuthenticatedUser(TRAINER_USERNAME, PASSWORD, ProfileType.TRAINER);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user =
+        new AuthenticatedPrincipal(TRAINER_USERNAME, ProfileType.TRAINER);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(validRequestBody())
+        .contentType(ContentType.JSON)        .body(validRequestBody())
         .when()
         .post("/v1/trainings")
         .then()
@@ -105,14 +100,12 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldRejectAnotherUsername() {
-    AuthenticatedUser user =
-        new AuthenticatedUser(TRAINEE_USERNAME, PASSWORD, ProfileType.TRAINEE);
-    when(tokenService.getUserByToken(TOKEN)).thenReturn(user);
+    AuthenticatedPrincipal user =
+        new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "Another.User",
@@ -134,13 +127,11 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldRejectInvalidToken() {
-    when(tokenService.getUserByToken("invalid-token"))
+    when(authenticatedUserProvider.currentUser())
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", "invalid-token")
-        .body(validRequestBody())
+        .contentType(ContentType.JSON)        .body(validRequestBody())
         .when()
         .post("/v1/trainings")
         .then()
@@ -153,9 +144,7 @@ class TrainingControllerTest {
   @Test
   void addTrainingShouldReturnBadRequestWhenDurationIsNotPositive() {
     given()
-        .contentType(ContentType.JSON)
-        .header("X-Auth-Token", TOKEN)
-        .body(
+        .contentType(ContentType.JSON)        .body(
             """
                         {
                           "traineeUsername": "John.Doe",

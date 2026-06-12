@@ -200,7 +200,7 @@ class RestExceptionHandlerTest {
     }
 
     @GetMapping("/missing-header")
-    String missingHeader(@RequestHeader("X-Auth-Token") String token) {
+    String missingHeader(@RequestHeader("Authorization") String token) {
       return token;
     }
 

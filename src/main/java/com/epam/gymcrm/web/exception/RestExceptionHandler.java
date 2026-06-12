@@ -1,5 +1,6 @@
 package com.epam.gymcrm.web.exception;
 
+import com.epam.gymcrm.exception.AccountLockedException;
 import com.epam.gymcrm.exception.AuthenticationException;
 import com.epam.gymcrm.exception.EntityNotFoundException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -106,6 +107,12 @@ public class RestExceptionHandler {
   @ExceptionHandler(AuthenticationException.class)
   @ResponseStatus(HttpStatus.UNAUTHORIZED)
   public ErrorResponse handleAuthenticationException(AuthenticationException exception) {
+    return new ErrorResponse(exception.getMessage());
+  }
+
+  @ExceptionHandler(AccountLockedException.class)
+  @ResponseStatus(HttpStatus.LOCKED)
+  public ErrorResponse handleAccountLockedException(AccountLockedException exception) {
     return new ErrorResponse(exception.getMessage());
   }
 

@@ -1,6 +1,7 @@
-.idea
-target/
-.env
-infra/.env
-logs/
+.idea/
+.vscode/
+**/target/
+**/.env
+**/logs/
 *.iml
+tomcat.8080/

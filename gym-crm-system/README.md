@@ -194,17 +194,18 @@ The `infra` compose stack starts the database and Redis infrastructure used by t
 * Pgpool on host port `5435`
 * Redis on host port `6379`
 
+Run compose commands from the repository root where `docker-compose.yml` is located.
+
 Create a local compose environment file if you want to override defaults:
 
 ```bash
-cp infra/.env.example infra/.env
+cp .env.example .env
 ```
 
 Start the infrastructure stack:
 
 ```bash
-cd infra
-podman compose up -d gym-master gym-replica gym-pgpool gym-redis
+docker-compose up -d gym-master gym-replica gym-pgpool gym-redis
 ```
 
 The application connects to Pgpool through these default values:
@@ -242,8 +243,8 @@ java -jar target/gym-crm-1.0-SNAPSHOT.jar --spring.profiles.active=dev
 If old volumes were created with previous credentials or schema settings, reset them first:
 
 ```bash
-podman compose down -v
-podman compose up -d gym-master gym-replica gym-pgpool gym-redis
+docker-compose down -v
+docker-compose up -d gym-master gym-replica gym-pgpool gym-redis
 ```
 
 ## Run With Docker Compose
@@ -251,11 +252,10 @@ podman compose up -d gym-master gym-replica gym-pgpool gym-redis
 Build and start the application container together with the database stack:
 
 ```bash
-cd infra
-podman compose up -d --build gym-app
+docker-compose up -d --build gym-app
 ```
 
-The application container uses the `prod` profile by default. To run it with another profile, set `SPRING_PROFILES_ACTIVE` in `infra/.env`:
+The application container uses the `prod` profile by default. To run it with another profile, set `SPRING_PROFILES_ACTIVE` in `.env`:
 
 ```env
 SPRING_PROFILES_ACTIVE=dev
@@ -264,7 +264,7 @@ SPRING_PROFILES_ACTIVE=dev
 Then restart the application service:
 
 ```bash
-podman compose up -d --build gym-app
+docker-compose up -d --build gym-app
 ```
 
 Inside the compose network, the application connects to:
@@ -309,8 +309,7 @@ The compose stack includes Prometheus and Grafana for local monitoring.
 Start the full application and monitoring stack:
 
 ```bash
-cd infra
-podman compose up -d --build gym-app prometheus grafana
+docker-compose up -d --build gym-app prometheus grafana
 ```
 
 Open Grafana:
@@ -326,7 +325,7 @@ username: admin
 password: admin
 ```
 
-The credentials can be changed in `infra/.env`:
+The credentials can be changed in `.env`:
 
 ```env
 GRAFANA_ADMIN_USER=admin
@@ -347,7 +346,7 @@ http://gym-app:8080/api/actuator/prometheus
 
 This default setup is intended for the containerized `gym-app` service.
 
-For a local Maven or JAR run, change the Prometheus config in `infra/.env` first:
+For a local Maven or JAR run, change the Prometheus config in `.env` first:
 
 ```env
 PROMETHEUS_CONFIG=prometheus-host-podman.yml
@@ -362,8 +361,7 @@ PROMETHEUS_CONFIG=prometheus-host-docker.yml
 Then start only the monitoring services and keep the application running on host port `8080`:
 
 ```bash
-cd infra
-podman compose up -d prometheus grafana
+docker-compose up -d prometheus grafana
 ```
 
 In this mode Prometheus scrapes the application through one host target:
@@ -494,7 +492,7 @@ Tests use Testcontainers and the test configuration from:
 src/test/resources/application.properties
 ```
 
-The committed `infra/.env.example` contains local sample values only. Real local secrets should stay in ignored `.env` files.
+The committed `.env.example` contains local sample values only. Real local secrets should stay in ignored `.env` files.
 
 ## GitLab CI
 

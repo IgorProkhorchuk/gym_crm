@@ -1,0 +1,23 @@
+verify:gym-crm-system:
+  stage: verify
+  services:
+    - name: docker:24.0.9-dind
+      command: ["--tls=false"]
+  script:
+    - mvn $MAVEN_CLI_OPTS -f gym-crm-system/pom.xml verify
+  artifacts:
+    when: always
+    reports:
+      junit: gym-crm-system/target/surefire-reports/TEST-*.xml
+      coverage_report:
+        coverage_format: jacoco
+        path: gym-crm-system/target/site/jacoco/jacoco.xml
+    paths:
+      - gym-crm-system/target/site/jacoco/
+      - gym-crm-system/target/surefire-reports/
+    expire_in: 1 week
+  rules:
+    - changes:
+        - gym-crm-system/**/*
+        - .gitlab-ci.yml
+        - gym-crm-system/.gitlab-ci.yml

@@ -1,0 +1,10 @@
+verify:eureka:
+  stage: verify
+  script:
+    - cd eureka
+    - mvn $MAVEN_CLI_OPTS verify
+  rules:
+    - changes:
+        - eureka/**/*
+        - .gitlab-ci.yml
+        - eureka/.gitlab-ci.yml

@@ -48,6 +48,15 @@ class AuthenticatedUserProviderTest {
   }
 
   @Test
+  void authenticatedPrincipalToStringShouldExcludeUsername() {
+    String representation = new AuthenticatedPrincipal("John.Doe", ProfileType.TRAINEE).toString();
+
+    assertThat(representation)
+        .isEqualTo("AuthenticatedPrincipal[profileType=TRAINEE]")
+        .doesNotContain("username", "John.Doe");
+  }
+
+  @Test
   void currentUserShouldRejectMissingAuthentication() {
     assertThatThrownBy(authenticatedUserProvider::currentUser)
         .isInstanceOf(AuthenticationException.class)

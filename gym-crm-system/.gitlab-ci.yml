@@ -4,7 +4,8 @@ verify:gym-crm-system:
     - name: docker:24.0.9-dind
       command: ["--tls=false"]
   script:
-    - mvn $MAVEN_CLI_OPTS -f gym-crm-system/pom.xml verify
+    - cd gym-crm-system
+    - mvn $MAVEN_CLI_OPTS verify
   artifacts:
     when: always
     reports:

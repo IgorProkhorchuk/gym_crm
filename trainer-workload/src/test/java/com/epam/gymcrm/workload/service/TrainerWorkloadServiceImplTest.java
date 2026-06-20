@@ -10,11 +10,14 @@ import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.workload.dto.ActionType;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadRequest;
+import com.epam.gymcrm.workload.dto.TrainerWorkloadResponse;
+import com.epam.gymcrm.workload.exception.TrainerWorkloadNotFoundException;
 import com.epam.gymcrm.workload.model.TrainerMonthlySummary;
 import com.epam.gymcrm.workload.model.TrainerWorkload;
 import com.epam.gymcrm.workload.repository.TrainerMonthlySummaryRepository;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadRepository;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -119,6 +122,55 @@ class TrainerWorkloadServiceImplTest {
     verify(trainerMonthlySummaryRepository, never()).save(any());
   }
 
+  @Test
+  void getTrainerWorkloadShouldReturnSummaryGroupedByYearsAndMonths() {
+    TrainerWorkload trainer = trainer();
+    TrainerMonthlySummary maySummary = monthlySummary(trainer, 2025, 5, 30);
+    TrainerMonthlySummary juneSummary = monthlySummary(trainer, 2026, 6, 60);
+    TrainerMonthlySummary julySummary = monthlySummary(trainer, 2026, 7, 45);
+    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerMonthlySummaryRepository.findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(
+            USERNAME))
+        .thenReturn(List.of(maySummary, juneSummary, julySummary));
+
+    TrainerWorkloadResponse response = trainerWorkloadService.getTrainerWorkload(USERNAME);
+
+    assertAll(
+        () -> assertThat(response.trainerUsername()).isEqualTo(USERNAME),
+        () -> assertThat(response.trainerFirstName()).isEqualTo("Old"),
+        () -> assertThat(response.trainerLastName()).isEqualTo("Name"),
+        () -> assertThat(response.trainerStatus()).isTrue(),
+        () -> assertThat(response.years()).hasSize(2),
+        () -> assertThat(response.years().get(0).year()).isEqualTo(2025),
+        () -> assertThat(response.years().get(0).months()).hasSize(1),
+        () -> assertThat(response.years().get(0).months().getFirst().month()).isEqualTo(5),
+        () ->
+            assertThat(response.years().get(0).months().getFirst().trainingSummaryDuration())
+                .isEqualTo(30),
+        () -> assertThat(response.years().get(1).year()).isEqualTo(2026),
+        () -> assertThat(response.years().get(1).months()).hasSize(2),
+        () -> assertThat(response.years().get(1).months().getFirst().month()).isEqualTo(6),
+        () ->
+            assertThat(response.years().get(1).months().getFirst().trainingSummaryDuration())
+                .isEqualTo(60),
+        () -> assertThat(response.years().get(1).months().get(1).month()).isEqualTo(7),
+        () ->
+            assertThat(response.years().get(1).months().get(1).trainingSummaryDuration())
+                .isEqualTo(45));
+  }
+
+  @Test
+  void getTrainerWorkloadShouldThrowTrainerWorkloadNotFoundExceptionWhenTrainerDoesNotExist() {
+    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> trainerWorkloadService.getTrainerWorkload(USERNAME))
+        .isInstanceOf(TrainerWorkloadNotFoundException.class)
+        .hasMessage("Trainer workload not found: John.Doe");
+
+    verify(trainerMonthlySummaryRepository, never())
+        .findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(any());
+  }
+
   private static TrainerWorkloadRequest request(
       ActionType actionType,
       int trainingDuration,
@@ -147,10 +199,19 @@ class TrainerWorkloadServiceImplTest {
       TrainerWorkload trainer,
       int summaryDuration
   ) {
+    return monthlySummary(trainer, 2026, 6, summaryDuration);
+  }
+
+  private static TrainerMonthlySummary monthlySummary(
+      TrainerWorkload trainer,
+      int trainingYear,
+      int trainingMonth,
+      int summaryDuration
+  ) {
     return TrainerMonthlySummary.builder()
         .trainer(trainer)
-        .trainingYear(2026)
-        .trainingMonth(6)
+        .trainingYear(trainingYear)
+        .trainingMonth(trainingMonth)
         .summaryDuration(summaryDuration)
         .build();
   }

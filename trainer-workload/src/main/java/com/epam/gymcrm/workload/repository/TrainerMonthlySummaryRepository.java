@@ -1,6 +1,7 @@
 package com.epam.gymcrm.workload.repository;
 
 import com.epam.gymcrm.workload.model.TrainerMonthlySummary;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -21,5 +22,15 @@ public interface TrainerMonthlySummaryRepository extends JpaRepository<TrainerMo
       String trainerUsername,
       int trainingYear,
       int trainingMonth
+  );
+
+  /**
+   * Finds all monthly summaries for a trainer ordered by year and month.
+   *
+   * @param trainerUsername trainer username
+   * @return ordered trainer monthly summaries
+   */
+  List<TrainerMonthlySummary> findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(
+      String trainerUsername
   );
 }

@@ -10,6 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
+import com.epam.gymcrm.client.workload.TrainerWorkloadClient;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dto.PageRequest;
@@ -64,6 +68,10 @@ class TrainingServiceImplTest {
 
   @Mock private GymMetrics gymMetrics;
 
+  @Mock private TrainerWorkloadClient trainerWorkloadClient;
+
+  @Mock private TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
+
   private AddTrainingRequest addTrainingRequest;
   private Validator validator;
 
@@ -91,10 +99,13 @@ class TrainingServiceImplTest {
             .trainingDate(LocalDate.of(2026, 5, 3))
             .trainingDuration(60)
             .build();
+    TrainerWorkloadRequest workloadRequest = trainerWorkloadRequest(TrainerWorkloadActionType.ADD);
     when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
     when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(trainingType));
     when(trainingMapper.toEntity(addTrainingRequest)).thenReturn(training);
+    when(trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.ADD))
+        .thenReturn(workloadRequest);
 
     trainingService.addTraining(addTrainingRequest);
 
@@ -104,6 +115,8 @@ class TrainingServiceImplTest {
         () -> verify(trainingTypeRepository).findByName("Yoga"),
         () -> verify(trainingMapper).toEntity(addTrainingRequest),
         () -> verify(trainingRepository).save(training),
+        () -> verify(trainerWorkloadRequestFactory).fromTraining(training, TrainerWorkloadActionType.ADD),
+        () -> verify(trainerWorkloadClient).updateTrainerWorkload(workloadRequest),
         () -> verify(gymMetrics).recordTrainingCreationSucceeded(),
         () -> assertThat(training.getTrainee()).isSameAs(trainee),
         () -> assertThat(training.getTrainer()).isSameAs(trainer),
@@ -150,6 +163,47 @@ class TrainingServiceImplTest {
         .hasMessage("Trainee profile not found");
 
     verify(gymMetrics).recordTrainingCreationAuthFailed();
+  }
+
+  @Test
+  void deleteTrainingShouldDeleteTrainingAndUpdateTrainerWorkload() {
+    Training training = validTraining();
+    TrainerWorkloadRequest workloadRequest = trainerWorkloadRequest(TrainerWorkloadActionType.DELETE);
+    when(trainingRepository.findById(10L)).thenReturn(Optional.of(training));
+    when(trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.DELETE))
+        .thenReturn(workloadRequest);
+
+    trainingService.deleteTraining(10L);
+
+    assertAll(
+        () -> verify(trainingRepository).findById(10L),
+        () -> verify(trainerWorkloadRequestFactory).fromTraining(training, TrainerWorkloadActionType.DELETE),
+        () -> verify(trainingRepository).delete(training),
+        () -> verify(trainerWorkloadClient).updateTrainerWorkload(workloadRequest));
+  }
+
+  @Test
+  void deleteTrainingShouldThrowEntityNotFoundExceptionWhenTrainingDoesNotExist() {
+    when(trainingRepository.findById(10L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> trainingService.deleteTraining(10L))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Training not found");
+
+    verify(trainingRepository).findById(10L);
+  }
+
+  @Test
+  void deleteTrainingShouldHaveBeanValidationViolationWhenTrainingIdIsNull() throws Exception {
+    TrainingService target = trainingService;
+    Method method = TrainingService.class.getMethod("deleteTraining", Long.class);
+
+    Set<ConstraintViolation<TrainingService>> violations =
+        validator.forExecutables().validateParameters(target, method, new Object[] {null});
+
+    assertThat(violations)
+        .extracting(ConstraintViolation::getMessage)
+        .containsExactly("Training id must not be null");
   }
 
   @Test
@@ -423,5 +477,17 @@ class TrainingServiceImplTest {
   private static TrainerTrainingResponse trainerTrainingResponse() {
     return new TrainerTrainingResponse(
         "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 60, "Training Trainee");
+  }
+
+  private static TrainerWorkloadRequest trainerWorkloadRequest(
+      TrainerWorkloadActionType actionType) {
+    return new TrainerWorkloadRequest(
+        "Training.Trainer",
+        "Training",
+        "Trainer",
+        true,
+        LocalDate.of(2026, 5, 3),
+        60,
+        actionType);
   }
 }

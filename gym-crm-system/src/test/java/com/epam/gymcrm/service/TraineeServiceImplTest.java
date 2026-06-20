@@ -255,8 +255,8 @@ class TraineeServiceImplTest {
 
   @Test
   void deleteByUsernameShouldDeleteAuthenticatedTraineeById() {
-    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee(15L, "Jane", "Doe", "Jane.Doe");
+    final AuthRequest request = new AuthRequest("Jane.Doe");
     when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
 
     traineeService.deleteByUsername(request);
@@ -498,4 +498,5 @@ class TraineeServiceImplTest {
         .extracting(ConstraintViolation::getMessage)
         .contains(message);
   }
+
 }

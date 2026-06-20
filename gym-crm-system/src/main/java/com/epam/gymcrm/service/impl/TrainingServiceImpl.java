@@ -1,5 +1,9 @@
 package com.epam.gymcrm.service.impl;
 
+import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
+import com.epam.gymcrm.client.workload.TrainerWorkloadClient;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dto.PageRequest;
@@ -40,6 +44,8 @@ public class TrainingServiceImpl implements TrainingService {
   private final TrainingTypeRepository trainingTypeRepository;
   private final TrainingMapper trainingMapper;
   private final GymMetrics gymMetrics;
+  private final TrainerWorkloadClient trainerWorkloadClient;
+  private final TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
   @Override
   public void addTraining(AddTrainingRequest request) {
@@ -69,9 +75,26 @@ public class TrainingServiceImpl implements TrainingService {
     training.setTrainingType(trainingType);
 
     trainingRepository.save(training);
+    trainerWorkloadClient.updateTrainerWorkload(
+        trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.ADD));
     gymMetrics.recordTrainingCreationSucceeded();
 
     log.info("Training added, trainingId={}", training.getTrainingId());
+  }
+
+  @Override
+  public void deleteTraining(Long trainingId) {
+    log.info("Deleting training, trainingId={}", trainingId);
+
+    Training training = trainingRepository.findById(trainingId)
+        .orElseThrow(() -> new EntityNotFoundException("Training not found"));
+    TrainerWorkloadRequest workloadRequest =
+        trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.DELETE);
+
+    trainingRepository.delete(training);
+    trainerWorkloadClient.updateTrainerWorkload(workloadRequest);
+
+    log.info("Training deleted, trainingId={}", trainingId);
   }
 
   @Override

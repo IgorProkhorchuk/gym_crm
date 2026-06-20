@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /** OpenAPI contract for training endpoints. */
 @Tag(name = "Trainings", description = "Training management operations")
@@ -27,4 +28,14 @@ public interface TrainingApi {
               required = true,
               content = @Content(schema = @Schema(implementation = AddTrainingRestRequest.class)))
           AddTrainingRestRequest request);
+
+  /** Deletes a training by id. */
+  @Operation(summary = "Delete training")
+  @SecurityRequirement(name = "bearerAuth")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Training deleted"),
+    @ApiResponse(responseCode = "401", description = "Unauthorized"),
+    @ApiResponse(responseCode = "404", description = "Training not found")
+  })
+  void deleteTraining(@PathVariable Long trainingId);
 }

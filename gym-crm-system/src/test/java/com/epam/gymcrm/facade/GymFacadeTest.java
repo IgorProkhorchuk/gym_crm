@@ -245,6 +245,13 @@ class GymFacadeTest {
   }
 
   @Test
+  void deleteTrainingShouldDelegateToTrainingService() {
+    gymFacade.deleteTraining(10L);
+
+    verify(trainingService).deleteTraining(10L);
+  }
+
+  @Test
   void getTraineeTrainingsShouldReturnTrainingResponsesFromService() {
     TraineeTrainingsRequest request =
         new TraineeTrainingsRequest(

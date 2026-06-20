@@ -209,13 +209,17 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
+                    <configLocation>${project.basedir}/checkstyle.xml</configLocation>
                     <inputEncoding>UTF-8</inputEncoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <violationSeverity>warning</violationSeverity>
                     <linkXRef>false</linkXRef>
+                    <propertyExpansion>
+                        org.checkstyle.google.suppressionfilter.config=${project.basedir}/checkstyle-suppressions.xml
+                        org.checkstyle.google.suppressionxpathfilter.config=${project.basedir}/checkstyle-xpath-suppressions.xml
+                    </propertyExpansion>
                 </configuration>
                 <executions>
                     <execution>

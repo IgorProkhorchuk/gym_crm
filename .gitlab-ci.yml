@@ -25,4 +25,5 @@ cache:
 include:
   - local: "gym-crm-system/.gitlab-ci.yml"
   - local: "eureka/.gitlab-ci.yml"
+  - local: "trainer-workload/.gitlab-ci.yml"
 

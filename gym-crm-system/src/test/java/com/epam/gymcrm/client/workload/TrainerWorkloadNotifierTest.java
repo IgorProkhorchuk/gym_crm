@@ -1,6 +1,6 @@
 package com.epam.gymcrm.client.workload;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -34,8 +34,10 @@ class TrainerWorkloadNotifierTest {
     when(circuitBreakerFactory.create("trainerWorkload")).thenReturn(circuitBreaker);
     runCircuitBreakerInvocation();
 
-    trainerWorkloadNotifier.notifyTrainerWorkload(request);
+    TrainerWorkloadNotificationResult result =
+        trainerWorkloadNotifier.notifyTrainerWorkload(request);
 
+    assertThat(result.successful()).isTrue();
     verify(trainerWorkloadClient).updateTrainerWorkload(request);
   }
 
@@ -48,9 +50,16 @@ class TrainerWorkloadNotifierTest {
         .when(trainerWorkloadClient)
         .updateTrainerWorkload(request);
 
-    assertThatCode(() -> trainerWorkloadNotifier.notifyTrainerWorkload(request))
-        .doesNotThrowAnyException();
+    TrainerWorkloadNotificationResult result =
+        trainerWorkloadNotifier.notifyTrainerWorkload(request);
 
+    assertThat(result)
+        .satisfies(
+            notificationResult -> {
+              assertThat(notificationResult.successful()).isFalse();
+              assertThat(notificationResult.errorMessage())
+                  .isEqualTo("Trainer workload service is down");
+            });
     verify(trainerWorkloadClient).updateTrainerWorkload(request);
   }
 
@@ -58,8 +67,9 @@ class TrainerWorkloadNotifierTest {
     when(circuitBreaker.run(any(), any()))
         .thenAnswer(
             invocation -> {
-              Supplier<Void> supplier = invocation.getArgument(0);
-              Function<Throwable, Void> fallback = invocation.getArgument(1);
+              Supplier<TrainerWorkloadNotificationResult> supplier = invocation.getArgument(0);
+              Function<Throwable, TrainerWorkloadNotificationResult> fallback =
+                  invocation.getArgument(1);
               try {
                 return supplier.get();
               } catch (RuntimeException exception) {

@@ -25,20 +25,22 @@ public class TrainerWorkloadNotifier {
    * Sends trainer workload update without failing the main training flow.
    *
    * @param request trainer workload update request
+   * @return delivery result
    */
-  public void notifyTrainerWorkload(TrainerWorkloadRequest request) {
+  public TrainerWorkloadNotificationResult notifyTrainerWorkload(TrainerWorkloadRequest request) {
     CircuitBreaker circuitBreaker = circuitBreakerFactory.create(CIRCUIT_BREAKER_NAME);
-    circuitBreaker.run(updateRequest(request), logFailedUpdate(request));
+    return circuitBreaker.run(updateRequest(request), logFailedUpdate(request));
   }
 
-  private Supplier<Void> updateRequest(TrainerWorkloadRequest request) {
+  private Supplier<TrainerWorkloadNotificationResult> updateRequest(TrainerWorkloadRequest request) {
     return () -> {
       trainerWorkloadClient.updateTrainerWorkload(request);
-      return null;
+      return new TrainerWorkloadNotificationResult(true, null);
     };
   }
 
-  private Function<Throwable, Void> logFailedUpdate(TrainerWorkloadRequest request) {
+  private Function<Throwable, TrainerWorkloadNotificationResult> logFailedUpdate(
+      TrainerWorkloadRequest request) {
     return failure -> {
       log.warn(
           "Trainer workload update failed, actionType={}, trainerUsername={}, trainingDate={}, "
@@ -48,7 +50,7 @@ public class TrainerWorkloadNotifier {
           request.trainingDate(),
           request.trainingDuration(),
           failure);
-      return null;
+      return new TrainerWorkloadNotificationResult(false, failure.getMessage());
     };
   }
 }

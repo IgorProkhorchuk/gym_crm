@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
-import com.epam.gymcrm.client.workload.TrainerWorkloadNotifier;
+import com.epam.gymcrm.client.workload.TrainerWorkloadOutboxService;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
@@ -44,7 +44,7 @@ public class TrainingServiceImpl implements TrainingService {
   private final TrainingTypeRepository trainingTypeRepository;
   private final TrainingMapper trainingMapper;
   private final GymMetrics gymMetrics;
-  private final TrainerWorkloadNotifier trainerWorkloadNotifier;
+  private final TrainerWorkloadOutboxService trainerWorkloadOutboxService;
   private final TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
   @Override
@@ -74,12 +74,13 @@ public class TrainingServiceImpl implements TrainingService {
     training.setTrainer(trainer);
     training.setTrainingType(trainingType);
 
-    trainingRepository.save(training);
-    trainerWorkloadNotifier.notifyTrainerWorkload(
-        trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.ADD));
+    Training savedTraining = trainingRepository.save(training);
+    TrainerWorkloadRequest workloadRequest =
+        trainerWorkloadRequestFactory.fromTraining(savedTraining, TrainerWorkloadActionType.ADD);
+    trainerWorkloadOutboxService.savePendingEvent(savedTraining.getTrainingId(), workloadRequest);
     gymMetrics.recordTrainingCreationSucceeded();
 
-    log.info("Training added, trainingId={}", training.getTrainingId());
+    log.info("Training added, trainingId={}", savedTraining.getTrainingId());
   }
 
   @Override
@@ -92,7 +93,7 @@ public class TrainingServiceImpl implements TrainingService {
         trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.DELETE);
 
     trainingRepository.delete(training);
-    trainerWorkloadNotifier.notifyTrainerWorkload(workloadRequest);
+    trainerWorkloadOutboxService.savePendingEvent(trainingId, workloadRequest);
 
     log.info("Training deleted, trainingId={}", trainingId);
   }

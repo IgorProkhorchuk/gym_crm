@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
-import com.epam.gymcrm.client.workload.TrainerWorkloadNotifier;
+import com.epam.gymcrm.client.workload.TrainerWorkloadOutboxService;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
@@ -68,7 +68,7 @@ class TrainingServiceImplTest {
 
   @Mock private GymMetrics gymMetrics;
 
-  @Mock private TrainerWorkloadNotifier trainerWorkloadNotifier;
+  @Mock private TrainerWorkloadOutboxService trainerWorkloadOutboxService;
 
   @Mock private TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
@@ -98,12 +98,14 @@ class TrainingServiceImplTest {
             .trainingName("Yoga Basics")
             .trainingDate(LocalDate.of(2026, 5, 3))
             .trainingDuration(60)
+            .trainingId(10L)
             .build();
     TrainerWorkloadRequest workloadRequest = trainerWorkloadRequest(TrainerWorkloadActionType.ADD);
     when(traineeRepository.findByUsername("Training.Trainee")).thenReturn(Optional.of(trainee));
     when(trainerRepository.findByUsername("Training.Trainer")).thenReturn(Optional.of(trainer));
     when(trainingTypeRepository.findByName("Yoga")).thenReturn(Optional.of(trainingType));
     when(trainingMapper.toEntity(addTrainingRequest)).thenReturn(training);
+    when(trainingRepository.save(training)).thenReturn(training);
     when(trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.ADD))
         .thenReturn(workloadRequest);
 
@@ -116,7 +118,7 @@ class TrainingServiceImplTest {
         () -> verify(trainingMapper).toEntity(addTrainingRequest),
         () -> verify(trainingRepository).save(training),
         () -> verify(trainerWorkloadRequestFactory).fromTraining(training, TrainerWorkloadActionType.ADD),
-        () -> verify(trainerWorkloadNotifier).notifyTrainerWorkload(workloadRequest),
+        () -> verify(trainerWorkloadOutboxService).savePendingEvent(10L, workloadRequest),
         () -> verify(gymMetrics).recordTrainingCreationSucceeded(),
         () -> assertThat(training.getTrainee()).isSameAs(trainee),
         () -> assertThat(training.getTrainer()).isSameAs(trainer),
@@ -179,7 +181,7 @@ class TrainingServiceImplTest {
         () -> verify(trainingRepository).findById(10L),
         () -> verify(trainerWorkloadRequestFactory).fromTraining(training, TrainerWorkloadActionType.DELETE),
         () -> verify(trainingRepository).delete(training),
-        () -> verify(trainerWorkloadNotifier).notifyTrainerWorkload(workloadRequest));
+        () -> verify(trainerWorkloadOutboxService).savePendingEvent(10L, workloadRequest));
   }
 
   @Test

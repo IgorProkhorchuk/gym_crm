@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
-import com.epam.gymcrm.client.workload.TrainerWorkloadClient;
+import com.epam.gymcrm.client.workload.TrainerWorkloadNotifier;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
@@ -68,7 +68,7 @@ class TrainingServiceImplTest {
 
   @Mock private GymMetrics gymMetrics;
 
-  @Mock private TrainerWorkloadClient trainerWorkloadClient;
+  @Mock private TrainerWorkloadNotifier trainerWorkloadNotifier;
 
   @Mock private TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
@@ -116,7 +116,7 @@ class TrainingServiceImplTest {
         () -> verify(trainingMapper).toEntity(addTrainingRequest),
         () -> verify(trainingRepository).save(training),
         () -> verify(trainerWorkloadRequestFactory).fromTraining(training, TrainerWorkloadActionType.ADD),
-        () -> verify(trainerWorkloadClient).updateTrainerWorkload(workloadRequest),
+        () -> verify(trainerWorkloadNotifier).notifyTrainerWorkload(workloadRequest),
         () -> verify(gymMetrics).recordTrainingCreationSucceeded(),
         () -> assertThat(training.getTrainee()).isSameAs(trainee),
         () -> assertThat(training.getTrainer()).isSameAs(trainer),
@@ -179,7 +179,7 @@ class TrainingServiceImplTest {
         () -> verify(trainingRepository).findById(10L),
         () -> verify(trainerWorkloadRequestFactory).fromTraining(training, TrainerWorkloadActionType.DELETE),
         () -> verify(trainingRepository).delete(training),
-        () -> verify(trainerWorkloadClient).updateTrainerWorkload(workloadRequest));
+        () -> verify(trainerWorkloadNotifier).notifyTrainerWorkload(workloadRequest));
   }
 
   @Test

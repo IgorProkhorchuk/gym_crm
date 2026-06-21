@@ -1,7 +1,7 @@
 package com.epam.gymcrm.service.impl;
 
 import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
-import com.epam.gymcrm.client.workload.TrainerWorkloadClient;
+import com.epam.gymcrm.client.workload.TrainerWorkloadNotifier;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
 import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
@@ -44,7 +44,7 @@ public class TrainingServiceImpl implements TrainingService {
   private final TrainingTypeRepository trainingTypeRepository;
   private final TrainingMapper trainingMapper;
   private final GymMetrics gymMetrics;
-  private final TrainerWorkloadClient trainerWorkloadClient;
+  private final TrainerWorkloadNotifier trainerWorkloadNotifier;
   private final TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
   @Override
@@ -75,7 +75,7 @@ public class TrainingServiceImpl implements TrainingService {
     training.setTrainingType(trainingType);
 
     trainingRepository.save(training);
-    trainerWorkloadClient.updateTrainerWorkload(
+    trainerWorkloadNotifier.notifyTrainerWorkload(
         trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.ADD));
     gymMetrics.recordTrainingCreationSucceeded();
 
@@ -92,7 +92,7 @@ public class TrainingServiceImpl implements TrainingService {
         trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.DELETE);
 
     trainingRepository.delete(training);
-    trainerWorkloadClient.updateTrainerWorkload(workloadRequest);
+    trainerWorkloadNotifier.notifyTrainerWorkload(workloadRequest);
 
     log.info("Training deleted, trainingId={}", trainingId);
   }

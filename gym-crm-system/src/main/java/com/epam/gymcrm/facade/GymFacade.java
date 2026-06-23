@@ -90,6 +90,10 @@ public class GymFacade {
     trainingService.addTraining(request);
   }
 
+  public void deleteTraining(Long trainingId) {
+    trainingService.deleteTraining(trainingId);
+  }
+
   public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
     return trainingService.getTraineeTrainings(request);
   }

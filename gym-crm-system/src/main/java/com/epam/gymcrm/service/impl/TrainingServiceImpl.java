@@ -1,5 +1,9 @@
 package com.epam.gymcrm.service.impl;
 
+import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
+import com.epam.gymcrm.client.workload.TrainerWorkloadOutboxService;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.criteria.TraineeTrainingCriteria;
 import com.epam.gymcrm.criteria.TrainerTrainingCriteria;
 import com.epam.gymcrm.dto.PageRequest;
@@ -40,6 +44,8 @@ public class TrainingServiceImpl implements TrainingService {
   private final TrainingTypeRepository trainingTypeRepository;
   private final TrainingMapper trainingMapper;
   private final GymMetrics gymMetrics;
+  private final TrainerWorkloadOutboxService trainerWorkloadOutboxService;
+  private final TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
   @Override
   public void addTraining(AddTrainingRequest request) {
@@ -68,10 +74,28 @@ public class TrainingServiceImpl implements TrainingService {
     training.setTrainer(trainer);
     training.setTrainingType(trainingType);
 
-    trainingRepository.save(training);
+    Training savedTraining = trainingRepository.save(training);
+    TrainerWorkloadRequest workloadRequest =
+        trainerWorkloadRequestFactory.fromTraining(savedTraining, TrainerWorkloadActionType.ADD);
+    trainerWorkloadOutboxService.savePendingEvent(savedTraining.getTrainingId(), workloadRequest);
     gymMetrics.recordTrainingCreationSucceeded();
 
-    log.info("Training added, trainingId={}", training.getTrainingId());
+    log.info("Training added, trainingId={}", savedTraining.getTrainingId());
+  }
+
+  @Override
+  public void deleteTraining(Long trainingId) {
+    log.info("Deleting training, trainingId={}", trainingId);
+
+    Training training = trainingRepository.findById(trainingId)
+        .orElseThrow(() -> new EntityNotFoundException("Training not found"));
+    TrainerWorkloadRequest workloadRequest =
+        trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.DELETE);
+
+    trainingRepository.delete(training);
+    trainerWorkloadOutboxService.savePendingEvent(trainingId, workloadRequest);
+
+    log.info("Training deleted, trainingId={}", trainingId);
   }
 
   @Override

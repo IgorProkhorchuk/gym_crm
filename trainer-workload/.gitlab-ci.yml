@@ -1,0 +1,20 @@
+verify:trainer-workload:
+  stage: verify
+  script:
+    - mvn $MAVEN_CLI_OPTS -f trainer-workload/pom.xml verify
+  artifacts:
+    when: always
+    reports:
+      junit: trainer-workload/target/surefire-reports/TEST-*.xml
+      coverage_report:
+        coverage_format: jacoco
+        path: trainer-workload/target/site/jacoco/jacoco.xml
+    paths:
+      - trainer-workload/target/site/jacoco/
+      - trainer-workload/target/surefire-reports/
+    expire_in: 1 week
+  rules:
+    - changes:
+        - trainer-workload/**/*
+        - .gitlab-ci.yml
+        - trainer-workload/.gitlab-ci.yml

@@ -1,0 +1,95 @@
+package com.epam.gymcrm.workload.config;
+
+import java.nio.charset.StandardCharsets;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+/**
+ * Security configuration for internal trainer workload API.
+ */
+@Configuration
+@EnableConfigurationProperties(JwtProperties.class)
+public class SecurityConfig {
+
+  /**
+   * Protects workload updates and keeps read-only operational endpoints available.
+   *
+   * @param http HTTP security builder
+   * @return configured security filter chain
+   * @throws Exception when security configuration fails
+   */
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    return http.csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            sessionManagement ->
+                sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .httpBasic(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+        .authorizeHttpRequests(
+            authorization ->
+                authorization
+                    .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/actuator/health",
+                        "/actuator/info")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/v1/trainer-workloads/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/v1/trainer-workloads")
+                    .hasRole("SERVICE")
+                    .anyRequest()
+                    .authenticated())
+        .build();
+  }
+
+  /**
+   * Validates service JWT tokens signed by Gym CRM system.
+   *
+   * @param jwtProperties JWT configuration
+   * @return JWT decoder
+   */
+  @Bean
+  public JwtDecoder jwtDecoder(JwtProperties jwtProperties) {
+    NimbusJwtDecoder jwtDecoder =
+        NimbusJwtDecoder.withSecretKey(secretKey(jwtProperties))
+            .macAlgorithm(MacAlgorithm.HS256)
+            .build();
+    jwtDecoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(jwtProperties.issuer()));
+    return jwtDecoder;
+  }
+
+  private static JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+    authoritiesConverter.setAuthoritiesClaimName("roles");
+    authoritiesConverter.setAuthorityPrefix("ROLE_");
+
+    JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
+    authenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+    return authenticationConverter;
+  }
+
+  private static SecretKey secretKey(JwtProperties jwtProperties) {
+    byte[] secret = jwtProperties.secret().getBytes(StandardCharsets.UTF_8);
+    return new SecretKeySpec(secret, "HmacSHA256");
+  }
+}

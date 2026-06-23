@@ -1,1 +1,2 @@
 infra/*.sh text eol=lf
+**/infra/*.sh text eol=lf

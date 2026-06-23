@@ -191,6 +191,7 @@
                             </rules>
                             <excludes>
                                 <exclude>com/epam/gymcrm/workload/TrainerWorkloadApplication.class</exclude>
+                                <exclude>com/epam/gymcrm/workload/config/**</exclude>
                                 <exclude>com/epam/gymcrm/workload/model/**</exclude>
                             </excludes>
                         </configuration>

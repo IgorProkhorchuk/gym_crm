@@ -15,9 +15,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
@@ -28,6 +30,14 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
   @Override
   @Transactional
   public void updateTrainerWorkload(TrainerWorkloadRequest request) {
+    log.info(
+        "Updating trainer workload, trainerUsername={}, actionType={}, trainingDate={}, "
+            + "trainingDuration={}",
+        request.trainerUsername(),
+        request.actionType(),
+        request.trainingDate(),
+        request.trainingDuration());
+
     TrainerWorkload trainer = trainerWorkloadRepository.findById(request.trainerUsername())
         .orElseGet(() -> TrainerWorkload.builder()
             .username(request.trainerUsername())
@@ -57,16 +67,28 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
 
     trainerWorkloadRepository.save(trainer);
     trainerMonthlySummaryRepository.save(summary);
+    log.info(
+        "Trainer workload updated, trainerUsername={}, trainingYear={}, trainingMonth={}, "
+            + "summaryDuration={}",
+        request.trainerUsername(),
+        trainingYear,
+        trainingMonth,
+        summary.getSummaryDuration());
   }
 
   @Override
   @Transactional(readOnly = true)
   public TrainerWorkloadResponse getTrainerWorkload(String username) {
+    log.info("Getting trainer workload, trainerUsername={}", username);
     TrainerWorkload trainer = trainerWorkloadRepository.findById(username)
         .orElseThrow(() -> new TrainerWorkloadNotFoundException(username));
     List<TrainerMonthlySummary> summaries = trainerMonthlySummaryRepository
         .findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(username);
 
+    log.info(
+        "Trainer workload found, trainerUsername={}, monthlySummaryCount={}",
+        username,
+        summaries.size());
     return new TrainerWorkloadResponse(
         trainer.getUsername(),
         trainer.getFirstName(),

@@ -1,4 +1,4 @@
-package com.epam.gymcrm.web.logging;
+package com.epam.gymcrm.workload.web.logging;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,15 +8,18 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+/**
+ * Adds transaction-level logging for trainer workload REST requests.
+ */
 @Slf4j
 @Component
 public class RestLoggingInterceptor implements HandlerInterceptor {
 
   public static final String TRANSACTION_ID_HEADER = "X-Transaction-Id";
+  public static final String TRANSACTION_ID = "transactionId";
 
   static final String START_TIME_ATTRIBUTE =
       RestLoggingInterceptor.class.getName() + ".startTime";
-  public static final String TRANSACTION_ID = "transactionId";
   private static final String PROTECTED_VALUE = "$1=[PROTECTED]";
   private static final String SENSITIVE_VALUE_PATTERN = "(?i)(password|token|secret)=\\S+";
   private static final long NANOS_PER_MILLI = 1_000_000L;
@@ -54,7 +57,8 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
           durationMillis);
     } else {
       log.warn(
-          "REST request failed method={} path={} status={} durationMs={} errorType={} errorMessage={}",
+          "REST request failed method={} path={} status={} durationMs={} errorType={} "
+              + "errorMessage={}",
           request.getMethod(),
           request.getRequestURI(),
           response.getStatus(),

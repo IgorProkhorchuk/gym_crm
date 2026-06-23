@@ -12,9 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * JPA-backed trainer workload outbox service.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,7 +21,7 @@ public class TrainerWorkloadOutboxServiceImpl implements TrainerWorkloadOutboxSe
   private static final Duration RETRY_DELAY = Duration.ofSeconds(30);
 
   private final TrainerWorkloadOutboxRepository trainerWorkloadOutboxRepository;
-  private final TrainerWorkloadNotifier trainerWorkloadNotifier;
+  private final TrainerWorkloadNotificationService trainerWorkloadNotificationService;
 
   @Override
   @Transactional
@@ -47,7 +44,7 @@ public class TrainerWorkloadOutboxServiceImpl implements TrainerWorkloadOutboxSe
 
   private void dispatchEvent(TrainerWorkloadOutboxEvent event, Instant now) {
     TrainerWorkloadNotificationResult result =
-        trainerWorkloadNotifier.notifyTrainerWorkload(event.toTrainerWorkloadRequest());
+        trainerWorkloadNotificationService.notifyTrainerWorkload(event.toTrainerWorkloadRequest());
 
     if (result.successful()) {
       event.markSent(now);

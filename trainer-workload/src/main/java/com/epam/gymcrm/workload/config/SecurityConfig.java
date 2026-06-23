@@ -18,9 +18,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Security configuration for internal trainer workload API.
- */
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
@@ -47,9 +44,14 @@ public class SecurityConfig {
             authorization ->
                 authorization
                     .requestMatchers(
+                        "/api/v3/api-docs/**",
+                        "/api/swagger-ui.html",
+                        "/api/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/swagger-ui.html",
                         "/swagger-ui/**",
+                        "/api/actuator/health",
+                        "/api/actuator/info",
                         "/actuator/health",
                         "/actuator/info")
                     .permitAll()

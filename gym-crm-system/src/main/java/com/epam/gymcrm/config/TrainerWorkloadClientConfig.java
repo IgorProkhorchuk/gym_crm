@@ -9,9 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * Configures trainer workload service client infrastructure.
- */
 @Configuration
 public class TrainerWorkloadClientConfig {
 

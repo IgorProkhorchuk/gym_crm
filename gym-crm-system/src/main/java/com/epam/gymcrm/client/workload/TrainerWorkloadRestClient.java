@@ -4,9 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * REST implementation of trainer workload service client.
- */
 @Component
 @RequiredArgsConstructor
 public class TrainerWorkloadRestClient implements TrainerWorkloadClient {

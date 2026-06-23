@@ -8,9 +8,6 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-/**
- * Adds transaction-level logging for trainer workload REST requests.
- */
 @Slf4j
 @Component
 public class RestLoggingInterceptor implements HandlerInterceptor {

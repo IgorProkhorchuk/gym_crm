@@ -13,9 +13,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Component;
 
-/**
- * Creates JWT tokens for internal service-to-service requests.
- */
 @Component
 @RequiredArgsConstructor
 public class ServiceJwtTokenProvider {

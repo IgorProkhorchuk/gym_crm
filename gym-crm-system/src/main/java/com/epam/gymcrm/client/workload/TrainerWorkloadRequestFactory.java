@@ -4,9 +4,6 @@ import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.User;
 import org.springframework.stereotype.Component;
 
-/**
- * Creates trainer workload service requests from Gym CRM domain events.
- */
 @Component
 public class TrainerWorkloadRequestFactory {
 

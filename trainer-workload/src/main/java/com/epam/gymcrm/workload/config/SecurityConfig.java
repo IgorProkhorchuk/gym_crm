@@ -22,13 +22,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
 
-  /**
-   * Protects workload updates and keeps read-only operational endpoints available.
-   *
-   * @param http HTTP security builder
-   * @return configured security filter chain
-   * @throws Exception when security configuration fails
-   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http.csrf(AbstractHttpConfigurer::disable)
@@ -56,7 +49,7 @@ public class SecurityConfig {
                         "/actuator/info")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/v1/trainer-workloads/**")
-                    .permitAll()
+                    .hasRole("SERVICE")
                     .requestMatchers(HttpMethod.POST, "/v1/trainer-workloads")
                     .hasRole("SERVICE")
                     .anyRequest()

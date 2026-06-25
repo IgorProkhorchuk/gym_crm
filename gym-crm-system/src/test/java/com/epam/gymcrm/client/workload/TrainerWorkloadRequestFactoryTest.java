@@ -21,11 +21,13 @@ class TrainerWorkloadRequestFactoryTest {
         trainee("John", "Doe", "John.Doe"),
         trainer("Coach", "Stone", "Coach.Stone"),
         trainingType("Yoga"));
+    training.setTrainingId(1L);
 
     TrainerWorkloadRequest result =
         requestFactory.fromTraining(training, TrainerWorkloadActionType.ADD);
 
     assertAll(
+        () -> assertThat(result.trainingId()).isEqualTo(1L),
         () -> assertThat(result.trainerUsername()).isEqualTo("Coach.Stone"),
         () -> assertThat(result.trainerFirstName()).isEqualTo("Coach"),
         () -> assertThat(result.trainerLastName()).isEqualTo("Stone"),

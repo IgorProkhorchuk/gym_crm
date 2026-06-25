@@ -115,6 +115,7 @@ public class TrainerWorkloadOutboxEvent {
    */
   public TrainerWorkloadRequest toTrainerWorkloadRequest() {
     return new TrainerWorkloadRequest(
+        trainingId,
         trainerUsername,
         trainerFirstName,
         trainerLastName,

@@ -21,6 +21,7 @@ class TrainerWorkloadRestClientTest {
   void updateTrainerWorkloadShouldPostRequestToTrainerWorkloadService() {
     TrainerWorkloadRequest request =
         new TrainerWorkloadRequest(
+            10L,
             "Coach.Stone",
             "Coach",
             "Stone",

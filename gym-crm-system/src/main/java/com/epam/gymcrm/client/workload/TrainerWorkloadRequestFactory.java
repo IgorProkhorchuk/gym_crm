@@ -20,6 +20,7 @@ public class TrainerWorkloadRequestFactory {
   ) {
     User trainerUser = training.getTrainer().getUser();
     return new TrainerWorkloadRequest(
+        training.getTrainingId(),
         trainerUser.getUsername(),
         trainerUser.getFirstName(),
         trainerUser.getLastName(),

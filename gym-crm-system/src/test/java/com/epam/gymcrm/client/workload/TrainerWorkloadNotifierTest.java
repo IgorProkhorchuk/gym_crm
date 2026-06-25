@@ -80,6 +80,7 @@ class TrainerWorkloadNotifierTest {
 
   private static TrainerWorkloadRequest trainerWorkloadRequest() {
     return new TrainerWorkloadRequest(
+        10L,
         "Training.Trainer",
         "Training",
         "Trainer",

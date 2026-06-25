@@ -160,8 +160,10 @@ services:
       - gym-crm-net
     volumes:
       - ./logs/trainer-workload:/app/logs
+      - trainer_workload_data:/app/data
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      SPRING_DATASOURCE_URL: ${TRAINER_WORKLOAD_DATASOURCE_URL}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
@@ -217,5 +219,6 @@ networks:
 volumes:
   master_data:
   replica_data:
+  trainer_workload_data:
   prometheus_data:
   grafana_data:

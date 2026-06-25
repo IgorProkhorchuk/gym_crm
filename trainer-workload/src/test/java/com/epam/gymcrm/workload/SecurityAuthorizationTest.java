@@ -31,5 +31,6 @@ class SecurityAuthorizationTest {
             HttpClientErrorException.Unauthorized.class);
 
     assertThat(exception.getStatusCode().value()).isEqualTo(401);
+    assertThat(exception.getResponseBodyAsString()).contains("message");
   }
 }

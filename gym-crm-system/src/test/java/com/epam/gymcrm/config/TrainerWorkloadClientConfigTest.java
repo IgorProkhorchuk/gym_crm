@@ -8,6 +8,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.epam.gymcrm.client.workload.ServiceJwtTokenProvider;
 import com.epam.gymcrm.web.logging.RestLoggingInterceptor;
+import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -29,7 +30,11 @@ class TrainerWorkloadClientConfigTest {
     MDC.put(RestLoggingInterceptor.TRANSACTION_ID, "transaction-id");
 
     RestTemplate restTemplate =
-        new TrainerWorkloadClientConfig().trainerWorkloadRestTemplate(tokenProvider);
+        new TrainerWorkloadClientConfig()
+            .trainerWorkloadRestTemplate(
+                tokenProvider,
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(5));
     MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
     server
         .expect(requestTo("http://trainer-workload/api/v1/trainer-workloads"))

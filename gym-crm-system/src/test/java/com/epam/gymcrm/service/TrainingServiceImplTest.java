@@ -484,6 +484,7 @@ class TrainingServiceImplTest {
   private static TrainerWorkloadRequest trainerWorkloadRequest(
       TrainerWorkloadActionType actionType) {
     return new TrainerWorkloadRequest(
+        10L,
         "Training.Trainer",
         "Training",
         "Trainer",

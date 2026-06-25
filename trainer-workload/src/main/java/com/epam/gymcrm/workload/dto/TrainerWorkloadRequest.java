@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public record TrainerWorkloadRequest(
+    @NotNull Long trainingId,
     @NotBlank String trainerUsername,
     @NotBlank String trainerFirstName,
     @NotBlank String trainerLastName,

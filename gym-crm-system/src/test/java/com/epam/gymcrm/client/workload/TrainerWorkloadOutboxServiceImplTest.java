@@ -29,7 +29,7 @@ class TrainerWorkloadOutboxServiceImplTest {
 
   @Mock private TrainerWorkloadOutboxRepository trainerWorkloadOutboxRepository;
 
-  @Mock private TrainerWorkloadNotifier trainerWorkloadNotifier;
+  @Mock private TrainerWorkloadNotificationService trainerWorkloadNotificationService;
 
   @Captor private ArgumentCaptor<TrainerWorkloadOutboxEvent> eventCaptor;
 
@@ -62,7 +62,7 @@ class TrainerWorkloadOutboxServiceImplTest {
             .findByStatusAndNextRetryAtLessThanEqualOrderByCreatedAtAsc(
                 eq(TrainerWorkloadOutboxStatus.PENDING), any(Instant.class), any(Pageable.class)))
         .thenReturn(List.of(event));
-    when(trainerWorkloadNotifier.notifyTrainerWorkload(event.toTrainerWorkloadRequest()))
+    when(trainerWorkloadNotificationService.notifyTrainerWorkload(event.toTrainerWorkloadRequest()))
         .thenReturn(new TrainerWorkloadNotificationResult(true, null));
 
     trainerWorkloadOutboxService.dispatchPendingEvents();
@@ -80,7 +80,7 @@ class TrainerWorkloadOutboxServiceImplTest {
             .findByStatusAndNextRetryAtLessThanEqualOrderByCreatedAtAsc(
                 eq(TrainerWorkloadOutboxStatus.PENDING), any(Instant.class), any(Pageable.class)))
         .thenReturn(List.of(event));
-    when(trainerWorkloadNotifier.notifyTrainerWorkload(event.toTrainerWorkloadRequest()))
+    when(trainerWorkloadNotificationService.notifyTrainerWorkload(event.toTrainerWorkloadRequest()))
         .thenReturn(new TrainerWorkloadNotificationResult(false, "Connection refused"));
 
     trainerWorkloadOutboxService.dispatchPendingEvents();
@@ -103,6 +103,7 @@ class TrainerWorkloadOutboxServiceImplTest {
   private static TrainerWorkloadRequest trainerWorkloadRequest(
       TrainerWorkloadActionType actionType) {
     return new TrainerWorkloadRequest(
+        10L,
         "Training.Trainer",
         "Training",
         "Trainer",

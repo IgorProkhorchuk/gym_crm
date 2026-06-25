@@ -4,9 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Scheduled dispatcher for trainer workload outbox events.
- */
 @Component
 @RequiredArgsConstructor
 public class TrainerWorkloadOutboxDispatcher {

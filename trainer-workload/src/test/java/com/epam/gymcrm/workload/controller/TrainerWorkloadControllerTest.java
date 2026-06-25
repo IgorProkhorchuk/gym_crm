@@ -44,6 +44,7 @@ class TrainerWorkloadControllerTest {
   void updateTrainerWorkloadShouldReturnOk() {
     TrainerWorkloadRequest request =
         new TrainerWorkloadRequest(
+            1L,
             "John.Doe",
             "John",
             "Doe",
@@ -57,6 +58,7 @@ class TrainerWorkloadControllerTest {
         .body(
             """
                 {
+                  "trainingId": 1,
                   "trainerUsername": "John.Doe",
                   "trainerFirstName": "John",
                   "trainerLastName": "Doe",
@@ -121,6 +123,7 @@ class TrainerWorkloadControllerTest {
   void updateTrainerWorkloadShouldReturnBadRequestWhenServiceRejectsRequest() {
     TrainerWorkloadRequest request =
         new TrainerWorkloadRequest(
+            1L,
             "John.Doe",
             "John",
             "Doe",
@@ -138,6 +141,7 @@ class TrainerWorkloadControllerTest {
         .body(
             """
                 {
+                  "trainingId": 1,
                   "trainerUsername": "John.Doe",
                   "trainerFirstName": "John",
                   "trainerLastName": "Doe",

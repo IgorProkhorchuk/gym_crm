@@ -102,6 +102,8 @@ services:
       - "8761:8761"
     networks:
       - gym-crm-net
+    volumes:
+      - eureka_logs:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/8761'"]
       interval: 5s
@@ -117,6 +119,8 @@ services:
       - "8080:8080"
     networks:
       - gym-crm-net
+    volumes:
+      - gym_crm_system_logs:/app/logs
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
@@ -154,8 +158,12 @@ services:
       - "8081:8081"
     networks:
       - gym-crm-net
+    volumes:
+      - trainer_workload_logs:/app/logs
+      - trainer_workload_data:/app/data
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      SPRING_DATASOURCE_URL: ${TRAINER_WORKLOAD_DATASOURCE_URL}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
@@ -211,5 +219,9 @@ networks:
 volumes:
   master_data:
   replica_data:
+  eureka_logs:
+  gym_crm_system_logs:
+  trainer_workload_logs:
+  trainer_workload_data:
   prometheus_data:
   grafana_data:

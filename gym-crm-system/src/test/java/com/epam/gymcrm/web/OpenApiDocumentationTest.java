@@ -30,6 +30,7 @@ class OpenApiDocumentationTest extends PostgresContainerTest {
         .contains("\"bearerFormat\":\"JWT\"")
         .contains("\"/v1/auth/login\"")
         .contains("\"/v1/auth/logout\"")
+        .contains("\"/v1/trainer-workloads/{username}\"")
         .contains("\"423\"");
   }
 

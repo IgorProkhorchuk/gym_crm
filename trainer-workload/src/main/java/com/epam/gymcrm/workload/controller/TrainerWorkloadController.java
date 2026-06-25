@@ -1,5 +1,6 @@
 package com.epam.gymcrm.workload.controller;
 
+import com.epam.gymcrm.workload.api.TrainerWorkloadApi;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadRequest;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadResponse;
 import com.epam.gymcrm.workload.service.TrainerWorkloadService;
@@ -16,11 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/trainer-workloads")
 @RequiredArgsConstructor
-public class TrainerWorkloadController {
+public class TrainerWorkloadController implements TrainerWorkloadApi {
 
   private final TrainerWorkloadService trainerWorkloadService;
 
   @PostMapping
+  @Override
   public ResponseEntity<Void> updateTrainerWorkload(
       @Valid @RequestBody TrainerWorkloadRequest request
   ) {
@@ -29,6 +31,7 @@ public class TrainerWorkloadController {
   }
 
   @GetMapping("/{username}")
+  @Override
   public ResponseEntity<TrainerWorkloadResponse> getTrainerWorkload(
       @PathVariable String username
   ) {

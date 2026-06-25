@@ -12,9 +12,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class RestLoggingInterceptor implements HandlerInterceptor {
 
+  public static final String TRANSACTION_ID_HEADER = "X-Transaction-Id";
+
   static final String START_TIME_ATTRIBUTE =
       RestLoggingInterceptor.class.getName() + ".startTime";
-  private static final String TRANSACTION_ID = "transactionId";
+  public static final String TRANSACTION_ID = "transactionId";
   private static final String PROTECTED_VALUE = "$1=[PROTECTED]";
   private static final String SENSITIVE_VALUE_PATTERN = "(?i)(password|token|secret)=\\S+";
   private static final long NANOS_PER_MILLI = 1_000_000L;
@@ -22,9 +24,15 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
   @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
-    MDC.put(TRANSACTION_ID, UUID.randomUUID().toString());
+    String transactionId = resolveTransactionId(request);
+    MDC.put(TRANSACTION_ID, transactionId);
+    response.setHeader(TRANSACTION_ID_HEADER, transactionId);
     request.setAttribute(START_TIME_ATTRIBUTE, System.nanoTime());
-    log.info("REST request started method={} path={}", request.getMethod(), request.getRequestURI());
+    log.info(
+        "REST request started method={} path={} query={}",
+        request.getMethod(),
+        request.getRequestURI(),
+        sanitize(request.getQueryString()));
     return true;
   }
 
@@ -55,6 +63,14 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
           sanitize(exception.getMessage()));
     }
     MDC.remove(TRANSACTION_ID);
+  }
+
+  private static String resolveTransactionId(HttpServletRequest request) {
+    String transactionId = request.getHeader(TRANSACTION_ID_HEADER);
+    if (transactionId == null || transactionId.isBlank()) {
+      return UUID.randomUUID().toString();
+    }
+    return transactionId;
   }
 
   private static String sanitize(String message) {

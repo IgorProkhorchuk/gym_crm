@@ -8,26 +8,50 @@ import com.epam.gymcrm.workload.dto.TrainerWorkloadYearResponse;
 import com.epam.gymcrm.workload.exception.TrainerWorkloadNotFoundException;
 import com.epam.gymcrm.workload.model.TrainerMonthlySummary;
 import com.epam.gymcrm.workload.model.TrainerWorkload;
+import com.epam.gymcrm.workload.model.TrainerWorkloadProcessedEvent;
 import com.epam.gymcrm.workload.repository.TrainerMonthlySummaryRepository;
+import com.epam.gymcrm.workload.repository.TrainerWorkloadProcessedEventRepository;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
 
   private final TrainerWorkloadRepository trainerWorkloadRepository;
   private final TrainerMonthlySummaryRepository trainerMonthlySummaryRepository;
+  private final TrainerWorkloadProcessedEventRepository processedEventRepository;
 
   @Override
   @Transactional
   public void updateTrainerWorkload(TrainerWorkloadRequest request) {
+    log.info(
+        "Updating trainer workload, trainingId={}, trainerUsername={}, actionType={}, "
+            + "trainingDate={}, trainingDuration={}",
+        request.trainingId(),
+        request.trainerUsername(),
+        request.actionType(),
+        request.trainingDate(),
+        request.trainingDuration());
+
+    if (processedEventRepository.existsByTrainingIdAndActionType(
+        request.trainingId(), request.actionType())) {
+      log.info(
+          "Duplicate trainer workload event ignored, trainingId={}, actionType={}",
+          request.trainingId(),
+          request.actionType());
+      return;
+    }
+
     TrainerWorkload trainer = trainerWorkloadRepository.findById(request.trainerUsername())
         .orElseGet(() -> TrainerWorkload.builder()
             .username(request.trainerUsername())
@@ -57,16 +81,33 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
 
     trainerWorkloadRepository.save(trainer);
     trainerMonthlySummaryRepository.save(summary);
+    processedEventRepository.save(TrainerWorkloadProcessedEvent.fromRequest(
+        request.trainingId(),
+        request.actionType(),
+        Instant.now()));
+    log.info(
+        "Trainer workload updated, trainingId={}, trainerUsername={}, trainingYear={}, "
+            + "trainingMonth={}, summaryDuration={}",
+        request.trainingId(),
+        request.trainerUsername(),
+        trainingYear,
+        trainingMonth,
+        summary.getSummaryDuration());
   }
 
   @Override
   @Transactional(readOnly = true)
   public TrainerWorkloadResponse getTrainerWorkload(String username) {
+    log.info("Getting trainer workload, trainerUsername={}", username);
     TrainerWorkload trainer = trainerWorkloadRepository.findById(username)
         .orElseThrow(() -> new TrainerWorkloadNotFoundException(username));
     List<TrainerMonthlySummary> summaries = trainerMonthlySummaryRepository
         .findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(username);
 
+    log.info(
+        "Trainer workload found, trainerUsername={}, monthlySummaryCount={}",
+        username,
+        summaries.size());
     return new TrainerWorkloadResponse(
         trainer.getUsername(),
         trainer.getFirstName(),

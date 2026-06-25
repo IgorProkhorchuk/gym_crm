@@ -2,10 +2,8 @@ package com.epam.gymcrm.client.workload;
 
 import java.time.LocalDate;
 
-/**
- * Request sent to trainer workload service.
- */
 public record TrainerWorkloadRequest(
+    Long trainingId,
     String trainerUsername,
     String trainerFirstName,
     String trainerLastName,

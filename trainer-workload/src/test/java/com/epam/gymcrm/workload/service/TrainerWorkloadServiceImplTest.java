@@ -14,7 +14,9 @@ import com.epam.gymcrm.workload.dto.TrainerWorkloadResponse;
 import com.epam.gymcrm.workload.exception.TrainerWorkloadNotFoundException;
 import com.epam.gymcrm.workload.model.TrainerMonthlySummary;
 import com.epam.gymcrm.workload.model.TrainerWorkload;
+import com.epam.gymcrm.workload.model.TrainerWorkloadProcessedEvent;
 import com.epam.gymcrm.workload.repository.TrainerMonthlySummaryRepository;
+import com.epam.gymcrm.workload.repository.TrainerWorkloadProcessedEventRepository;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadRepository;
 import java.time.LocalDate;
 import java.util.List;
@@ -37,6 +39,8 @@ class TrainerWorkloadServiceImplTest {
 
   @Mock private TrainerMonthlySummaryRepository trainerMonthlySummaryRepository;
 
+  @Mock private TrainerWorkloadProcessedEventRepository processedEventRepository;
+
   @Test
   void updateTrainerWorkloadShouldCreateTrainerAndMonthlySummaryForAddAction() {
     TrainerWorkloadRequest request = request(ActionType.ADD, 60, true);
@@ -53,6 +57,7 @@ class TrainerWorkloadServiceImplTest {
         ArgumentCaptor.forClass(TrainerMonthlySummary.class);
     verify(trainerWorkloadRepository).save(trainerCaptor.capture());
     verify(trainerMonthlySummaryRepository).save(summaryCaptor.capture());
+    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
     TrainerWorkload trainer = trainerCaptor.getValue();
     TrainerMonthlySummary summary = summaryCaptor.getValue();
     assertAll(
@@ -85,6 +90,7 @@ class TrainerWorkloadServiceImplTest {
         () -> assertThat(trainer.isActive()).isFalse());
     verify(trainerWorkloadRepository).save(trainer);
     verify(trainerMonthlySummaryRepository).save(summary);
+    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
@@ -102,6 +108,23 @@ class TrainerWorkloadServiceImplTest {
     assertThat(summary.getSummaryDuration()).isEqualTo(45);
     verify(trainerWorkloadRepository).save(trainer);
     verify(trainerMonthlySummaryRepository).save(summary);
+    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+  }
+
+  @Test
+  void updateTrainerWorkloadShouldIgnoreAlreadyProcessedEvent() {
+    TrainerWorkloadRequest request = request(ActionType.ADD, 20, true);
+    when(processedEventRepository.existsByTrainingIdAndActionType(1L, ActionType.ADD))
+        .thenReturn(true);
+
+    trainerWorkloadService.updateTrainerWorkload(request);
+
+    verify(trainerWorkloadRepository, never()).findById(any());
+    verify(trainerMonthlySummaryRepository, never())
+        .findByTrainerUsernameAndTrainingYearAndTrainingMonth(any(), any(Integer.class), any(Integer.class));
+    verify(trainerWorkloadRepository, never()).save(any());
+    verify(trainerMonthlySummaryRepository, never()).save(any());
+    verify(processedEventRepository, never()).save(any());
   }
 
   @Test
@@ -120,6 +143,7 @@ class TrainerWorkloadServiceImplTest {
 
     verify(trainerWorkloadRepository, never()).save(any());
     verify(trainerMonthlySummaryRepository, never()).save(any());
+    verify(processedEventRepository, never()).save(any());
   }
 
   @Test
@@ -177,6 +201,7 @@ class TrainerWorkloadServiceImplTest {
       boolean active
   ) {
     return new TrainerWorkloadRequest(
+        1L,
         USERNAME,
         "John",
         "Doe",

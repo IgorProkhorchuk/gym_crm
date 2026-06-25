@@ -28,7 +28,38 @@ class RestLoggingInterceptorTest {
 
     assertThat(result).isTrue();
     assertThat(MDC.get("transactionId")).isNotBlank();
+    assertThat(response.getHeader(RestLoggingInterceptor.TRANSACTION_ID_HEADER))
+        .isEqualTo(MDC.get("transactionId"));
     assertThat(request.getAttribute(RestLoggingInterceptor.START_TIME_ATTRIBUTE)).isInstanceOf(Long.class);
+  }
+
+  @Test
+  void preHandleShouldUseIncomingTransactionId() {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/v1/trainees/profile");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    request.addHeader(RestLoggingInterceptor.TRANSACTION_ID_HEADER, "existing-transaction-id");
+
+    boolean result = interceptor.preHandle(request, response, HANDLER);
+
+    assertThat(result).isTrue();
+    assertThat(MDC.get("transactionId")).isEqualTo("existing-transaction-id");
+    assertThat(response.getHeader(RestLoggingInterceptor.TRANSACTION_ID_HEADER))
+        .isEqualTo("existing-transaction-id");
+  }
+
+  @Test
+  void preHandleShouldReplaceBlankIncomingTransactionId() {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/v1/trainees/profile");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    request.addHeader(RestLoggingInterceptor.TRANSACTION_ID_HEADER, " ");
+
+    boolean result = interceptor.preHandle(request, response, HANDLER);
+
+    assertThat(result).isTrue();
+    assertThat(MDC.get(RestLoggingInterceptor.TRANSACTION_ID)).isNotBlank();
+    assertThat(MDC.get(RestLoggingInterceptor.TRANSACTION_ID)).isNotEqualTo(" ");
+    assertThat(response.getHeader(RestLoggingInterceptor.TRANSACTION_ID_HEADER))
+        .isEqualTo(MDC.get(RestLoggingInterceptor.TRANSACTION_ID));
   }
 
   @Test

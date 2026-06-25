@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "2c820dc7-4eaf-4e73-bbe6-gymcrmoutbox001",
     "name": "Gym CRM Outbox Retry",
-    "description": "Manual collection for checking gym-crm-system -> trainer-workload integration and outbox retry. Run requests from top to bottom. For the retry section, pause after the manual step, stop trainer-workload with `docker-compose stop trainer-workload`, run the failed-delivery request, then start it again with `docker-compose start trainer-workload`. Optional DB check: `docker exec -e PGPASSWORD=password gym-master psql -U gym_user -d gym_crm -c \"select id, training_id, trainer_username, action_type, status, retry_count, next_retry_at, error_message from trainer_workload_outbox order by id;\"`.",
+    "description": "Manual collection for checking gym-crm-system -> trainer-workload integration and outbox retry. Run requests from top to bottom. Workload summaries are read through gym-crm-system because trainer-workload is an internal service. For the retry section, pause after the manual step, stop trainer-workload with `docker-compose stop trainer-workload`, run the failed-delivery request, then start it again with `docker-compose start trainer-workload`. Optional DB check: `docker exec -e PGPASSWORD=password gym-master psql -U gym_user -d gym_crm -c \"select id, training_id, trainer_username, action_type, status, retry_count, next_retry_at, error_message from trainer_workload_outbox order by id;\"`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -25,10 +25,6 @@
     {
       "key": "gymBaseUrl",
       "value": "http://localhost:8080/api"
-    },
-    {
-      "key": "workloadBaseUrl",
-      "value": "http://localhost:8081/api"
     },
     {
       "key": "runId",
@@ -318,11 +314,16 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{workloadBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
+              "raw": "{{gymBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
               "host": [
-                "{{workloadBaseUrl}}"
+                "{{gymBaseUrl}}"
               ],
               "path": [
                 "v1",
@@ -516,11 +517,16 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{workloadBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
+              "raw": "{{gymBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
               "host": [
-                "{{workloadBaseUrl}}"
+                "{{gymBaseUrl}}"
               ],
               "path": [
                 "v1",

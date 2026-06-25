@@ -23,8 +23,10 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
+import com.epam.gymcrm.dto.workload.TrainerWorkloadResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
+import com.epam.gymcrm.service.TrainerWorkloadQueryService;
 import com.epam.gymcrm.service.TrainingService;
 import com.epam.gymcrm.service.TrainingTypeService;
 import java.time.LocalDate;
@@ -47,6 +49,8 @@ class GymFacadeTest {
   @Mock private TrainingService trainingService;
 
   @Mock private TrainingTypeService trainingTypeService;
+
+  @Mock private TrainerWorkloadQueryService trainerWorkloadQueryService;
 
   @Test
   void createTraineeShouldDelegateToTraineeService() {
@@ -301,6 +305,19 @@ class GymFacadeTest {
     assertAll(
         () -> assertThat(result).isSameAs(trainingTypes),
         () -> verify(trainingTypeService).getTrainingTypes());
+  }
+
+  @Test
+  void getTrainerWorkloadShouldReturnWorkloadSummaryFromService() {
+    TrainerWorkloadResponse response =
+        new TrainerWorkloadResponse("Mike.Stone", "Mike", "Stone", true, List.of());
+    when(trainerWorkloadQueryService.getTrainerWorkload("Mike.Stone")).thenReturn(response);
+
+    TrainerWorkloadResponse result = gymFacade.getTrainerWorkload("Mike.Stone");
+
+    assertAll(
+        () -> assertThat(result).isSameAs(response),
+        () -> verify(trainerWorkloadQueryService).getTrainerWorkload("Mike.Stone"));
   }
 
   private static TraineeTrainingResponse traineeTrainingResponse() {

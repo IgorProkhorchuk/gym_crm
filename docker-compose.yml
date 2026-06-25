@@ -102,6 +102,8 @@ services:
       - "8761:8761"
     networks:
       - gym-crm-net
+    volumes:
+      - ./logs/eureka:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/8761'"]
       interval: 5s
@@ -117,6 +119,8 @@ services:
       - "8080:8080"
     networks:
       - gym-crm-net
+    volumes:
+      - ./logs/gym-crm-system:/app/logs
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
@@ -154,6 +158,8 @@ services:
       - "8081:8081"
     networks:
       - gym-crm-net
+    volumes:
+      - ./logs/trainer-workload:/app/logs
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
       JWT_ISSUER: ${JWT_ISSUER}

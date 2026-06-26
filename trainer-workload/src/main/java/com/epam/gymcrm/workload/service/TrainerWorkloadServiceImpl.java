@@ -35,10 +35,9 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
   @Transactional
   public void updateTrainerWorkload(TrainerWorkloadRequest request) {
     log.info(
-        "Updating trainer workload, trainingId={}, trainerUsername={}, actionType={}, "
-            + "trainingDate={}, trainingDuration={}",
+        "Updating trainer workload, trainingId={}, actionType={}, trainingDate={}, "
+            + "trainingDuration={}",
         request.trainingId(),
-        request.trainerUsername(),
         request.actionType(),
         request.trainingDate(),
         request.trainingDuration());
@@ -86,10 +85,9 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
         request.actionType(),
         Instant.now()));
     log.info(
-        "Trainer workload updated, trainingId={}, trainerUsername={}, trainingYear={}, "
-            + "trainingMonth={}, summaryDuration={}",
+        "Trainer workload updated, trainingId={}, trainingYear={}, trainingMonth={}, "
+            + "summaryDuration={}",
         request.trainingId(),
-        request.trainerUsername(),
         trainingYear,
         trainingMonth,
         summary.getSummaryDuration());
@@ -98,16 +96,14 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
   @Override
   @Transactional(readOnly = true)
   public TrainerWorkloadResponse getTrainerWorkload(String username) {
-    log.info("Getting trainer workload, trainerUsername={}", username);
+    log.info("Getting trainer workload");
     TrainerWorkload trainer = trainerWorkloadRepository.findById(username)
         .orElseThrow(() -> new TrainerWorkloadNotFoundException(username));
     List<TrainerMonthlySummary> summaries = trainerMonthlySummaryRepository
         .findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(username);
 
     log.info(
-        "Trainer workload found, trainerUsername={}, monthlySummaryCount={}",
-        username,
-        summaries.size());
+        "Trainer workload found, monthlySummaryCount={}", summaries.size());
     return new TrainerWorkloadResponse(
         trainer.getUsername(),
         trainer.getFirstName(),

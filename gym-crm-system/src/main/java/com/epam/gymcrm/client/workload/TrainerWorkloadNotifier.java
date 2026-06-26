@@ -35,10 +35,10 @@ public class TrainerWorkloadNotifier implements TrainerWorkloadNotificationServi
       TrainerWorkloadRequest request) {
     return failure -> {
       log.warn(
-          "Trainer workload update failed, actionType={}, trainerUsername={}, trainingDate={}, "
+          "Trainer workload update failed, trainingId={}, actionType={}, trainingDate={}, "
               + "trainingDuration={}",
+          request.trainingId(),
           request.actionType(),
-          request.trainerUsername(),
           request.trainingDate(),
           request.trainingDuration(),
           failure);

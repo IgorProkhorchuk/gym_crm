@@ -33,7 +33,7 @@ public class TrainerWorkloadController implements TrainerWorkloadApi {
   @GetMapping("/{username}")
   @Override
   public ResponseEntity<TrainerWorkloadResponse> getTrainerWorkload(
-      @PathVariable String username
+      @PathVariable(name = "username") String username
   ) {
     return ResponseEntity.ok(trainerWorkloadService.getTrainerWorkload(username));
   }

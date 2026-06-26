@@ -1,5 +1,8 @@
 package com.epam.gymcrm.client.workload;
 
+import static com.epam.gymcrm.service.validation.ServiceValidationUtils.requireNonNull;
+
+import com.epam.gymcrm.model.Trainer;
 import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.User;
 import org.springframework.stereotype.Component;
@@ -18,15 +21,17 @@ public class TrainerWorkloadRequestFactory {
       Training training,
       TrainerWorkloadActionType actionType
   ) {
-    User trainerUser = training.getTrainer().getUser();
+    Training sourceTraining = requireNonNull(training, "Training must not be null");
+    Trainer trainer = requireNonNull(sourceTraining.getTrainer(), "Training trainer must not be null");
+    User trainerUser = requireNonNull(trainer.getUser(), "Trainer user must not be null");
     return new TrainerWorkloadRequest(
-        training.getTrainingId(),
+        sourceTraining.getTrainingId(),
         trainerUser.getUsername(),
         trainerUser.getFirstName(),
         trainerUser.getLastName(),
         trainerUser.getActive(),
-        training.getTrainingDate(),
-        training.getTrainingDuration(),
+        sourceTraining.getTrainingDate(),
+        sourceTraining.getTrainingDuration(),
         actionType);
   }
 }

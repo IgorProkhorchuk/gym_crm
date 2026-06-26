@@ -9,4 +9,14 @@ public record TrainerWorkloadResponse(
     boolean trainerStatus,
     List<TrainerWorkloadYearResponse> years
 ) {
+
+  @Override
+  public String toString() {
+    return "TrainerWorkloadResponse[trainerUsername=[PROTECTED], "
+        + "trainerFirstName=[PROTECTED], trainerLastName=[PROTECTED], trainerStatus="
+        + trainerStatus
+        + ", years="
+        + years
+        + "]";
+  }
 }

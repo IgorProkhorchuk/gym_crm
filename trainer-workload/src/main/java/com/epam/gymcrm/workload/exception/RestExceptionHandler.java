@@ -29,8 +29,7 @@ public class RestExceptionHandler {
   @ExceptionHandler(TrainerWorkloadNotFoundException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ErrorResponse handleNotFound(TrainerWorkloadNotFoundException exception) {
-    log.warn("Trainer workload request failed, status={}, message={}", HttpStatus.NOT_FOUND,
-        exception.getMessage());
+    log.warn("Trainer workload request failed, status={}", HttpStatus.NOT_FOUND);
     return new ErrorResponse(exception.getMessage());
   }
 

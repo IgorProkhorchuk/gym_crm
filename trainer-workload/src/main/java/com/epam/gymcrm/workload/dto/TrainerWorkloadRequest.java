@@ -16,4 +16,19 @@ public record TrainerWorkloadRequest(
     @NotNull ActionType actionType
 ) {
 
+  @Override
+  public String toString() {
+    return "TrainerWorkloadRequest[trainingId="
+        + trainingId
+        + ", trainerUsername=[PROTECTED], trainerFirstName=[PROTECTED], "
+        + "trainerLastName=[PROTECTED], trainerStatus="
+        + trainerStatus
+        + ", trainingDate="
+        + trainingDate
+        + ", trainingDuration="
+        + trainingDuration
+        + ", actionType="
+        + actionType
+        + "]";
+  }
 }

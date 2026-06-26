@@ -23,6 +23,13 @@ public interface TrainingService {
       @Valid @NotNull(message = "Training request must not be null") AddTrainingRequest request);
 
   /**
+   * Deletes training by id.
+   *
+   * @param trainingId training id
+   */
+  void deleteTraining(@NotNull(message = "Training id must not be null") Long trainingId);
+
+  /**
    * Returns trainee trainings after authenticating the trainee credentials.
    *
    * @param request trainee credentials and optional filters

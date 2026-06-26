@@ -100,6 +100,23 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
       Pageable pageable);
 
   /**
+   * Finds all trainings for a trainee with trainer details required for workload updates.
+   *
+   * @param traineeId trainee profile id
+   * @return trainings owned by the trainee
+   */
+  @Query(
+      """
+          select tr
+          from Training tr
+          join fetch tr.trainer trainer
+          join fetch trainer.user trainerUser
+          where tr.trainee.id = :traineeId
+          order by tr.trainingDate
+      """)
+  List<Training> findByTraineeIdWithTrainer(Long traineeId);
+
+  /**
    * Finds trainer trainings by normalized filter parameters.
    *
    * @param trainerUsername trainer username to search trainings for

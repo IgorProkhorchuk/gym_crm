@@ -166,6 +166,37 @@ class TrainingControllerTest {
     verifyNoInteractions(gymFacade);
   }
 
+  @Test
+  void deleteTrainingShouldReturnNoContent() {
+    AuthenticatedPrincipal user =
+        new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
+    when(authenticatedUserProvider.currentUser()).thenReturn(user);
+
+    given()
+        .when()
+        .delete("/v1/trainings/10")
+        .then()
+        .statusCode(204);
+
+    verify(authenticatedUserProvider).currentUser();
+    verify(gymFacade).deleteTraining(10L);
+  }
+
+  @Test
+  void deleteTrainingShouldRejectInvalidToken() {
+    when(authenticatedUserProvider.currentUser())
+        .thenThrow(new AuthenticationException("Invalid authentication token"));
+
+    given()
+        .when()
+        .delete("/v1/trainings/10")
+        .then()
+        .statusCode(401)
+        .body("message", equalTo("Invalid authentication token"));
+
+    verifyNoInteractions(gymFacade);
+  }
+
   private static String validRequestBody() {
     return
         """

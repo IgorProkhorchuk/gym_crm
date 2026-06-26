@@ -11,6 +11,8 @@ import com.epam.gymcrm.web.dto.AddTrainingRestRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,5 +52,13 @@ public class TrainingController implements TrainingApi {
             request.trainingTypeName(),
             request.trainingDate(),
             request.trainingDuration()));
+  }
+
+  @DeleteMapping("/{trainingId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Override
+  public void deleteTraining(@PathVariable Long trainingId) {
+    authenticatedUserProvider.currentUser();
+    gymFacade.deleteTraining(trainingId);
   }
 }

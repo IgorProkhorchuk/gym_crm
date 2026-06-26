@@ -1,10 +1,16 @@
 #!/bin/bash
 set -e
 
-APP_DB_NAME="${APP_DB_NAME:-gym_crm}"
-APP_DB_USERNAME="${APP_DB_USERNAME:-gym_user}"
-APP_DB_PASSWORD="${APP_DB_PASSWORD:-password}"
-TEST_DB_NAME="${TEST_DB_NAME:-gym_crm_test}"
+require_env() {
+  if [ -z "${!1}" ]; then
+    echo "$1 is required"
+    exit 1
+  fi
+}
+
+for var in APP_DB_NAME APP_DB_USERNAME APP_DB_PASSWORD TEST_DB_NAME REPL_PASSWORD POSTGRES_USER POSTGRES_DB; do
+  require_env "$var"
+done
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     SELECT 'CREATE ROLE repl_user WITH REPLICATION LOGIN PASSWORD ''$REPL_PASSWORD'''

@@ -2,11 +2,13 @@ package com.epam.gymcrm.workload.web.logging;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.HandlerMapping;
 
 @Slf4j
 @Component
@@ -31,7 +33,7 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
     log.info(
         "REST request started method={} path={} query={}",
         request.getMethod(),
-        request.getRequestURI(),
+        routePattern(request),
         sanitize(request.getQueryString()));
     return true;
   }
@@ -49,7 +51,7 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
       log.info(
           "REST request completed method={} path={} status={} durationMs={}",
           request.getMethod(),
-          request.getRequestURI(),
+          routePattern(request),
           response.getStatus(),
           durationMillis);
     } else {
@@ -57,7 +59,7 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
           "REST request failed method={} path={} status={} durationMs={} errorType={} "
               + "errorMessage={}",
           request.getMethod(),
-          request.getRequestURI(),
+          routePattern(request),
           response.getStatus(),
           durationMillis,
           exception.getClass().getSimpleName(),
@@ -76,5 +78,10 @@ public class RestLoggingInterceptor implements HandlerInterceptor {
 
   private static String sanitize(String message) {
     return String.valueOf(message).replaceAll(SENSITIVE_VALUE_PATTERN, PROTECTED_VALUE);
+  }
+
+  private static String routePattern(HttpServletRequest request) {
+    Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+    return Objects.toString(pattern, "[unmatched]");
   }
 }

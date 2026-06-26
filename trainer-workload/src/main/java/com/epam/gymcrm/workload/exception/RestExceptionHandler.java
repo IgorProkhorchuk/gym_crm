@@ -2,6 +2,7 @@ package com.epam.gymcrm.workload.exception;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.HandlerMapping;
 
 @Slf4j
 @RestControllerAdvice
@@ -112,8 +114,13 @@ public class RestExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  public ErrorResponse handleUnexpectedException(Exception exception) {
-    log.error("Unexpected REST error type={}", exception.getClass().getSimpleName(), exception);
+  public ErrorResponse handleUnexpectedException(
+      Exception exception, HttpServletRequest request) {
+    log.error(
+        "Unexpected REST error type={}, method={}, path={}",
+        exception.getClass().getSimpleName(),
+        request.getMethod(),
+        routePattern(request));
     return new ErrorResponse(UNEXPECTED_ERROR);
   }
 
@@ -148,5 +155,10 @@ public class RestExceptionHandler {
       current = current.getCause();
     }
     return null;
+  }
+
+  private static String routePattern(HttpServletRequest request) {
+    Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+    return Objects.toString(pattern, "[unmatched]");
   }
 }

@@ -124,9 +124,9 @@ Useful URLs:
 ```text
 Eureka:                    http://localhost:8761
 Gym CRM Swagger UI:        http://localhost:8080/api/swagger-ui.html
-Trainer Workload Swagger:  http://localhost:8081/swagger-ui.html
+Trainer Workload Swagger:  http://localhost:8081/api/swagger-ui/index.html
 Gym CRM health:            http://localhost:8080/api/actuator/health
-Trainer Workload health:   http://localhost:8081/actuator/health
+Trainer Workload health:   http://localhost:8081/api/actuator/health
 Prometheus:                http://localhost:9090
 Grafana:                   http://localhost:3000
 ```
@@ -208,13 +208,13 @@ http://localhost:8080/api/v3/api-docs
 Swagger UI:
 
 ```text
-http://localhost:8081/swagger-ui.html
+http://localhost:8081/api/swagger-ui/index.html
 ```
 
 OpenAPI JSON:
 
 ```text
-http://localhost:8081/v3/api-docs
+http://localhost:8081/api/v3/api-docs
 ```
 
 `trainer-workload` endpoints are protected with the same JWT issuer/secret.
@@ -312,8 +312,8 @@ Actuator endpoints:
 http://localhost:8080/api/actuator/health
 http://localhost:8080/api/actuator/metrics
 http://localhost:8080/api/actuator/prometheus
-http://localhost:8081/actuator/health
-http://localhost:8081/actuator/prometheus
+http://localhost:8081/api/actuator/health
+http://localhost:8081/api/actuator/prometheus
 ```
 
 Prometheus:
@@ -339,4 +339,3 @@ admin / admin
 Use `presentation.md` for the video recording checklist. It contains Swagger
 payloads, Postman collection names, Linux terminal commands, log commands,
 circuit breaker demo steps, and outbox SQL checks.
-

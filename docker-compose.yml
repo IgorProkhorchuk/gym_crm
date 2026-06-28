@@ -181,6 +181,40 @@ services:
 
 #==================MONITORING=================
 
+  loki:
+    image: docker.io/grafana/loki:latest
+    container_name: gym-loki
+    ports:
+      - "3100:3100"
+    networks:
+      - gym-crm-net
+    volumes:
+      - ./infra/monitoring/loki/loki.yml:/etc/loki/local-config.yml:ro
+      - loki_data:/loki
+    command:
+      - "-config.file=/etc/loki/local-config.yml"
+
+  alloy:
+    image: docker.io/grafana/alloy:latest
+    container_name: gym-alloy
+    ports:
+      - "12345:12345"
+    networks:
+      - gym-crm-net
+    volumes:
+      - ./infra/monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      - eureka_logs:/var/log/gym/eureka:ro
+      - gym_crm_system_logs:/var/log/gym/gym-crm-system:ro
+      - trainer_workload_logs:/var/log/gym/trainer-workload:ro
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "/etc/alloy/config.alloy"
+    depends_on:
+      - loki
+
   prometheus:
     image: docker.io/prom/prometheus:latest
     container_name: gym-prometheus
@@ -215,6 +249,7 @@ services:
       - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - loki
 
 networks:
   gym-crm-net:
@@ -227,5 +262,7 @@ volumes:
   gym_crm_system_logs:
   trainer_workload_logs:
   trainer_workload_data:
+  loki_data:
+  alloy_data:
   prometheus_data:
   grafana_data:

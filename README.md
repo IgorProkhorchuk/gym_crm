@@ -39,7 +39,12 @@ flowchart LR
     workload --> h2["H2 Workload DB"]
     prometheus["Prometheus"] --> gym
     prometheus --> workload
+    alloy["Grafana Alloy"] --> loki["Loki"]
+    gym --> alloy
+    workload --> alloy
+    eureka --> alloy
     grafana["Grafana"] --> prometheus
+    grafana --> loki
 ```
 
 ## Key Features
@@ -62,6 +67,7 @@ flowchart LR
   events.
 * Correlation-id based tracing through `X-Transaction-Id` and log pattern
   `tx:<id>`.
+* Centralized log collection with Grafana Alloy, Loki, and Grafana Explore.
 * Actuator, Prometheus, and Grafana monitoring.
 * Maven, JUnit, Mockito, Testcontainers, Checkstyle, and JaCoCo verification.
 
@@ -129,6 +135,8 @@ Gym CRM health:            http://localhost:8080/api/actuator/health
 Trainer Workload health:   http://localhost:8081/api/actuator/health
 Prometheus:                http://localhost:9090
 Grafana:                   http://localhost:3000
+Loki:                      http://localhost:3100
+Grafana Alloy:             http://localhost:12345
 ```
 
 ## Build And Verify
@@ -258,6 +266,38 @@ Example:
 
 This is correlation-id based tracing through logs. It is not a full
 OpenTelemetry/Zipkin/Jaeger distributed tracing setup.
+
+Logs are centralized in Loki and queried from Grafana. Grafana Alloy reads the
+service log volumes and sends log entries to Loki with stable labels such as
+`service`, `job`, and `env`. `transactionId` is intentionally kept inside the
+log message instead of being used as a Loki label, because every request can
+have a different value.
+
+Open Grafana Explore:
+
+```text
+http://localhost:3000/explore
+```
+
+Select the `Loki` data source and search across application services.
+
+Find errors:
+
+```logql
+{service=~"gym-crm-system|trainer-workload"} |= "ERROR"
+```
+
+Find a full request flow after copying `tx:<id>` from any log line:
+
+```logql
+{service=~"gym-crm-system|trainer-workload"} |= "tx:demo-001"
+```
+
+Include Eureka logs if needed:
+
+```logql
+{job="gym-crm"} |= "tx:demo-001"
+```
 
 Follow logs.
 

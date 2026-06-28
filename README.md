@@ -328,6 +328,7 @@ Postman collections:
 ```text
 gym-crm-system/postman/gym-crm-rest.postman_collection.json
 gym-crm-system/postman/gym-crm-outbox.postman_collection.json
+gym-crm-system/postman/gym-crm-log-volume-demo.postman_collection.json
 ```
 
 Optional Newman run:
@@ -342,6 +343,20 @@ PowerShell:
 
 ```powershell
 newman run .\gym-crm-system\postman\gym-crm-outbox.postman_collection.json
+```
+
+Generate log activity for Loki/Grafana checks:
+
+Linux/macOS:
+
+```bash
+newman run ./gym-crm-system/postman/gym-crm-log-volume-demo.postman_collection.json
+```
+
+PowerShell:
+
+```powershell
+newman run .\gym-crm-system\postman\gym-crm-log-volume-demo.postman_collection.json
 ```
 
 ## Monitoring
@@ -373,9 +388,3 @@ Default local Grafana credentials are configured in `.env.example`:
 ```text
 admin / admin
 ```
-
-## Demo Script
-
-Use `presentation.md` for the video recording checklist. It contains Swagger
-payloads, Postman collection names, Linux terminal commands, log commands,
-circuit breaker demo steps, and outbox SQL checks.

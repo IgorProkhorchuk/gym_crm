@@ -1,0 +1,1156 @@
+{
+  "info": {
+    "_postman_id": "4ef8b9a2-7b2d-4b22-9b31-gymcrmlogdemo01",
+    "name": "Gym CRM Log Volume Demo",
+    "description": "Creates multiple trainers, trainees, trainings, read requests, expected failures, partial cleanup, and auto-generated transaction-id checks to generate centralized logs for Loki/Grafana. Run the collection from top to bottom with Postman Collection Runner. Most requests send X-Transaction-Id like postman-log-demo-<runId>-<request>-<timestamp>; the auto-generated checks intentionally omit the header and capture the generated X-Transaction-Id from response headers.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:8080/api');",
+          "}",
+          "",
+          "const runId = pm.collectionVariables.get('runId') || Date.now().toString();",
+          "pm.collectionVariables.set('runId', runId);",
+          "",
+          "const requestSlug = pm.info.requestName",
+          "  .toLowerCase()",
+          "  .replace(/[^a-z0-9]+/g, '-')",
+          "  .replace(/^-|-$/g, '');",
+          "const transactionId = 'postman-log-demo-' + runId + '-' + requestSlug + '-' + Date.now();",
+          "pm.collectionVariables.set('transactionId', transactionId);",
+          "console.log('X-Transaction-Id: ' + transactionId);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerCount",
+      "value": "4",
+      "type": "string"
+    },
+    {
+      "key": "traineeCount",
+      "value": "6",
+      "type": "string"
+    },
+    {
+      "key": "trainingCount",
+      "value": "18",
+      "type": "string"
+    },
+    {
+      "key": "deleteTraineeCount",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "autoTxCount",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "transactionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Initialize Demo Run",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const newRunId = Date.now().toString();",
+              "pm.collectionVariables.set('runId', newRunId);",
+              "pm.collectionVariables.set('trainers', '[]');",
+              "pm.collectionVariables.set('trainees', '[]');",
+              "pm.collectionVariables.set('trainerIndex', '0');",
+              "pm.collectionVariables.set('traineeIndex', '0');",
+              "pm.collectionVariables.set('trainerLoginIndex', '0');",
+              "pm.collectionVariables.set('traineeLoginIndex', '0');",
+              "pm.collectionVariables.set('assignmentIndex', '0');",
+              "pm.collectionVariables.set('trainingIndex', '0');",
+              "pm.collectionVariables.set('readTraineeIndex', '0');",
+              "pm.collectionVariables.set('readTrainerIndex', '0');",
+              "pm.collectionVariables.set('workloadIndex', '0');",
+              "pm.collectionVariables.set('deleteTraineeIndex', '0');",
+              "pm.collectionVariables.set('autoTxIndex', '0');",
+              "pm.collectionVariables.set('generatedTransactionIds', '[]');",
+              "pm.collectionVariables.set('transactionId', 'postman-log-demo-' + newRunId + '-initialize-demo-run-' + Date.now());",
+              "console.log('Log demo runId: ' + newRunId);",
+              "console.log('Grafana run query: {job=\"gym-crm\"} |= \"postman-log-demo-' + newRunId + '\"');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Gym CRM is healthy before seeding logs', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().status).to.eql('UP');",
+              "});",
+              "postman.setNextRequest('01 Create Trainer');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "actuator",
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "01 Create Trainer",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('trainerIndex') || 0);",
+              "const specializations = ['Fitness', 'Yoga', 'Cardio', 'Boxing'];",
+              "pm.collectionVariables.set('currentTrainerNumber', String(index + 1).padStart(2, '0'));",
+              "pm.collectionVariables.set('currentTrainerSpecialization', specializations[index % specializations.length]);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainer is created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "trainers.push({",
+              "  username: body.username,",
+              "  password: body.password,",
+              "  specialization: pm.collectionVariables.get('currentTrainerSpecialization')",
+              "});",
+              "pm.collectionVariables.set('trainers', JSON.stringify(trainers));",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('trainerIndex')) + 1;",
+              "pm.collectionVariables.set('trainerIndex', String(nextIndex));",
+              "if (nextIndex < Number(pm.collectionVariables.get('trainerCount'))) {",
+              "  postman.setNextRequest('01 Create Trainer');",
+              "} else {",
+              "  postman.setNextRequest('02 Create Trainee');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"LogTrainer{{runId}}{{currentTrainerNumber}}\",\n  \"lastName\": \"Coach\",\n  \"specialization\": \"{{currentTrainerSpecialization}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainers",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainers"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 Create Trainee",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('traineeIndex') || 0);",
+              "pm.collectionVariables.set('currentTraineeNumber', String(index + 1).padStart(2, '0'));",
+              "pm.collectionVariables.set('currentTraineeBirthDate', '199' + (index % 10) + '-0' + ((index % 9) + 1) + '-15');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainee is created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "trainees.push({",
+              "  username: body.username,",
+              "  password: body.password",
+              "});",
+              "pm.collectionVariables.set('trainees', JSON.stringify(trainees));",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('traineeIndex')) + 1;",
+              "pm.collectionVariables.set('traineeIndex', String(nextIndex));",
+              "if (nextIndex < Number(pm.collectionVariables.get('traineeCount'))) {",
+              "  postman.setNextRequest('02 Create Trainee');",
+              "} else {",
+              "  postman.setNextRequest('03 Login Trainer');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"LogTrainee{{runId}}{{currentTraineeNumber}}\",\n  \"lastName\": \"Member\",\n  \"dateOfBirth\": \"{{currentTraineeBirthDate}}\",\n  \"address\": \"Kyiv demo address {{currentTraineeNumber}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainees",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainees"
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 Login Trainer",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('trainerLoginIndex') || 0);",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "const trainer = trainers[index];",
+              "pm.collectionVariables.set('currentTrainerUsername', trainer.username);",
+              "pm.collectionVariables.set('currentTrainerPassword', trainer.password);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainer login succeeds', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "const index = Number(pm.collectionVariables.get('trainerLoginIndex'));",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "trainers[index].token = body.token;",
+              "pm.collectionVariables.set('trainers', JSON.stringify(trainers));",
+              "",
+              "const nextIndex = index + 1;",
+              "pm.collectionVariables.set('trainerLoginIndex', String(nextIndex));",
+              "if (nextIndex < trainers.length) {",
+              "  postman.setNextRequest('03 Login Trainer');",
+              "} else {",
+              "  postman.setNextRequest('04 Login Trainee');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{currentTrainerUsername}}\",\n  \"password\": \"{{currentTrainerPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 Login Trainee",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('traineeLoginIndex') || 0);",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainee = trainees[index];",
+              "pm.collectionVariables.set('currentTraineeUsername', trainee.username);",
+              "pm.collectionVariables.set('currentTraineePassword', trainee.password);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainee login succeeds', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "const index = Number(pm.collectionVariables.get('traineeLoginIndex'));",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "trainees[index].token = body.token;",
+              "pm.collectionVariables.set('trainees', JSON.stringify(trainees));",
+              "",
+              "const nextIndex = index + 1;",
+              "pm.collectionVariables.set('traineeLoginIndex', String(nextIndex));",
+              "if (nextIndex < trainees.length) {",
+              "  postman.setNextRequest('04 Login Trainee');",
+              "} else {",
+              "  postman.setNextRequest('05 Assign Trainer To Trainee');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{currentTraineeUsername}}\",\n  \"password\": \"{{currentTraineePassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 Assign Trainer To Trainee",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('assignmentIndex') || 0);",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "const trainee = trainees[index];",
+              "const trainer = trainers[index % trainers.length];",
+              "pm.collectionVariables.set('currentTraineeUsername', trainee.username);",
+              "pm.collectionVariables.set('currentTraineeToken', trainee.token);",
+              "pm.collectionVariables.set('currentTrainerUsername', trainer.username);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainer assignment succeeds', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const index = Number(pm.collectionVariables.get('assignmentIndex'));",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "const trainer = trainers[index % trainers.length];",
+              "trainees[index].assignedTrainerUsername = trainer.username;",
+              "trainees[index].assignedTrainerSpecialization = trainer.specialization;",
+              "pm.collectionVariables.set('trainees', JSON.stringify(trainees));",
+              "",
+              "const nextIndex = index + 1;",
+              "pm.collectionVariables.set('assignmentIndex', String(nextIndex));",
+              "if (nextIndex < trainees.length) {",
+              "  postman.setNextRequest('05 Assign Trainer To Trainee');",
+              "} else {",
+              "  postman.setNextRequest('06 Add Training');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTraineeToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"traineeUsername\": \"{{currentTraineeUsername}}\",\n  \"trainerUsernames\": [\n    \"{{currentTrainerUsername}}\"\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainees/trainers",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainees",
+            "trainers"
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 Add Training",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('trainingIndex') || 0);",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainee = trainees[index % trainees.length];",
+              "const day = String((index % 24) + 1).padStart(2, '0');",
+              "pm.collectionVariables.set('currentTraineeUsername', trainee.username);",
+              "pm.collectionVariables.set('currentTraineeToken', trainee.token);",
+              "pm.collectionVariables.set('currentTrainerUsername', trainee.assignedTrainerUsername);",
+              "pm.collectionVariables.set('currentTrainingType', trainee.assignedTrainerSpecialization);",
+              "pm.collectionVariables.set('currentTrainingName', 'Log demo training ' + pm.collectionVariables.get('runId') + '-' + String(index + 1).padStart(2, '0'));",
+              "pm.collectionVariables.set('currentTrainingDate', '2026-07-' + day);",
+              "pm.collectionVariables.set('currentTrainingDuration', String(30 + ((index % 4) * 15)));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Training creation succeeds', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('trainingIndex')) + 1;",
+              "pm.collectionVariables.set('trainingIndex', String(nextIndex));",
+              "if (nextIndex < Number(pm.collectionVariables.get('trainingCount'))) {",
+              "  postman.setNextRequest('06 Add Training');",
+              "} else {",
+              "  postman.setNextRequest('07 Get Trainee Trainings');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTraineeToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"traineeUsername\": \"{{currentTraineeUsername}}\",\n  \"trainerUsername\": \"{{currentTrainerUsername}}\",\n  \"trainingName\": \"{{currentTrainingName}}\",\n  \"trainingTypeName\": \"{{currentTrainingType}}\",\n  \"trainingDate\": \"{{currentTrainingDate}}\",\n  \"trainingDuration\": {{currentTrainingDuration}}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainings"
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 Get Trainee Trainings",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('readTraineeIndex') || 0);",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainee = trainees[index];",
+              "pm.collectionVariables.set('currentTraineeUsername', trainee.username);",
+              "pm.collectionVariables.set('currentTraineeToken', trainee.token);",
+              "pm.collectionVariables.set('currentTrainerUsername', trainee.assignedTrainerUsername);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainee trainings are returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json()).to.be.an('array');",
+              "});",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('readTraineeIndex')) + 1;",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "pm.collectionVariables.set('readTraineeIndex', String(nextIndex));",
+              "if (nextIndex < trainees.length) {",
+              "  postman.setNextRequest('07 Get Trainee Trainings');",
+              "} else {",
+              "  postman.setNextRequest('08 Get Trainer Trainings');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTraineeToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainees/trainings?username={{currentTraineeUsername}}&fromDate=2026-07-01&toDate=2026-07-31",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainees",
+            "trainings"
+          ],
+          "query": [
+            {
+              "key": "username",
+              "value": "{{currentTraineeUsername}}"
+            },
+            {
+              "key": "fromDate",
+              "value": "2026-07-01"
+            },
+            {
+              "key": "toDate",
+              "value": "2026-07-31"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08 Get Trainer Trainings",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('readTrainerIndex') || 0);",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "const trainer = trainers[index];",
+              "pm.collectionVariables.set('currentTrainerUsername', trainer.username);",
+              "pm.collectionVariables.set('currentTrainerToken', trainer.token);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainer trainings are returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json()).to.be.an('array');",
+              "});",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('readTrainerIndex')) + 1;",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "pm.collectionVariables.set('readTrainerIndex', String(nextIndex));",
+              "if (nextIndex < trainers.length) {",
+              "  postman.setNextRequest('08 Get Trainer Trainings');",
+              "} else {",
+              "  postman.setNextRequest('09 Get Trainer Workload');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTrainerToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainers/trainings?username={{currentTrainerUsername}}&fromDate=2026-07-01&toDate=2026-07-31",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainers",
+            "trainings"
+          ],
+          "query": [
+            {
+              "key": "username",
+              "value": "{{currentTrainerUsername}}"
+            },
+            {
+              "key": "fromDate",
+              "value": "2026-07-01"
+            },
+            {
+              "key": "toDate",
+              "value": "2026-07-31"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "09 Get Trainer Workload",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('workloadIndex') || 0);",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "pm.collectionVariables.set('currentTrainerUsername', trainers[index].username);",
+              "pm.collectionVariables.set('currentTraineeToken', trainees[0].token);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainer workload endpoint responds', function () {",
+              "  pm.expect([200, 404]).to.include(pm.response.code);",
+              "});",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('workloadIndex')) + 1;",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "pm.collectionVariables.set('workloadIndex', String(nextIndex));",
+              "if (nextIndex < trainers.length) {",
+              "  postman.setNextRequest('09 Get Trainer Workload');",
+              "} else {",
+              "  postman.setNextRequest('10 Expected Wrong Password Failure');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTraineeToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainer-workloads/{{currentTrainerUsername}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainer-workloads",
+            "{{currentTrainerUsername}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 Expected Wrong Password Failure",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "pm.collectionVariables.set('currentTrainerUsername', trainers[0].username);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Wrong password produces expected 401 log activity', function () {",
+              "  pm.response.to.have.status(401);",
+              "});",
+              "postman.setNextRequest('11 Expected Missing Training Delete Failure');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{currentTrainerUsername}}\",\n  \"password\": \"wrong-password-for-log-demo\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 Expected Missing Training Delete Failure",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "pm.collectionVariables.set('currentTraineeToken', trainees[0].token);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Missing training delete produces expected 404 log activity', function () {",
+              "  pm.response.to.have.status(404);",
+              "});",
+              "postman.setNextRequest('12 Delete Some Trainee Profiles');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTraineeToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainings/999999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainings",
+            "999999999"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 Delete Some Trainee Profiles",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('deleteTraineeIndex') || 0);",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainee = trainees[index];",
+              "pm.collectionVariables.set('currentTraineeUsername', trainee.username);",
+              "pm.collectionVariables.set('currentTraineeToken', trainee.token);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Trainee profile cleanup succeeds', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('deleteTraineeIndex')) + 1;",
+              "pm.collectionVariables.set('deleteTraineeIndex', String(nextIndex));",
+              "if (nextIndex < Number(pm.collectionVariables.get('deleteTraineeCount'))) {",
+              "  postman.setNextRequest('12 Delete Some Trainee Profiles');",
+              "} else {",
+              "  postman.setNextRequest('13 Auto Generated Transaction Id Check');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{currentTraineeToken}}"
+          },
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{currentTraineeUsername}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/trainees/profile",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "trainees",
+            "profile"
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 Auto Generated Transaction Id Check",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const index = Number(pm.collectionVariables.get('autoTxIndex') || 0);",
+              "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
+              "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
+              "const deleteCount = Number(pm.collectionVariables.get('deleteTraineeCount') || 0);",
+              "const trainee = trainees[Math.min(deleteCount, trainees.length - 1)];",
+              "const trainer = trainers[index % trainers.length];",
+              "",
+              "const scenarios = [",
+              "  {",
+              "    name: 'training types',",
+              "    path: '/v1/training-types',",
+              "    token: trainee.token,",
+              "    statuses: [200]",
+              "  },",
+              "  {",
+              "    name: 'trainee profile',",
+              "    path: '/v1/trainees/profile?username=' + encodeURIComponent(trainee.username),",
+              "    token: trainee.token,",
+              "    statuses: [200]",
+              "  },",
+              "  {",
+              "    name: 'trainee trainings',",
+              "    path: '/v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=2026-07-01&toDate=2026-07-31',",
+              "    token: trainee.token,",
+              "    statuses: [200]",
+              "  },",
+              "  {",
+              "    name: 'unassigned trainers',",
+              "    path: '/v1/trainees/trainers/unassigned?username=' + encodeURIComponent(trainee.username),",
+              "    token: trainee.token,",
+              "    statuses: [200]",
+              "  },",
+              "  {",
+              "    name: 'trainer profile',",
+              "    path: '/v1/trainers/profile?username=' + encodeURIComponent(trainer.username),",
+              "    token: trainer.token,",
+              "    statuses: [200]",
+              "  },",
+              "  {",
+              "    name: 'trainer trainings',",
+              "    path: '/v1/trainers/trainings?username=' + encodeURIComponent(trainer.username) + '&fromDate=2026-07-01&toDate=2026-07-31',",
+              "    token: trainer.token,",
+              "    statuses: [200]",
+              "  },",
+              "  {",
+              "    name: 'trainer workload',",
+              "    path: '/v1/trainer-workloads/' + encodeURIComponent(trainer.username),",
+              "    token: trainee.token,",
+              "    statuses: [200, 404]",
+              "  },",
+              "  {",
+              "    name: 'invalid date query',",
+              "    path: '/v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=wrong-date',",
+              "    token: trainee.token,",
+              "    statuses: [400]",
+              "  },",
+              "  {",
+              "    name: 'forbidden trainer profile by trainee token',",
+              "    path: '/v1/trainers/profile?username=' + encodeURIComponent(trainer.username),",
+              "    token: trainee.token,",
+              "    statuses: [403]",
+              "  },",
+              "  {",
+              "    name: 'missing training delete lookup via get trainings fallback',",
+              "    path: '/v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=2026-01-01&toDate=2026-12-31&trainingType=Fitness',",
+              "    token: trainee.token,",
+              "    statuses: [200]",
+              "  }",
+              "];",
+              "",
+              "const scenario = scenarios[index % scenarios.length];",
+              "pm.collectionVariables.set('currentAutoTxScenario', scenario.name);",
+              "pm.collectionVariables.set('currentAutoTxPath', scenario.path);",
+              "pm.collectionVariables.set('currentAutoTxAuthorization', 'Bearer ' + scenario.token);",
+              "pm.collectionVariables.set('currentAutoTxExpectedStatuses', JSON.stringify(scenario.statuses));",
+              "console.log('Auto-generated tx check #' + (index + 1) + ': ' + scenario.name + ' ' + scenario.path);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const expectedStatuses = JSON.parse(pm.collectionVariables.get('currentAutoTxExpectedStatuses') || '[200]');",
+              "pm.test('Auto transaction-id scenario returns expected status', function () {",
+              "  pm.expect(expectedStatuses).to.include(pm.response.code);",
+              "});",
+              "",
+              "const generatedTransactionId = pm.response.headers.get('X-Transaction-Id');",
+              "pm.test('Response contains generated X-Transaction-Id', function () {",
+              "  pm.expect(generatedTransactionId).to.be.a('string').and.not.empty;",
+              "  pm.expect(generatedTransactionId).to.not.include('postman-log-demo-');",
+              "});",
+              "",
+              "const generatedIds = JSON.parse(pm.collectionVariables.get('generatedTransactionIds') || '[]');",
+              "generatedIds.push(generatedTransactionId);",
+              "pm.collectionVariables.set('generatedTransactionIds', JSON.stringify(generatedIds));",
+              "console.log('Generated X-Transaction-Id: ' + generatedTransactionId);",
+              "console.log('Grafana query: {job=\"gym-crm\"} |= \"tx:' + generatedTransactionId + '\"');",
+              "",
+              "const nextIndex = Number(pm.collectionVariables.get('autoTxIndex')) + 1;",
+              "pm.collectionVariables.set('autoTxIndex', String(nextIndex));",
+              "if (nextIndex < Number(pm.collectionVariables.get('autoTxCount'))) {",
+              "  postman.setNextRequest('13 Auto Generated Transaction Id Check');",
+              "} else {",
+              "  postman.setNextRequest('14 Finish And Print Grafana Queries');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{currentAutoTxAuthorization}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}{{currentAutoTxPath}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "{{currentAutoTxPath}}"
+          ]
+        },
+        "description": "Intentionally does not send X-Transaction-Id. The application should generate one and return it in the response header."
+      }
+    },
+    {
+      "name": "14 Finish And Print Grafana Queries",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Demo run finished', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const runId = pm.collectionVariables.get('runId');",
+              "const generatedIds = JSON.parse(pm.collectionVariables.get('generatedTransactionIds') || '[]');",
+              "console.log('Demo run finished. Grafana Loki queries:');",
+              "console.log('{job=\"gym-crm\"} |= \"postman-log-demo-' + runId + '\"');",
+              "console.log('{service=~\"gym-crm-system|trainer-workload\"} |= \"postman-log-demo-' + runId + '\"');",
+              "generatedIds.forEach(function (id) {",
+              "  console.log('{job=\"gym-crm\"} |= \"tx:' + id + '\"');",
+              "});",
+              "console.log('{service=~\"gym-crm-system|trainer-workload\"} |= \"ERROR\"');",
+              "postman.setNextRequest(null);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Transaction-Id",
+            "value": "{{transactionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "actuator",
+            "health"
+          ]
+        }
+      }
+    }
+  ]
+}

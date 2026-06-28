@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,4 +45,8 @@ public class TrainerMonthlySummary {
 
   @Column(name = "summary_duration", nullable = false)
   private int summaryDuration;
+
+  @Version
+  @Column(name = "version", nullable = false)
+  private Long version;
 }

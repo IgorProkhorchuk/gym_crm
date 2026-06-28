@@ -158,6 +158,7 @@ services:
     container_name: gym-trainer-workload
     ports:
       - "8081:8081"
+      - "127.0.0.1:9092:9092"
     networks:
       - gym-crm-net
     volumes:
@@ -168,6 +169,7 @@ services:
       SPRING_DATASOURCE_URL: ${TRAINER_WORKLOAD_DATASOURCE_URL}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
+      TRAINER_WORKLOAD_H2_TCP_ENABLED: ${TRAINER_WORKLOAD_H2_TCP_ENABLED:-false}
     depends_on:
       eureka:
         condition: service_healthy

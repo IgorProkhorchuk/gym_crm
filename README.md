@@ -253,7 +253,7 @@ Both services log `X-Transaction-Id` as `tx:<id>`.
 Example:
 
 ```text
-[tx:video-demo-001] ... REST request started ...
+[tx:demo-001] ... REST request started ...
 ```
 
 This is correlation-id based tracing through logs. It is not a full

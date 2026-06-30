@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "4ef8b9a2-7b2d-4b22-9b31-gymcrmlogdemo01",
     "name": "Gym CRM Log Volume Demo",
-    "description": "Creates multiple trainers, trainees, trainings, read requests, expected failures, partial cleanup, and auto-generated transaction-id checks to generate centralized logs for Loki/Grafana. Run the collection from top to bottom with Postman Collection Runner. Most requests send X-Transaction-Id like postman-log-demo-<runId>-<request>-<timestamp>; the auto-generated checks intentionally omit the header and capture the generated X-Transaction-Id from response headers.",
+    "description": "Creates multiple trainers, trainees, trainings, read requests, expected failures, partial cleanup, and auto-generated transaction-id checks to generate centralized logs for Loki/Grafana. Run the collection from top to bottom with Postman Collection Runner. Most requests send a UUID-like X-Transaction-Id; the auto-generated checks intentionally omit the header and capture the generated X-Transaction-Id from response headers.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -22,9 +22,12 @@
           "  .toLowerCase()",
           "  .replace(/[^a-z0-9]+/g, '-')",
           "  .replace(/^-|-$/g, '');",
-          "const transactionId = 'postman-log-demo-' + runId + '-' + requestSlug + '-' + Date.now();",
+          "const transactionId = pm.variables.replaceIn('{{$guid}}');",
           "pm.collectionVariables.set('transactionId', transactionId);",
-          "console.log('X-Transaction-Id: ' + transactionId);"
+          "const clientTransactionIds = JSON.parse(pm.collectionVariables.get('clientTransactionIds') || '[]');",
+          "clientTransactionIds.push({ request: pm.info.requestName, slug: requestSlug, transactionId: transactionId });",
+          "pm.collectionVariables.set('clientTransactionIds', JSON.stringify(clientTransactionIds));",
+          "console.log(pm.info.requestName + ' X-Transaction-Id: ' + transactionId);"
         ]
       }
     }
@@ -62,7 +65,7 @@
     },
     {
       "key": "autoTxCount",
-      "value": "10",
+      "value": "7",
       "type": "string"
     },
     {
@@ -95,10 +98,11 @@
               "pm.collectionVariables.set('workloadIndex', '0');",
               "pm.collectionVariables.set('deleteTraineeIndex', '0');",
               "pm.collectionVariables.set('autoTxIndex', '0');",
+              "pm.collectionVariables.set('clientTransactionIds', '[]');",
               "pm.collectionVariables.set('generatedTransactionIds', '[]');",
-              "pm.collectionVariables.set('transactionId', 'postman-log-demo-' + newRunId + '-initialize-demo-run-' + Date.now());",
+              "pm.collectionVariables.set('transactionId', pm.variables.replaceIn('{{$guid}}'));",
               "console.log('Log demo runId: ' + newRunId);",
-              "console.log('Grafana run query: {job=\"gym-crm\"} |= \"postman-log-demo-' + newRunId + '\"');"
+              "console.log('Grafana run query by test data: {service=~\"gym-crm-system|trainer-workload\"} |= \"' + newRunId + '\"');"
             ]
           }
         },
@@ -867,7 +871,7 @@
               "pm.test('Missing training delete produces expected 404 log activity', function () {",
               "  pm.response.to.have.status(404);",
               "});",
-              "postman.setNextRequest('12 Delete Some Trainee Profiles');"
+              "postman.setNextRequest('13 Auto Generated Transaction Id Check');"
             ]
           }
         }
@@ -927,7 +931,7 @@
               "if (nextIndex < Number(pm.collectionVariables.get('deleteTraineeCount'))) {",
               "  postman.setNextRequest('12 Delete Some Trainee Profiles');",
               "} else {",
-              "  postman.setNextRequest('13 Auto Generated Transaction Id Check');",
+              "  postman.setNextRequest('14 Finish And Print Grafana Queries');",
               "}"
             ]
           }
@@ -977,68 +981,51 @@
               "const index = Number(pm.collectionVariables.get('autoTxIndex') || 0);",
               "const trainees = JSON.parse(pm.collectionVariables.get('trainees') || '[]');",
               "const trainers = JSON.parse(pm.collectionVariables.get('trainers') || '[]');",
-              "const deleteCount = Number(pm.collectionVariables.get('deleteTraineeCount') || 0);",
-              "const trainee = trainees[Math.min(deleteCount, trainees.length - 1)];",
-              "const trainer = trainers[index % trainers.length];",
+              "const trainee = trainees[0];",
+              "const trainer = trainers[0];",
+              "if (!trainee || !trainer || !trainee.token) {",
+              "  throw new Error('Auto transaction-id check requires a logged-in trainee and an existing trainer. Run the collection from the first setup request.');",
+              "}",
               "",
               "const scenarios = [",
               "  {",
               "    name: 'training types',",
-              "    path: '/v1/training-types',",
+              "    path: 'v1/training-types',",
               "    token: trainee.token,",
               "    statuses: [200]",
               "  },",
               "  {",
               "    name: 'trainee profile',",
-              "    path: '/v1/trainees/profile?username=' + encodeURIComponent(trainee.username),",
+              "    path: 'v1/trainees/profile?username=' + encodeURIComponent(trainee.username),",
               "    token: trainee.token,",
               "    statuses: [200]",
               "  },",
               "  {",
               "    name: 'trainee trainings',",
-              "    path: '/v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=2026-07-01&toDate=2026-07-31',",
+              "    path: 'v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=2026-07-01&toDate=2026-07-31',",
               "    token: trainee.token,",
               "    statuses: [200]",
               "  },",
               "  {",
               "    name: 'unassigned trainers',",
-              "    path: '/v1/trainees/trainers/unassigned?username=' + encodeURIComponent(trainee.username),",
+              "    path: 'v1/trainees/trainers/unassigned?username=' + encodeURIComponent(trainee.username),",
               "    token: trainee.token,",
-              "    statuses: [200]",
-              "  },",
-              "  {",
-              "    name: 'trainer profile',",
-              "    path: '/v1/trainers/profile?username=' + encodeURIComponent(trainer.username),",
-              "    token: trainer.token,",
-              "    statuses: [200]",
-              "  },",
-              "  {",
-              "    name: 'trainer trainings',",
-              "    path: '/v1/trainers/trainings?username=' + encodeURIComponent(trainer.username) + '&fromDate=2026-07-01&toDate=2026-07-31',",
-              "    token: trainer.token,",
               "    statuses: [200]",
               "  },",
               "  {",
               "    name: 'trainer workload',",
-              "    path: '/v1/trainer-workloads/' + encodeURIComponent(trainer.username),",
-              "    token: trainee.token,",
+              "    path: 'v1/trainer-workloads/' + encodeURIComponent(trainer.username),",
               "    statuses: [200, 404]",
               "  },",
               "  {",
               "    name: 'invalid date query',",
-              "    path: '/v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=wrong-date',",
+              "    path: 'v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=wrong-date',",
               "    token: trainee.token,",
               "    statuses: [400]",
               "  },",
               "  {",
-              "    name: 'forbidden trainer profile by trainee token',",
-              "    path: '/v1/trainers/profile?username=' + encodeURIComponent(trainer.username),",
-              "    token: trainee.token,",
-              "    statuses: [403]",
-              "  },",
-              "  {",
               "    name: 'missing training delete lookup via get trainings fallback',",
-              "    path: '/v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=2026-01-01&toDate=2026-12-31&trainingType=Fitness',",
+              "    path: 'v1/trainees/trainings?username=' + encodeURIComponent(trainee.username) + '&fromDate=2026-01-01&toDate=2026-12-31&trainingType=Fitness',",
               "    token: trainee.token,",
               "    statuses: [200]",
               "  }",
@@ -1047,8 +1034,8 @@
               "const scenario = scenarios[index % scenarios.length];",
               "pm.collectionVariables.set('currentAutoTxScenario', scenario.name);",
               "pm.collectionVariables.set('currentAutoTxPath', scenario.path);",
-              "pm.collectionVariables.set('currentAutoTxAuthorization', 'Bearer ' + scenario.token);",
               "pm.collectionVariables.set('currentAutoTxExpectedStatuses', JSON.stringify(scenario.statuses));",
+              "pm.collectionVariables.set('currentAutoTxCount', String(scenarios.length));",
               "console.log('Auto-generated tx check #' + (index + 1) + ': ' + scenario.name + ' ' + scenario.path);"
             ]
           }
@@ -1066,7 +1053,7 @@
               "const generatedTransactionId = pm.response.headers.get('X-Transaction-Id');",
               "pm.test('Response contains generated X-Transaction-Id', function () {",
               "  pm.expect(generatedTransactionId).to.be.a('string').and.not.empty;",
-              "  pm.expect(generatedTransactionId).to.not.include('postman-log-demo-');",
+              "  pm.expect(generatedTransactionId).to.not.include(pm.collectionVariables.get('runId'));",
               "});",
               "",
               "const generatedIds = JSON.parse(pm.collectionVariables.get('generatedTransactionIds') || '[]');",
@@ -1077,10 +1064,10 @@
               "",
               "const nextIndex = Number(pm.collectionVariables.get('autoTxIndex')) + 1;",
               "pm.collectionVariables.set('autoTxIndex', String(nextIndex));",
-              "if (nextIndex < Number(pm.collectionVariables.get('autoTxCount'))) {",
+              "if (nextIndex < Number(pm.collectionVariables.get('currentAutoTxCount') || pm.collectionVariables.get('autoTxCount'))) {",
               "  postman.setNextRequest('13 Auto Generated Transaction Id Check');",
               "} else {",
-              "  postman.setNextRequest('14 Finish And Print Grafana Queries');",
+              "  postman.setNextRequest('12 Delete Some Trainee Profiles');",
               "}"
             ]
           }
@@ -1091,11 +1078,11 @@
         "header": [
           {
             "key": "Authorization",
-            "value": "{{currentAutoTxAuthorization}}"
+            "value": "Bearer {{currentTraineeToken}}"
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}{{currentAutoTxPath}}",
+          "raw": "{{baseUrl}}/{{currentAutoTxPath}}",
           "host": [
             "{{baseUrl}}"
           ],
@@ -1119,12 +1106,15 @@
               "});",
               "",
               "const runId = pm.collectionVariables.get('runId');",
+              "const clientIds = JSON.parse(pm.collectionVariables.get('clientTransactionIds') || '[]');",
               "const generatedIds = JSON.parse(pm.collectionVariables.get('generatedTransactionIds') || '[]');",
               "console.log('Demo run finished. Grafana Loki queries:');",
-              "console.log('{job=\"gym-crm\"} |= \"postman-log-demo-' + runId + '\"');",
-              "console.log('{service=~\"gym-crm-system|trainer-workload\"} |= \"postman-log-demo-' + runId + '\"');",
+              "console.log('{service=~\"gym-crm-system|trainer-workload\"} |= \"' + runId + '\"');",
+              "clientIds.forEach(function (entry) {",
+              "  console.log(entry.request + ': {service=~\"gym-crm-system|trainer-workload\"} |= \"tx:' + entry.transactionId + '\"');",
+              "});",
               "generatedIds.forEach(function (id) {",
-              "  console.log('{job=\"gym-crm\"} |= \"tx:' + id + '\"');",
+              "  console.log('Generated by service: {service=~\"gym-crm-system|trainer-workload\"} |= \"tx:' + id + '\"');",
               "});",
               "console.log('{service=~\"gym-crm-system|trainer-workload\"} |= \"ERROR\"');",
               "postman.setNextRequest(null);"

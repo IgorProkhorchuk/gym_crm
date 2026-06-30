@@ -1,5 +1,9 @@
 package com.epam.gymcrm.service.impl;
 
+import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
+import com.epam.gymcrm.client.workload.TrainerWorkloadOutboxService;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
@@ -13,9 +17,11 @@ import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.model.User;
 import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.service.AuthenticationService;
 import com.epam.gymcrm.service.PasswordGenerator;
@@ -38,6 +44,7 @@ public class TraineeServiceImpl implements TraineeService {
 
   private final TraineeRepository traineeRepository;
   private final TrainerRepository trainerRepository;
+  private final TrainingRepository trainingRepository;
   private final UserRepository userRepository;
   private final AuthenticationService authenticationService;
   private final PasswordGenerator passwordGenerator;
@@ -45,6 +52,8 @@ public class TraineeServiceImpl implements TraineeService {
   private final UsernameGenerator usernameGenerator;
   private final TraineeMapper traineeMapper;
   private final TrainerMapper trainerMapper;
+  private final TrainerWorkloadOutboxService trainerWorkloadOutboxService;
+  private final TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
   @Override
   public UsernamePasswordResponse create(CreateTraineeRequest request) {
@@ -105,6 +114,7 @@ public class TraineeServiceImpl implements TraineeService {
     log.info("Deleting trainee profile");
 
     Trainee trainee = findTrainee(request.username());
+    saveTrainerWorkloadDeleteEvents(trainee);
     traineeRepository.delete(trainee.getId());
 
     log.info("Trainee profile deleted, userId={}", trainee.getId());
@@ -158,5 +168,19 @@ public class TraineeServiceImpl implements TraineeService {
     return traineeRepository
         .findByUsername(username)
         .orElseThrow(() -> new EntityNotFoundException("Trainee profile not found"));
+  }
+
+  private void saveTrainerWorkloadDeleteEvents(Trainee trainee) {
+    List<Training> trainings = trainingRepository.findByTraineeIdWithTrainer(trainee.getId());
+    trainings.forEach(
+        training -> {
+          TrainerWorkloadRequest workloadRequest =
+              trainerWorkloadRequestFactory.fromTraining(training, TrainerWorkloadActionType.DELETE);
+          trainerWorkloadOutboxService.savePendingEvent(training.getTrainingId(), workloadRequest);
+        });
+    log.info(
+        "Trainer workload delete events saved for trainee deletion, userId={}, eventCount={}",
+        trainee.getId(),
+        trainings.size());
   }
 }

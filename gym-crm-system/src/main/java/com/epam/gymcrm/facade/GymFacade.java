@@ -17,8 +17,10 @@ import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainingTypeResponse;
+import com.epam.gymcrm.dto.workload.TrainerWorkloadResponse;
 import com.epam.gymcrm.service.TraineeService;
 import com.epam.gymcrm.service.TrainerService;
+import com.epam.gymcrm.service.TrainerWorkloadQueryService;
 import com.epam.gymcrm.service.TrainingService;
 import com.epam.gymcrm.service.TrainingTypeService;
 import java.util.List;
@@ -33,6 +35,7 @@ public class GymFacade {
   private final TrainerService trainerService;
   private final TrainingService trainingService;
   private final TrainingTypeService trainingTypeService;
+  private final TrainerWorkloadQueryService trainerWorkloadQueryService;
 
   public UsernamePasswordResponse createTrainee(CreateTraineeRequest request) {
     return traineeService.create(request);
@@ -90,6 +93,10 @@ public class GymFacade {
     trainingService.addTraining(request);
   }
 
+  public void deleteTraining(Long trainingId) {
+    trainingService.deleteTraining(trainingId);
+  }
+
   public List<TraineeTrainingResponse> getTraineeTrainings(TraineeTrainingsRequest request) {
     return trainingService.getTraineeTrainings(request);
   }
@@ -100,5 +107,9 @@ public class GymFacade {
 
   public List<TrainingTypeResponse> getTrainingTypes() {
     return trainingTypeService.getTrainingTypes();
+  }
+
+  public TrainerWorkloadResponse getTrainerWorkload(String username) {
+    return trainerWorkloadQueryService.getTrainerWorkload(username);
   }
 }

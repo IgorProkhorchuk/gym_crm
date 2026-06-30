@@ -3,6 +3,8 @@ package com.epam.gymcrm.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
 import com.epam.gymcrm.dto.auth.LoginRequest;
 import com.epam.gymcrm.dto.auth.LoginResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
@@ -19,6 +21,7 @@ import com.epam.gymcrm.dto.training.TraineeTrainingResponse;
 import com.epam.gymcrm.dto.training.TraineeTrainingsRequest;
 import com.epam.gymcrm.dto.training.TrainerTrainingResponse;
 import com.epam.gymcrm.dto.training.TrainerTrainingsRequest;
+import com.epam.gymcrm.dto.workload.TrainerWorkloadResponse;
 import com.epam.gymcrm.web.dto.AddTrainingRestRequest;
 import com.epam.gymcrm.web.dto.ChangePasswordRestRequest;
 import com.epam.gymcrm.web.dto.DeleteProfileRestRequest;
@@ -155,6 +158,18 @@ class DtoPrivacyTest {
                 .toString(),
             new TrainerTrainingResponse(
                     "Yoga Basics", "Yoga", LocalDate.of(2026, 5, 3), 60, "John Doe")
+                .toString(),
+            new TrainerWorkloadRequest(
+                    1L,
+                    "Mike.Stone",
+                    "Mike",
+                    "Stone",
+                    true,
+                    LocalDate.of(2026, 5, 3),
+                    60,
+                    TrainerWorkloadActionType.ADD)
+                .toString(),
+            new TrainerWorkloadResponse("Mike.Stone", "Mike", "Stone", true, List.of())
                 .toString());
 
     representations.forEach(

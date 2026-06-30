@@ -1,0 +1,8 @@
+ _____         _               __      __       _   _              _
+|_   _| _ __ _(_)_ _  ___ _ _  \ \    / /__ _ _| |_| |___  __ _ __| |
+  | || '_/ _` | | ' \/ -_) '_|  \ \/\/ / _ \ '_| / / / _ \/ _` / _` |
+  |_||_| \__,_|_|_||_\___|_|     \_/\_/\___/_| |_\_\_\___/\__,_\__,_|
+
+App version: ${application.version}
+Spring boot version: ${spring-boot.version}
+Spring cloud version: ${spring-cloud.version}

@@ -2,6 +2,8 @@ package com.epam.gymcrm.service;
 
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
+import static com.epam.gymcrm.TestFixtures.training;
+import static com.epam.gymcrm.TestFixtures.trainingType;
 import static com.epam.gymcrm.TestFixtures.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,6 +14,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
+import com.epam.gymcrm.client.workload.TrainerWorkloadOutboxService;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequest;
+import com.epam.gymcrm.client.workload.TrainerWorkloadRequestFactory;
 import com.epam.gymcrm.dto.AuthRequest;
 import com.epam.gymcrm.dto.ChangePasswordRequest;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
@@ -25,8 +31,10 @@ import com.epam.gymcrm.mapper.TraineeMapper;
 import com.epam.gymcrm.mapper.TrainerMapper;
 import com.epam.gymcrm.model.Trainee;
 import com.epam.gymcrm.model.Trainer;
+import com.epam.gymcrm.model.Training;
 import com.epam.gymcrm.repository.TraineeRepository;
 import com.epam.gymcrm.repository.TrainerRepository;
+import com.epam.gymcrm.repository.TrainingRepository;
 import com.epam.gymcrm.repository.UserRepository;
 import com.epam.gymcrm.service.impl.TraineeServiceImpl;
 import jakarta.validation.ConstraintViolation;
@@ -56,6 +64,8 @@ class TraineeServiceImplTest {
 
   @Mock private TrainerRepository trainerRepository;
 
+  @Mock private TrainingRepository trainingRepository;
+
   @Mock private UserRepository userRepository;
 
   @Mock private AuthenticationService authenticationService;
@@ -69,6 +79,10 @@ class TraineeServiceImplTest {
   @Mock private TraineeMapper traineeMapper;
 
   @Mock private TrainerMapper trainerMapper;
+
+  @Mock private TrainerWorkloadOutboxService trainerWorkloadOutboxService;
+
+  @Mock private TrainerWorkloadRequestFactory trainerWorkloadRequestFactory;
 
   @Test
   void createShouldGenerateUsernameAndPassword() {
@@ -255,14 +269,49 @@ class TraineeServiceImplTest {
 
   @Test
   void deleteByUsernameShouldDeleteAuthenticatedTraineeById() {
-    AuthRequest request = new AuthRequest("Jane.Doe");
     Trainee trainee = trainee(15L, "Jane", "Doe", "Jane.Doe");
+    final AuthRequest request = new AuthRequest("Jane.Doe");
     when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
+    when(trainingRepository.findByTraineeIdWithTrainer(15L)).thenReturn(List.of());
 
     traineeService.deleteByUsername(request);
 
     assertAll(
         () -> verify(traineeRepository).findByUsername("Jane.Doe"),
+        () -> verify(trainingRepository).findByTraineeIdWithTrainer(15L),
+        () -> verify(traineeRepository).delete(15L));
+  }
+
+  @Test
+  void deleteByUsernameShouldSaveTrainerWorkloadDeleteEventsForTraineeTrainings() {
+    Trainee trainee = trainee(15L, "Jane", "Doe", "Jane.Doe");
+    Trainer trainer = trainer(16L, "John", "Coach", "John.Coach");
+    Training firstTraining = training(trainee, trainer, trainingType("Fitness"));
+    Training secondTraining = training(trainee, trainer, trainingType("Yoga"));
+    firstTraining.setTrainingId(21L);
+    secondTraining.setTrainingId(22L);
+    TrainerWorkloadRequest firstRequest =
+        new TrainerWorkloadRequest(
+            21L, "John.Coach", "John", "Coach", true, firstTraining.getTrainingDate(), 60,
+            TrainerWorkloadActionType.DELETE);
+    TrainerWorkloadRequest secondRequest =
+        new TrainerWorkloadRequest(
+            22L, "John.Coach", "John", "Coach", true, secondTraining.getTrainingDate(), 60,
+            TrainerWorkloadActionType.DELETE);
+
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.of(trainee));
+    when(trainingRepository.findByTraineeIdWithTrainer(15L))
+        .thenReturn(List.of(firstTraining, secondTraining));
+    when(trainerWorkloadRequestFactory.fromTraining(firstTraining, TrainerWorkloadActionType.DELETE))
+        .thenReturn(firstRequest);
+    when(trainerWorkloadRequestFactory.fromTraining(secondTraining, TrainerWorkloadActionType.DELETE))
+        .thenReturn(secondRequest);
+
+    traineeService.deleteByUsername(new AuthRequest("Jane.Doe"));
+
+    assertAll(
+        () -> verify(trainerWorkloadOutboxService).savePendingEvent(21L, firstRequest),
+        () -> verify(trainerWorkloadOutboxService).savePendingEvent(22L, secondRequest),
         () -> verify(traineeRepository).delete(15L));
   }
 
@@ -277,6 +326,7 @@ class TraineeServiceImplTest {
 
     assertAll(
         () -> verify(traineeRepository).findByUsername("Deleted.Trainee"),
+        () -> verifyNoInteractions(trainingRepository, trainerWorkloadOutboxService),
         () -> verifyNoMoreInteractions(traineeRepository));
   }
 
@@ -498,4 +548,5 @@ class TraineeServiceImplTest {
         .extracting(ConstraintViolation::getMessage)
         .contains(message);
   }
+
 }

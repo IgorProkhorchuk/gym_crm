@@ -190,6 +190,35 @@ class TrainingRepositoryTest extends PostgresContainerTest {
   }
 
   @Test
+  void findByTraineeIdWithTrainerShouldReturnTraineeTrainingsWithTrainerUser() {
+    Trainee targetTrainee = trainee("Deleted", "Trainee", "Deleted.Trainee");
+    Trainee otherTrainee = trainee("Other", "Trainee", "Other.Deleted");
+    Trainer trainer = trainer("Delete", "Coach", "Delete.Coach");
+    TrainingType trainingType = findTrainingType("Yoga");
+    persistAll(targetTrainee, otherTrainee, trainer, trainingType);
+
+    final Training first =
+        persistTraining(targetTrainee, trainer, trainingType, LocalDate.of(2026, 1, 10));
+    final Training second =
+        persistTraining(targetTrainee, trainer, trainingType, LocalDate.of(2026, 2, 10));
+    persistTraining(otherTrainee, trainer, trainingType, LocalDate.of(2026, 1, 10));
+    entityManager.flush();
+    entityManager.clear();
+
+    List<Training> result =
+        trainingRepository.findByTraineeIdWithTrainer(targetTrainee.getId());
+
+    assertAll(
+        () ->
+            assertThat(result)
+                .extracting(Training::getTrainingId)
+                .containsExactly(first.getTrainingId(), second.getTrainingId()),
+        () ->
+            assertThat(result.getFirst().getTrainer().getUser().getUsername())
+                .isEqualTo("Delete.Coach"));
+  }
+
+  @Test
   void findByTrainerUsernameAndCriteriaShouldReturnMatchingTrainings() {
     Trainee aliceTrainee = trainee("Alice", "Runner", "Alice.Runner");
     Trainee bobTrainee = trainee("Bob", "Runner", "Bob.Runner");

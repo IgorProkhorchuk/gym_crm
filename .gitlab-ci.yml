@@ -1,6 +1,7 @@
 workflow:
   rules:
     - if: $CI_COMMIT_BRANCH == "devel"
+    - if: $CI_COMMIT_BRANCH == "microservices"
     - if: $CI_MERGE_REQUEST_ID
     - if: $CI_COMMIT_BRANCH == "main"
 
@@ -24,3 +25,6 @@ cache:
 
 include:
   - local: "gym-crm-system/.gitlab-ci.yml"
+  - local: "eureka/.gitlab-ci.yml"
+  - local: "trainer-workload/.gitlab-ci.yml"
+

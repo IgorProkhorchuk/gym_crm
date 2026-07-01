@@ -99,6 +99,22 @@ class SecurityAuthorizationTest extends PostgresContainerTest {
   }
 
   @Test
+  void trainerWorkloadEndpointShouldRejectMissingToken() {
+    HttpClientErrorException.Unauthorized exception =
+        catchThrowableOfType(
+            () ->
+                restClient
+                    .get()
+                    .uri("/api/v1/trainer-workloads/Mike.Stone")
+                    .retrieve()
+                    .toBodilessEntity(),
+            HttpClientErrorException.Unauthorized.class);
+
+    assertThat(exception.getResponseBodyAsString())
+        .isEqualTo("{\"message\":\"Authentication is required\"}");
+  }
+
+  @Test
   void corsPreflightShouldAllowConfiguredOriginAndHeaders() {
     ResponseEntity<Void> response =
         restClient

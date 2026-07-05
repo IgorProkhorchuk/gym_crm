@@ -8,13 +8,6 @@ import com.epam.gymcrm.dto.workload.TrainerWorkloadResponse;
 public interface TrainerWorkloadClient {
 
   /**
-   * Sends trainer workload update request to workload service.
-   *
-   * @param request trainer workload update request
-   */
-  void updateTrainerWorkload(TrainerWorkloadRequest request);
-
-  /**
    * Gets trainer workload summary from workload service.
    *
    * @param username trainer username

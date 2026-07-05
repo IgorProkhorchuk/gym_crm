@@ -27,8 +27,8 @@ class OpenApiDocumentationTest {
         .contains("\"bearerAuth\"")
         .contains("\"scheme\":\"bearer\"")
         .contains("\"bearerFormat\":\"JWT\"")
-        .contains("\"/v1/trainer-workloads\"")
         .contains("\"/v1/trainer-workloads/{username}\"")
+        .doesNotContain("\"/v1/trainer-workloads\"")
         .contains("\"Trainer Workloads\"");
   }
 

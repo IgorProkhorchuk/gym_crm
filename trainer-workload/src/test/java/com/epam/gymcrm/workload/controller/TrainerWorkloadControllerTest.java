@@ -3,22 +3,16 @@ package com.epam.gymcrm.workload.controller;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.reset;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.standaloneSetup;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.epam.gymcrm.workload.dto.ActionType;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadMonthResponse;
-import com.epam.gymcrm.workload.dto.TrainerWorkloadRequest;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadResponse;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadYearResponse;
 import com.epam.gymcrm.workload.exception.RestExceptionHandler;
 import com.epam.gymcrm.workload.exception.TrainerWorkloadNotFoundException;
 import com.epam.gymcrm.workload.service.TrainerWorkloadService;
-import io.restassured.http.ContentType;
-import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,42 +35,6 @@ class TrainerWorkloadControllerTest {
   @AfterEach
   void tearDown() {
     reset();
-  }
-
-  @Test
-  void updateTrainerWorkloadShouldReturnOk() {
-    TrainerWorkloadRequest request =
-        new TrainerWorkloadRequest(
-            1L,
-            "John.Doe",
-            "John",
-            "Doe",
-            true,
-            LocalDate.of(2026, 6, 20),
-            60,
-            ActionType.ADD);
-
-    given()
-        .contentType(ContentType.JSON)
-        .body(
-            """
-                {
-                  "trainingId": 1,
-                  "trainerUsername": "John.Doe",
-                  "trainerFirstName": "John",
-                  "trainerLastName": "Doe",
-                  "trainerStatus": true,
-                  "trainingDate": "2026-06-20",
-                  "trainingDuration": 60,
-                  "actionType": "ADD"
-                }
-            """)
-        .when()
-        .post("/v1/trainer-workloads")
-        .then()
-        .statusCode(200);
-
-    verify(trainerWorkloadService).updateTrainerWorkload(request);
   }
 
   @Test
@@ -120,131 +78,5 @@ class TrainerWorkloadControllerTest {
         .then()
         .statusCode(404)
         .body("message", equalTo("Trainer workload not found: Unknown.User"));
-  }
-
-  @Test
-  void updateTrainerWorkloadShouldReturnBadRequestWhenServiceRejectsRequest() {
-    TrainerWorkloadRequest request =
-        new TrainerWorkloadRequest(
-            1L,
-            "John.Doe",
-            "John",
-            "Doe",
-            true,
-            LocalDate.of(2026, 6, 20),
-            60,
-            ActionType.DELETE);
-    doThrow(new IllegalArgumentException("Training summary duration cannot be negative"))
-        .when(trainerWorkloadService)
-        .updateTrainerWorkload(request);
-
-    given()
-        .contentType(ContentType.JSON)
-        .body(
-            """
-                {
-                  "trainingId": 1,
-                  "trainerUsername": "John.Doe",
-                  "trainerFirstName": "John",
-                  "trainerLastName": "Doe",
-                  "trainerStatus": true,
-                  "trainingDate": "2026-06-20",
-                  "trainingDuration": 60,
-                  "actionType": "DELETE"
-                }
-            """)
-        .when()
-        .post("/v1/trainer-workloads")
-        .then()
-        .statusCode(400)
-        .body("message", equalTo("Training summary duration cannot be negative"));
-  }
-
-  @Test
-  void updateTrainerWorkloadShouldReturnBadRequestWhenRequestBodyIsInvalid() {
-    given()
-        .contentType(ContentType.JSON)
-        .body(
-            """
-                {
-                  "trainingId": 1,
-                  "trainerUsername": " ",
-                  "trainerFirstName": "John",
-                  "trainerLastName": "Doe",
-                  "trainerStatus": true,
-                  "trainingDate": "2026-06-20",
-                  "trainingDuration": 0,
-                  "actionType": "ADD"
-                }
-            """)
-        .when()
-        .post("/v1/trainer-workloads")
-        .then()
-        .statusCode(400)
-        .body("message", containsString("Invalid request body"))
-        .body("message", containsString("trainerUsername"))
-        .body("message", containsString("trainingDuration"));
-  }
-
-  @Test
-  void updateTrainerWorkloadShouldReturnBadRequestWhenRequestBodyHasInvalidDate() {
-    given()
-        .contentType(ContentType.JSON)
-        .body(
-            """
-                {
-                  "trainingId": 1,
-                  "trainerUsername": "John.Doe",
-                  "trainerFirstName": "John",
-                  "trainerLastName": "Doe",
-                  "trainerStatus": true,
-                  "trainingDate": "bad-date",
-                  "trainingDuration": 60,
-                  "actionType": "ADD"
-                }
-            """)
-        .when()
-        .post("/v1/trainer-workloads")
-        .then()
-        .statusCode(400)
-        .body("message", containsString("Malformed request body"));
-  }
-
-  @Test
-  void updateTrainerWorkloadShouldReturnGenericMessageWhenUnexpectedErrorOccurs() {
-    TrainerWorkloadRequest request =
-        new TrainerWorkloadRequest(
-            1L,
-            "John.Doe",
-            "John",
-            "Doe",
-            true,
-            LocalDate.of(2026, 6, 20),
-            60,
-            ActionType.ADD);
-    doThrow(new IllegalStateException("Sensitive persistence error"))
-        .when(trainerWorkloadService)
-        .updateTrainerWorkload(request);
-
-    given()
-        .contentType(ContentType.JSON)
-        .body(
-            """
-                {
-                  "trainingId": 1,
-                  "trainerUsername": "John.Doe",
-                  "trainerFirstName": "John",
-                  "trainerLastName": "Doe",
-                  "trainerStatus": true,
-                  "trainingDate": "2026-06-20",
-                  "trainingDuration": 60,
-                  "actionType": "ADD"
-                }
-            """)
-        .when()
-        .post("/v1/trainer-workloads")
-        .then()
-        .statusCode(500)
-        .body("message", equalTo("Unexpected server error"));
   }
 }

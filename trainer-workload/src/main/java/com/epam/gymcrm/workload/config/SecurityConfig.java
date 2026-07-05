@@ -59,8 +59,6 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/v1/trainer-workloads/**")
                     .hasRole("SERVICE")
-                    .requestMatchers(HttpMethod.POST, "/v1/trainer-workloads")
-                    .hasRole("SERVICE")
                     .anyRequest()
                     .authenticated())
         .build();

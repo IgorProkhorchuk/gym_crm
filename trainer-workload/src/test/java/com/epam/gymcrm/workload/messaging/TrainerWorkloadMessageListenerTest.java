@@ -3,8 +3,10 @@ package com.epam.gymcrm.workload.messaging;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -17,6 +19,7 @@ import com.epam.gymcrm.workload.web.logging.RestLoggingInterceptor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import jakarta.jms.Message;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -142,15 +145,53 @@ class TrainerWorkloadMessageListenerTest {
   }
 
   @Test
-  void handleMessageShouldMoveInvalidPayloadToDeadLetterQueueOnFinalDelivery() {
+  void handleMessageShouldGenerateTransactionIdWhenMessageHeaderIsBlank() {
+    doAnswer(
+            invocation -> {
+              String transactionId = MDC.get(RestLoggingInterceptor.TRANSACTION_ID);
+              assertThat(transactionId).isNotBlank();
+              assertThat(UUID.fromString(transactionId)).isNotNull();
+              return null;
+            })
+        .when(trainerWorkloadService)
+        .updateTrainerWorkload(any(TrainerWorkloadRequest.class));
+
+    listener.handleMessage(validPayload(), "   ", 1);
+
+    verify(trainerWorkloadService).updateTrainerWorkload(any(TrainerWorkloadRequest.class));
+    assertThat(MDC.get(RestLoggingInterceptor.TRANSACTION_ID)).isNull();
+  }
+
+  @Test
+  void handleMessageShouldThrowExceptionWhenDeliveryCountIsMissing() {
+    assertThatThrownBy(
+            () -> listener.handleMessage(invalidPayload(), "request-transaction-id", null))
+        .isInstanceOf(ConstraintViolationException.class);
+
+    verifyNoInteractions(trainerWorkloadService);
+    verifyNoInteractions(jmsTemplate);
+    assertThat(MDC.get(RestLoggingInterceptor.TRANSACTION_ID)).isNull();
+  }
+
+  @Test
+  void handleMessageShouldMoveInvalidPayloadToDeadLetterQueueOnFinalDelivery() throws Exception {
     listener.handleMessage(invalidPayload(), "request-transaction-id", 4);
 
+    ArgumentCaptor<MessagePostProcessor> postProcessorCaptor =
+        ArgumentCaptor.forClass(MessagePostProcessor.class);
     verifyNoInteractions(trainerWorkloadService);
     verify(jmsTemplate)
         .convertAndSend(
             eq("trainer.workload.events.dlq"),
             eq(invalidPayload()),
-            any(MessagePostProcessor.class));
+            postProcessorCaptor.capture());
+    Message message = mock(Message.class);
+
+    assertThat(postProcessorCaptor.getValue().postProcessMessage(message)).isSameAs(message);
+    verify(message).setStringProperty("transactionId", "request-transaction-id");
+    verify(message).setStringProperty("originalQueue", "trainer.workload.events");
+    verify(message).setStringProperty("errorType", "ConstraintViolationException");
+    verify(message).setStringProperty(eq("errorMessage"), anyString());
     assertThat(MDC.get(RestLoggingInterceptor.TRANSACTION_ID)).isNull();
   }
 

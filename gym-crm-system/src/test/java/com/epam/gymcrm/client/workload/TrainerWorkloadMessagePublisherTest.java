@@ -79,6 +79,41 @@ class TrainerWorkloadMessagePublisherTest {
   }
 
   @Test
+  void publishShouldGenerateTransactionIdWhenMdcIsEmpty() throws JMSException {
+    TrainerWorkloadRequest request = trainerWorkloadRequest();
+
+    publisher.publish(request);
+
+    ArgumentCaptor<MessagePostProcessor> postProcessorCaptor =
+        ArgumentCaptor.forClass(MessagePostProcessor.class);
+    verify(jmsTemplate)
+        .convertAndSend(eq(DESTINATION), anyString(), postProcessorCaptor.capture());
+    Message message = mock(Message.class);
+
+    postProcessorCaptor.getValue().postProcessMessage(message);
+
+    verify(message).setStringProperty(eq("transactionId"), anyString());
+  }
+
+  @Test
+  void publishShouldGenerateTransactionIdWhenMdcIsBlank() throws JMSException {
+    TrainerWorkloadRequest request = trainerWorkloadRequest();
+    MDC.put(RestLoggingInterceptor.TRANSACTION_ID, " ");
+
+    publisher.publish(request);
+
+    ArgumentCaptor<MessagePostProcessor> postProcessorCaptor =
+        ArgumentCaptor.forClass(MessagePostProcessor.class);
+    verify(jmsTemplate)
+        .convertAndSend(eq(DESTINATION), anyString(), postProcessorCaptor.capture());
+    Message message = mock(Message.class);
+
+    postProcessorCaptor.getValue().postProcessMessage(message);
+
+    verify(message).setStringProperty(eq("transactionId"), anyString());
+  }
+
+  @Test
   void publishShouldThrowIllegalStateExceptionWhenSerializationFails() throws Exception {
     ObjectMapper failingObjectMapper = mock(ObjectMapper.class);
     TrainerWorkloadMessagePublisher failingPublisher =

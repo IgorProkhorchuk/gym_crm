@@ -17,32 +17,23 @@ public class TrainerWorkloadNotifier implements TrainerWorkloadNotificationServi
 
   private final TrainerWorkloadClient trainerWorkloadClient;
   private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
+  private final TrainerWorkloadMessagePublisher trainerWorkloadMessagePublisher;
 
   @Override
   public TrainerWorkloadNotificationResult notifyTrainerWorkload(TrainerWorkloadRequest request) {
-    CircuitBreaker circuitBreaker = circuitBreakerFactory.create(CIRCUIT_BREAKER_NAME);
-    return circuitBreaker.run(updateRequest(request), logFailedUpdate(request));
-  }
-
-  private Supplier<TrainerWorkloadNotificationResult> updateRequest(TrainerWorkloadRequest request) {
-    return () -> {
-      trainerWorkloadClient.updateTrainerWorkload(request);
+    try {
+      trainerWorkloadMessagePublisher.publish(request);
       return new TrainerWorkloadNotificationResult(true, null);
-    };
-  }
-
-  private Function<Throwable, TrainerWorkloadNotificationResult> logFailedUpdate(
-      TrainerWorkloadRequest request) {
-    return failure -> {
+    } catch (RuntimeException exception) {
       log.warn(
-          "Trainer workload update failed, trainingId={}, actionType={}, trainingDate={}, "
-              + "trainingDuration={}",
+          "Trainer workload message publish failed, trainingId={}, actionType={}, trainingDate={}, "
+          + "trainingDuration={}",
           request.trainingId(),
           request.actionType(),
           request.trainingDate(),
           request.trainingDuration(),
-          failure);
-      return new TrainerWorkloadNotificationResult(false, failure.getMessage());
-    };
+          exception);
+      return new TrainerWorkloadNotificationResult(false, exception.getMessage());
+    }
   }
 }

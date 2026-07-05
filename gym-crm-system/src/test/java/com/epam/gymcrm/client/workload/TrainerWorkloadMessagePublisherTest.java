@@ -73,9 +73,7 @@ class TrainerWorkloadMessagePublisherTest {
 
     Message message = mock(Message.class);
     postProcessorCaptor.getValue().postProcessMessage(message);
-    verify(message)
-        .setStringProperty(
-            RestLoggingInterceptor.TRANSACTION_ID_HEADER, "request-transaction-id");
+    verify(message).setStringProperty("transactionId", "request-transaction-id");
     verify(message).setLongProperty("trainingId", 10L);
     verify(message).setStringProperty("actionType", "ADD");
   }

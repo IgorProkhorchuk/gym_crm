@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TrainerWorkloadMessagePublisher {
 
+  private static final String TRANSACTION_ID_PROPERTY = "transactionId";
   private static final String TRAINING_ID_PROPERTY = "trainingId";
   private static final String ACTION_TYPE_PROPERTY = "actionType";
   private final JmsTemplate jmsTemplate;
@@ -37,8 +38,7 @@ public class TrainerWorkloadMessagePublisher {
           destination,
           payload,
           message -> {
-            message.setStringProperty(
-                RestLoggingInterceptor.TRANSACTION_ID_HEADER, resolveTransactionId());
+            message.setStringProperty(TRANSACTION_ID_PROPERTY, resolveTransactionId());
             message.setLongProperty(TRAINING_ID_PROPERTY, request.trainingId());
             message.setStringProperty(ACTION_TYPE_PROPERTY, request.actionType().name());
             return message;

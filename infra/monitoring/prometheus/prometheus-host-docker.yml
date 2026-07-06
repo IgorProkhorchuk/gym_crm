@@ -3,8 +3,14 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: gym-crm-host
+  - job_name: gym-crm-system
     metrics_path: /api/actuator/prometheus
     static_configs:
       - targets:
           - host.docker.internal:8080
+
+  - job_name: gym-crm-trainer-workload
+    metrics_path: /api/actuator/prometheus
+    static_configs:
+      - targets:
+          - host.docker.internal:8081

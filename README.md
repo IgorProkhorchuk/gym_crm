@@ -13,7 +13,8 @@ documentation.
   authentication, PostgreSQL persistence, Redis-backed security state, metrics,
   and integration with trainer workload.
 * `trainer-workload` - workload service. Stores trainer monthly workload
-  summaries in H2 and exposes update/query endpoints.
+  summaries in H2, consumes workload update messages from ActiveMQ, and
+  exposes a REST query endpoint for summaries.
 * `eureka` - Spring Cloud Netflix Eureka discovery server.
 * `infra` - PostgreSQL initialization scripts and Prometheus/Grafana
   configuration.
@@ -31,11 +32,14 @@ flowchart LR
     gym --> redis["Redis"]
     gym --> eureka["Eureka"]
     workload["trainer-workload"] --> eureka
-    gym --> cb["Resilience4j Circuit Breaker"]
-    cb --> workload
+    gym -->|"REST query: workload summary"| workload
     gym --> outbox["trainer_workload_outbox"]
     outbox --> dispatcher["Scheduled Dispatcher + ShedLock"]
-    dispatcher --> workload
+    dispatcher --> publisher["JMS Publisher"]
+    publisher --> mq["ActiveMQ Queue: trainer.workload.events"]
+    mq --> listener["JMS Listener"]
+    listener --> workload
+    listener --> dlq["ActiveMQ DLQ: trainer.workload.events.dlq"]
     workload --> h2["H2 Workload DB"]
     prometheus["Prometheus"] --> gym
     prometheus --> workload
@@ -58,15 +62,17 @@ flowchart LR
 * Spring Data JPA persistence for the main service.
 * H2 persistence for `trainer-workload`.
 * Eureka service discovery.
-* Service-to-service JWT for internal workload calls.
-* Resilience4j circuit breaker around `trainer-workload` calls.
-* Custom outbox retry flow for failed workload updates.
+* Service-to-service JWT for internal workload summary queries.
+* ActiveMQ-based trainer workload update delivery.
+* Custom outbox retry flow for failed workload message publishing.
 * ShedLock for single-node execution of the scheduled outbox dispatcher in
   multi-replica deployments.
+* Dead-letter queue handling for workload messages that cannot be processed
+  after configured redeliveries.
 * Idempotency records in `trainer-workload` to ignore duplicate workload
   events.
-* Correlation-id based tracing through `X-Transaction-Id` and log pattern
-  `tx:<id>`.
+* Correlation-id based tracing through `X-Transaction-Id`, JMS
+  `transactionId`, and log pattern `tx:<id>`.
 * Centralized log collection with Grafana Alloy, Loki, and Grafana Explore.
 * Actuator, Prometheus, and Grafana monitoring.
 * Maven, JUnit, Mockito, Testcontainers, Checkstyle, and JaCoCo verification.
@@ -111,6 +117,30 @@ PowerShell:
 docker compose up -d --build
 ```
 
+Podman:
+
+```powershell
+podman compose up -d --build
+```
+
+The application Dockerfiles copy already-built jars from each module's
+`target` directory. After changing Java code, package the affected services
+before rebuilding images.
+
+PowerShell:
+
+```powershell
+Push-Location gym-crm-system
+mvn -DskipTests package
+Pop-Location
+
+Push-Location trainer-workload
+mvn -DskipTests package
+Pop-Location
+
+podman compose up -d --build --force-recreate gym-app trainer-workload
+```
+
 Check containers.
 
 Linux/macOS:
@@ -125,12 +155,19 @@ PowerShell:
 docker compose ps
 ```
 
+Podman:
+
+```powershell
+podman compose ps
+```
+
 Useful URLs:
 
 ```text
 Eureka:                    http://localhost:8761
 Gym CRM Swagger UI:        http://localhost:8080/api/swagger-ui.html
 Trainer Workload Swagger:  http://localhost:8081/api/swagger-ui/index.html
+ActiveMQ Console:          http://localhost:8161/admin/  admin/admin
 Gym CRM health:            http://localhost:8080/api/actuator/health
 Trainer Workload health:   http://localhost:8081/api/actuator/health
 Prometheus:                http://localhost:9090
@@ -226,37 +263,48 @@ http://localhost:8081/api/v3/api-docs
 ```
 
 `trainer-workload` endpoints are protected with the same JWT issuer/secret.
-The main service calls workload endpoints with a service JWT.
+The main service calls the workload summary query endpoint with a service JWT.
+Workload updates are not sent through REST; they are consumed from ActiveMQ.
 
-## Resilience Flow
+## Messaging And Outbox Flow
 
 When a training is created or deleted, `gym-crm-system` sends a workload update
-to `trainer-workload`.
+to `trainer-workload` through the outbox and ActiveMQ.
 
-If `trainer-workload` is available:
-
-```text
-training operation -> REST call -> workload summary updated
-```
-
-If `trainer-workload` is unavailable:
+Command/update flow:
 
 ```text
-training operation succeeds
-failed workload update is stored in trainer_workload_outbox as PENDING
-scheduled dispatcher retries later
-after successful delivery, outbox status becomes SENT
+training operation
+-> trainer_workload_outbox PENDING record
+-> scheduled dispatcher with ShedLock
+-> ActiveMQ queue trainer.workload.events
+-> trainer-workload JMS listener
+-> workload summary updated
+-> outbox status SENT
 ```
 
-The synchronous call is protected by a Resilience4j circuit breaker named
-`trainerWorkload`. The retry dispatcher is protected by ShedLock, so only one
-`gym-crm-system` replica dispatches outbox records at a time. The workload
-service stores processed `(training_id, action_type)` events, making retries
-idempotent.
+Query/read flow:
+
+```text
+GET workload summary
+-> gym-crm-system REST client
+-> trainer-workload GET /v1/trainer-workloads/{username}
+-> response DTO
+```
+
+If ActiveMQ is unavailable, training operations still succeed and outbox
+records remain `PENDING`. The scheduled dispatcher retries later. If
+`trainer-workload` receives a message but cannot process it after the configured
+redeliveries, the listener moves the payload to
+`trainer.workload.events.dlq` with failure metadata.
+
+The retry dispatcher is protected by ShedLock, so only one `gym-crm-system`
+replica dispatches outbox records at a time. The workload service stores
+processed `(training_id, action_type)` events, making retries idempotent.
 
 ## Logs And Tracing
 
-Both services log `X-Transaction-Id` as `tx:<id>`.
+Both services log `X-Transaction-Id` or JMS `transactionId` as `tx:<id>`.
 
 Example:
 
@@ -321,6 +369,47 @@ docker logs -f gym-app
 docker logs -f gym-trainer-workload
 ```
 
+Podman:
+
+```powershell
+podman logs -f gym-app
+```
+
+```powershell
+podman logs -f gym-trainer-workload
+```
+
+## ActiveMQ
+
+Open the ActiveMQ console:
+
+```text
+http://localhost:8161/admin/
+admin / admin
+```
+
+The main workload queue is:
+
+```text
+trainer.workload.events
+```
+
+The application-level dead-letter queue is:
+
+```text
+trainer.workload.events.dlq
+```
+
+Useful broker checks:
+
+```powershell
+curl.exe -u admin:admin -H "Origin: http://localhost:8161" "http://localhost:8161/api/jolokia/read/org.apache.activemq:type=Broker,brokerName=localhost/CurrentConnectionsCount,TotalConsumerCount,TotalProducerCount,Queues"
+```
+
+```powershell
+curl.exe -u admin:admin -H "Origin: http://localhost:8161" "http://localhost:8161/api/jolokia/read/org.apache.activemq:brokerName=localhost,destinationName=trainer.workload.events,destinationType=Queue,type=Broker/ConsumerCount,QueueSize,EnqueueCount,DequeueCount"
+```
+
 ## Postman
 
 Postman collections:
@@ -328,6 +417,7 @@ Postman collections:
 ```text
 gym-crm-system/postman/gym-crm-rest.postman_collection.json
 gym-crm-system/postman/gym-crm-outbox.postman_collection.json
+gym-crm-system/postman/gym-crm-activemq-load.postman_collection.json
 gym-crm-system/postman/gym-crm-log-volume-demo.postman_collection.json
 ```
 
@@ -343,6 +433,12 @@ PowerShell:
 
 ```powershell
 newman run .\gym-crm-system\postman\gym-crm-outbox.postman_collection.json
+```
+
+Generate ActiveMQ workload messages and inspect queue metrics:
+
+```powershell
+newman run .\gym-crm-system\postman\gym-crm-activemq-load.postman_collection.json
 ```
 
 Generate log activity for Loki/Grafana checks:

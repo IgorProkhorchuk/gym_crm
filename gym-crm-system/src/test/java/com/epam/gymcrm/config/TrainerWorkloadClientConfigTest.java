@@ -12,7 +12,6 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
-import org.springframework.http.HttpMethod;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
@@ -37,13 +36,15 @@ class TrainerWorkloadClientConfigTest {
                 Duration.ofSeconds(5));
     MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
     server
-        .expect(requestTo("http://trainer-workload/api/v1/trainer-workloads"))
+        .expect(requestTo("http://trainer-workload/api/v1/trainer-workloads/Mike.Stone"))
         .andExpect(header("Authorization", "Bearer service-token"))
         .andExpect(header(RestLoggingInterceptor.TRANSACTION_ID_HEADER, "transaction-id"))
         .andRespond(withSuccess());
 
-    restTemplate.exchange(
-        "http://trainer-workload/api/v1/trainer-workloads", HttpMethod.POST, null, Void.class);
+    restTemplate.getForObject(
+        "http://trainer-workload/api/v1/trainer-workloads/{username}",
+        String.class,
+        "Mike.Stone");
 
     server.verify();
   }

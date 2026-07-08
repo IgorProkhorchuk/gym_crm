@@ -38,7 +38,8 @@ class TrainingControllerTest {
 
   @BeforeEach
   void setUp() {
-    standaloneSetup(new TrainingController(gymFacade, authenticatedUserProvider), new RestExceptionHandler());
+    standaloneSetup(
+        new TrainingController(gymFacade, authenticatedUserProvider), new RestExceptionHandler());
   }
 
   @AfterEach
@@ -48,8 +49,7 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldReturnOkForTraineeToken() {
-    AuthenticatedPrincipal user =
-        new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
     AddTrainingRequest request =
         new AddTrainingRequest(
             TRAINEE_USERNAME,
@@ -61,7 +61,8 @@ class TrainingControllerTest {
     when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)        .body(
+        .contentType(ContentType.JSON)
+        .body(
             """
                         {
                           "traineeUsername": "John.Doe",
@@ -83,12 +84,12 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldRejectTrainerToken() {
-    AuthenticatedPrincipal user =
-        new AuthenticatedPrincipal(TRAINER_USERNAME, ProfileType.TRAINER);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(TRAINER_USERNAME, ProfileType.TRAINER);
     when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)        .body(validRequestBody())
+        .contentType(ContentType.JSON)
+        .body(validRequestBody())
         .when()
         .post("/v1/trainings")
         .then()
@@ -100,12 +101,12 @@ class TrainingControllerTest {
 
   @Test
   void addTrainingShouldRejectAnotherUsername() {
-    AuthenticatedPrincipal user =
-        new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
     when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
     given()
-        .contentType(ContentType.JSON)        .body(
+        .contentType(ContentType.JSON)
+        .body(
             """
                         {
                           "traineeUsername": "Another.User",
@@ -131,7 +132,8 @@ class TrainingControllerTest {
         .thenThrow(new AuthenticationException("Invalid authentication token"));
 
     given()
-        .contentType(ContentType.JSON)        .body(validRequestBody())
+        .contentType(ContentType.JSON)
+        .body(validRequestBody())
         .when()
         .post("/v1/trainings")
         .then()
@@ -144,7 +146,8 @@ class TrainingControllerTest {
   @Test
   void addTrainingShouldReturnBadRequestWhenDurationIsNotPositive() {
     given()
-        .contentType(ContentType.JSON)        .body(
+        .contentType(ContentType.JSON)
+        .body(
             """
                         {
                           "traineeUsername": "John.Doe",
@@ -160,23 +163,17 @@ class TrainingControllerTest {
         .then()
         .statusCode(400)
         .body(
-            "message",
-            equalTo("Invalid request body: field 'trainingDuration' must be positive"));
+            "message", equalTo("Invalid request body: field 'trainingDuration' must be positive"));
 
     verifyNoInteractions(gymFacade);
   }
 
   @Test
   void deleteTrainingShouldReturnNoContent() {
-    AuthenticatedPrincipal user =
-        new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
+    AuthenticatedPrincipal user = new AuthenticatedPrincipal(TRAINEE_USERNAME, ProfileType.TRAINEE);
     when(authenticatedUserProvider.currentUser()).thenReturn(user);
 
-    given()
-        .when()
-        .delete("/v1/trainings/10")
-        .then()
-        .statusCode(204);
+    given().when().delete("/v1/trainings/10").then().statusCode(204);
 
     verify(authenticatedUserProvider).currentUser();
     verify(gymFacade).deleteTraining(10L);

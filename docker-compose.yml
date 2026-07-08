@@ -91,6 +91,22 @@ services:
       timeout: 5s
       retries: 5
 
+#================ActiveMQ===============
+
+  gym-activemq:
+    image: docker.io/apache/activemq-classic:latest
+    container_name: gym-activemq
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    networks:
+      - gym-crm-net
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/61616'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
 #==================APP=================
 
   eureka:
@@ -143,12 +159,18 @@ services:
       TRAINER_WORKLOAD_READ_TIMEOUT: ${TRAINER_WORKLOAD_READ_TIMEOUT}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE}
       SPRING_FLYWAY_BASELINE_VERSION: ${SPRING_FLYWAY_BASELINE_VERSION}
+      ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}
+      ACTIVE_MQ_USER: ${ACTIVE_MQ_USER:-admin}
+      ACTIVE_MQ_PASSWORD: ${ACTIVE_MQ_PASSWORD:-admin}
+      TRAINER_WORKLOAD_EVENTS_QUEUE: ${TRAINER_WORKLOAD_EVENTS_QUEUE:-trainer.workload.events}
     depends_on:
       gym-pgpool:
         condition: service_healthy
       gym-redis:
         condition: service_healthy
       eureka:
+        condition: service_healthy
+      gym-activemq:
         condition: service_healthy
 
   trainer-workload:
@@ -170,8 +192,20 @@ services:
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
       TRAINER_WORKLOAD_H2_TCP_ENABLED: ${TRAINER_WORKLOAD_H2_TCP_ENABLED:-false}
+      ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}
+      ACTIVE_MQ_USER: ${ACTIVE_MQ_USER:-admin}
+      ACTIVE_MQ_PASSWORD: ${ACTIVE_MQ_PASSWORD:-admin}
+      TRAINER_WORKLOAD_EVENTS_QUEUE: ${TRAINER_WORKLOAD_EVENTS_QUEUE:-trainer.workload.events}
+      TRAINER_WORKLOAD_EVENTS_DLQ: ${TRAINER_WORKLOAD_EVENTS_DLQ:-trainer.workload.events.dlq}
+      TRAINER_WORKLOAD_LISTENER_CONCURRENCY: ${TRAINER_WORKLOAD_LISTENER_CONCURRENCY:-2-5}
+      TRAINER_WORKLOAD_REDELIVERY_MAX_ATTEMPTS: ${TRAINER_WORKLOAD_REDELIVERY_MAX_ATTEMPTS:-3}
+      TRAINER_WORKLOAD_REDELIVERY_INITIAL_DELAY: ${TRAINER_WORKLOAD_REDELIVERY_INITIAL_DELAY:-1000}
+      TRAINER_WORKLOAD_REDELIVERY_USE_EXPONENTIAL_BACKOFF: ${TRAINER_WORKLOAD_REDELIVERY_USE_EXPONENTIAL_BACKOFF:-true}
+      TRAINER_WORKLOAD_REDELIVERY_BACKOFF_MULTIPLIER: ${TRAINER_WORKLOAD_REDELIVERY_BACKOFF_MULTIPLIER:-2.0}
     depends_on:
       eureka:
+        condition: service_healthy
+      gym-activemq:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/8081'"]

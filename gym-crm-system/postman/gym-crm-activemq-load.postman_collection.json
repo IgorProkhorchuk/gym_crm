@@ -1,0 +1,887 @@
+{
+  "info": {
+    "_postman_id": "41b1af82-1a2d-45e4-9a0d-gymcrmactivemq001",
+    "name": "Gym CRM ActiveMQ Broker Load",
+    "description": "Manual collection for putting load on the trainer workload ActiveMQ queue. Run it against the full stack. Open ActiveMQ console at http://localhost:8161/admin/ with admin/admin and watch Queues, gym-app logs, and gym-trainer-workload logs while the collection runs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('runId')) {",
+          "  pm.collectionVariables.set('runId', Date.now().toString());",
+          "}",
+          "if (!pm.collectionVariables.get('loadIterations')) {",
+          "  pm.collectionVariables.set('loadIterations', '12');",
+          "}",
+          "if (!pm.collectionVariables.get('currentIteration')) {",
+          "  pm.collectionVariables.set('currentIteration', '0');",
+          "}",
+          "if (!pm.collectionVariables.get('expectedDuration')) {",
+          "  pm.collectionVariables.set('expectedDuration', '0');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "gymBaseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "activeMqBaseUrl",
+      "value": "http://localhost:8161",
+      "type": "string"
+    },
+    {
+      "key": "activeMqUsername",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "activeMqPassword",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "queueName",
+      "value": "trainer.workload.events",
+      "type": "string"
+    },
+    {
+      "key": "dlqName",
+      "value": "trainer.workload.events.dlq",
+      "type": "string"
+    },
+    {
+      "key": "loadIterations",
+      "value": "12",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "currentIteration",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "expectedDuration",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "currentDuration",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "traineeUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traineePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trainerPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traineeToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Setup",
+      "item": [
+        {
+          "name": "Create Load Trainee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainee created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('traineeUsername', body.username);",
+                  "pm.collectionVariables.set('traineePassword', body.password);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"BrokerLoadTrainee{{runId}}\",\n  \"lastName\": \"User\",\n  \"dateOfBirth\": \"1994-04-12\",\n  \"address\": \"Kyiv\"\n}"
+            },
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainees",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Load Trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainer created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('trainerUsername', body.username);",
+                  "pm.collectionVariables.set('trainerPassword', body.password);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"BrokerLoadTrainer{{runId}}\",\n  \"lastName\": \"Coach\",\n  \"specialization\": \"Fitness\"\n}"
+            },
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainers",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Load Trainee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainee login succeeds', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('traineeToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\",\n  \"password\": \"{{traineePassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/auth/login",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 ActiveMQ Baseline",
+      "item": [
+        {
+          "name": "Read Broker Totals",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Broker totals are readable', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const value = pm.response.json().value;",
+                  "console.log('ActiveMQ totals:', value);",
+                  "pm.test('trainer-workload has JMS consumers', function () {",
+                  "  pm.expect(value.CurrentConnectionsCount).to.be.at.least(1);",
+                  "  pm.expect(value.TotalConsumerCount).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              }
+            ],
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/jolokia/read/org.apache.activemq:type=Broker,brokerName=localhost/CurrentConnectionsCount,TotalConsumerCount,TotalProducerCount,Queues",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jolokia",
+                "read",
+                "org.apache.activemq:type=Broker,brokerName=localhost",
+                "CurrentConnectionsCount,TotalConsumerCount,TotalProducerCount,Queues"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Read Queue Metrics Before Load",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Queue metrics are readable', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "console.log('Queue metrics before load:', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              }
+            ],
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/jolokia/read/org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker/ConsumerCount,QueueSize,EnqueueCount,DequeueCount",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jolokia",
+                "read",
+                "org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker",
+                "ConsumerCount,QueueSize,EnqueueCount,DequeueCount"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Publish ADD Batch",
+      "item": [
+        {
+          "name": "Add Training Batch Item",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const iteration = Number(pm.collectionVariables.get('currentIteration') || '0') + 1;",
+                  "const duration = 5 + iteration;",
+                  "pm.collectionVariables.set('currentIteration', String(iteration));",
+                  "pm.collectionVariables.set('currentDuration', String(duration));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Training creation publishes an outbox event', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const expectedDuration = Number(pm.collectionVariables.get('expectedDuration') || '0') + Number(pm.collectionVariables.get('currentDuration'));",
+                  "pm.collectionVariables.set('expectedDuration', String(expectedDuration));",
+                  "const currentIteration = Number(pm.collectionVariables.get('currentIteration'));",
+                  "const loadIterations = Number(pm.collectionVariables.get('loadIterations'));",
+                  "console.log('Published ADD candidate', currentIteration, 'of', loadIterations);",
+                  "if (currentIteration < loadIterations) {",
+                  "  postman.setNextRequest('Add Training Batch Item');",
+                  "} else {",
+                  "  postman.setNextRequest('Read Queue Metrics After ADD Batch');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"traineeUsername\": \"{{traineeUsername}}\",\n  \"trainerUsername\": \"{{trainerUsername}}\",\n  \"trainingName\": \"Broker load {{runId}} #{{currentIteration}}\",\n  \"trainingTypeName\": \"Fitness\",\n  \"trainingDate\": \"2026-06-01\",\n  \"trainingDuration\": {{currentDuration}}\n}"
+            },
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainings",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Read Queue Metrics After ADD Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Queue metrics are readable after ADD batch', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "console.log('Queue metrics after ADD batch:', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              }
+            ],
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/jolokia/read/org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker/ConsumerCount,QueueSize,EnqueueCount,DequeueCount",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jolokia",
+                "read",
+                "org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker",
+                "ConsumerCount,QueueSize,EnqueueCount,DequeueCount"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Wait For ADD Drain",
+          "description": "Waits for the outbox dispatcher and trainer-workload listener. Watch ActiveMQ QueueSize and DequeueCount in the console while this runs.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const waitUntil = Date.now() + 30000;",
+                  "while (Date.now() < waitUntil) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Gym API is available after ADD drain wait', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/training-types",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Read Queue Metrics After ADD Drain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Queue metrics are readable after ADD drain', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const value = pm.response.json().value;",
+                  "console.log('Queue metrics after ADD drain:', value);",
+                  "pm.test('Queue is drained after ADD batch', function () {",
+                  "  pm.expect(value.QueueSize).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              }
+            ],
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/jolokia/read/org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker/ConsumerCount,QueueSize,EnqueueCount,DequeueCount",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jolokia",
+                "read",
+                "org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker",
+                "ConsumerCount,QueueSize,EnqueueCount,DequeueCount"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Workload Summary After ADD Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainer workload is available after ADD batch', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const expectedDuration = Number(pm.collectionVariables.get('expectedDuration'));",
+                  "const year = (body.years || []).find(function (item) { return item.year === 2026; });",
+                  "const month = year && (year.months || []).find(function (item) { return item.month === 6; });",
+                  "pm.test('Workload duration matches ADD batch', function () {",
+                  "  pm.expect(body.trainerUsername).to.eql(pm.collectionVariables.get('trainerUsername'));",
+                  "  pm.expect(month, 'June 2026 workload month').to.exist;",
+                  "  pm.expect(month.trainingSummaryDuration).to.eql(expectedDuration);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainer-workloads",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Publish DELETE Batch",
+      "item": [
+        {
+          "name": "Delete Trainee Profile To Publish DELETE Events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainee delete succeeds', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{traineeUsername}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainees/profile",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainees",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Read Queue Metrics After DELETE Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Queue metrics are readable after DELETE batch', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "console.log('Queue metrics after DELETE batch:', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              }
+            ],
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/jolokia/read/org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker/ConsumerCount,QueueSize,EnqueueCount,DequeueCount",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jolokia",
+                "read",
+                "org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker",
+                "ConsumerCount,QueueSize,EnqueueCount,DequeueCount"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Wait For DELETE Drain",
+          "description": "Waits for DELETE outbox events to be published and consumed.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const waitUntil = Date.now() + 30000;",
+                  "while (Date.now() < waitUntil) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Gym API is available after DELETE drain wait', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/training-types",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Read Queue Metrics After DELETE Drain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Queue metrics are readable after DELETE drain', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const value = pm.response.json().value;",
+                  "console.log('Queue metrics after DELETE drain:', value);",
+                  "pm.test('Queue is drained after DELETE batch', function () {",
+                  "  pm.expect(value.QueueSize).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              }
+            ],
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/jolokia/read/org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker/ConsumerCount,QueueSize,EnqueueCount,DequeueCount",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jolokia",
+                "read",
+                "org.apache.activemq:brokerName=localhost,destinationName={{queueName}},destinationType=Queue,type=Broker",
+                "ConsumerCount,QueueSize,EnqueueCount,DequeueCount"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Workload Summary After DELETE Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainer workload is still available after DELETE batch', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const year = (body.years || []).find(function (item) { return item.year === 2026; });",
+                  "const month = year && (year.months || []).find(function (item) { return item.month === 6; });",
+                  "pm.test('Workload duration returns to zero after DELETE batch', function () {",
+                  "  pm.expect(body.trainerUsername).to.eql(pm.collectionVariables.get('trainerUsername'));",
+                  "  pm.expect(month, 'June 2026 workload month').to.exist;",
+                  "  pm.expect(month.trainingSummaryDuration).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainer-workloads",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

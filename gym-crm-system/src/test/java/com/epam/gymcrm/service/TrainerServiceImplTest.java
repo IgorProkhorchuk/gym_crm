@@ -324,6 +324,20 @@ class TrainerServiceImplTest {
   }
 
   @Test
+  void getUnassignedTrainersShouldThrowEntityNotFoundExceptionWhenTraineeDoesNotExist() {
+    AuthRequest request = new AuthRequest("Jane.Doe");
+    when(traineeRepository.findByUsername("Jane.Doe")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> trainerService.getUnassignedTrainers(request))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessage("Trainee profile not found");
+
+    assertAll(
+        () -> verify(traineeRepository).findByUsername("Jane.Doe"),
+        () -> verifyNoInteractions(trainerRepository, trainerMapper));
+  }
+
+  @Test
   void updateShouldSaveAuthenticatedTrainerChanges() {
     UpdateTrainerRequest request = updateTrainerRequest(22L, "Minnie", "McGonagall", "Yoga");
     Trainer authenticatedTrainer = trainer(22L, "Minerva", "McGonagall", "Minerva.McGonagall");

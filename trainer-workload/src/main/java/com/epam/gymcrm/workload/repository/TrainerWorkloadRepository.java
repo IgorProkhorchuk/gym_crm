@@ -1,10 +1,10 @@
 package com.epam.gymcrm.workload.repository;
 
 import com.epam.gymcrm.workload.model.TrainerWorkload;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 /**
- * Repository for trainer workload records.
+ * Repository for trainer workload documents.
  */
-public interface TrainerWorkloadRepository extends JpaRepository<TrainerWorkload, String> {
+public interface TrainerWorkloadRepository extends MongoRepository<TrainerWorkload, String> {
 }

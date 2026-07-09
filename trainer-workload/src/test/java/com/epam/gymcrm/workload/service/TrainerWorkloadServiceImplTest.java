@@ -12,13 +12,14 @@ import com.epam.gymcrm.workload.dto.ActionType;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadRequest;
 import com.epam.gymcrm.workload.dto.TrainerWorkloadResponse;
 import com.epam.gymcrm.workload.exception.TrainerWorkloadNotFoundException;
-import com.epam.gymcrm.workload.model.TrainerMonthlySummary;
 import com.epam.gymcrm.workload.model.TrainerWorkload;
+import com.epam.gymcrm.workload.model.TrainerWorkloadMonthSummary;
 import com.epam.gymcrm.workload.model.TrainerWorkloadProcessedEvent;
-import com.epam.gymcrm.workload.repository.TrainerMonthlySummaryRepository;
+import com.epam.gymcrm.workload.model.TrainerWorkloadYearSummary;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadProcessedEventRepository;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadRepository;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -37,77 +38,100 @@ class TrainerWorkloadServiceImplTest {
 
   @Mock private TrainerWorkloadRepository trainerWorkloadRepository;
 
-  @Mock private TrainerMonthlySummaryRepository trainerMonthlySummaryRepository;
-
   @Mock private TrainerWorkloadProcessedEventRepository processedEventRepository;
 
   @Test
   void updateTrainerWorkloadShouldCreateTrainerAndMonthlySummaryForAddAction() {
     TrainerWorkloadRequest request = request(ActionType.ADD, 60, true);
     when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.empty());
-    when(trainerMonthlySummaryRepository.findByTrainerUsernameAndTrainingYearAndTrainingMonth(
-            USERNAME, 2026, 6))
-        .thenReturn(Optional.empty());
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
     ArgumentCaptor<TrainerWorkload> trainerCaptor =
         ArgumentCaptor.forClass(TrainerWorkload.class);
-    ArgumentCaptor<TrainerMonthlySummary> summaryCaptor =
-        ArgumentCaptor.forClass(TrainerMonthlySummary.class);
     verify(trainerWorkloadRepository).save(trainerCaptor.capture());
-    verify(trainerMonthlySummaryRepository).save(summaryCaptor.capture());
     verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+
     TrainerWorkload trainer = trainerCaptor.getValue();
-    TrainerMonthlySummary summary = summaryCaptor.getValue();
+    TrainerWorkloadYearSummary year = trainer.getYears().getFirst();
+    TrainerWorkloadMonthSummary month = year.getMonths().getFirst();
     assertAll(
         () -> assertThat(trainer.getUsername()).isEqualTo(USERNAME),
         () -> assertThat(trainer.getFirstName()).isEqualTo("John"),
         () -> assertThat(trainer.getLastName()).isEqualTo("Doe"),
         () -> assertThat(trainer.isActive()).isTrue(),
-        () -> assertThat(summary.getTrainer()).isSameAs(trainer),
-        () -> assertThat(summary.getTrainingYear()).isEqualTo(2026),
-        () -> assertThat(summary.getTrainingMonth()).isEqualTo(6),
-        () -> assertThat(summary.getSummaryDuration()).isEqualTo(60));
+        () -> assertThat(year.getYear()).isEqualTo(2026),
+        () -> assertThat(month.getMonth()).isEqualTo(6),
+        () -> assertThat(month.getTrainingsSummaryDuration()).isEqualTo(60));
   }
 
   @Test
   void updateTrainerWorkloadShouldIncreaseExistingMonthlySummaryForAddAction() {
-    TrainerWorkload trainer = trainer();
-    TrainerMonthlySummary summary = monthlySummary(trainer, 40);
+    TrainerWorkload trainer = trainerWithSummary(2026, 6, 40);
     TrainerWorkloadRequest request = request(ActionType.ADD, 20, false);
     when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
-    when(trainerMonthlySummaryRepository.findByTrainerUsernameAndTrainingYearAndTrainingMonth(
-            USERNAME, 2026, 6))
-        .thenReturn(Optional.of(summary));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
+    TrainerWorkloadMonthSummary month = trainer.getYears().getFirst().getMonths().getFirst();
     assertAll(
-        () -> assertThat(summary.getSummaryDuration()).isEqualTo(60),
+        () -> assertThat(month.getTrainingsSummaryDuration()).isEqualTo(60),
         () -> assertThat(trainer.getFirstName()).isEqualTo("John"),
         () -> assertThat(trainer.getLastName()).isEqualTo("Doe"),
         () -> assertThat(trainer.isActive()).isFalse());
     verify(trainerWorkloadRepository).save(trainer);
-    verify(trainerMonthlySummaryRepository).save(summary);
+    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+  }
+
+  @Test
+  void updateTrainerWorkloadShouldCreateMissingYearAndMonthForExistingTrainer() {
+    TrainerWorkload trainer = trainerWithSummary(2025, 5, 30);
+    TrainerWorkloadRequest request = request(ActionType.ADD, 20, true);
+    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+
+    trainerWorkloadService.updateTrainerWorkload(request);
+
+    assertAll(
+        () -> assertThat(trainer.getYears()).hasSize(2),
+        () -> assertThat(trainer.getYears().get(1).getYear()).isEqualTo(2026),
+        () -> assertThat(trainer.getYears().get(1).getMonths()).hasSize(1),
+        () -> assertThat(trainer.getYears().get(1).getMonths().getFirst().getMonth())
+            .isEqualTo(6),
+        () -> assertThat(trainer.getYears().get(1).getMonths().getFirst()
+            .getTrainingsSummaryDuration()).isEqualTo(20));
+    verify(trainerWorkloadRepository).save(trainer);
+    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+  }
+
+  @Test
+  void updateTrainerWorkloadShouldCreateMissingMonthForExistingYear() {
+    TrainerWorkload trainer = trainerWithSummary(2026, 5, 30);
+    TrainerWorkloadRequest request = request(ActionType.ADD, 20, true);
+    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+
+    trainerWorkloadService.updateTrainerWorkload(request);
+
+    TrainerWorkloadYearSummary year = trainer.getYears().getFirst();
+    assertAll(
+        () -> assertThat(trainer.getYears()).hasSize(1),
+        () -> assertThat(year.getMonths()).hasSize(2),
+        () -> assertThat(year.getMonths().get(1).getMonth()).isEqualTo(6),
+        () -> assertThat(year.getMonths().get(1).getTrainingsSummaryDuration()).isEqualTo(20));
+    verify(trainerWorkloadRepository).save(trainer);
     verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
   void updateTrainerWorkloadShouldDecreaseExistingMonthlySummaryForDeleteAction() {
-    TrainerWorkload trainer = trainer();
-    TrainerMonthlySummary summary = monthlySummary(trainer, 60);
+    TrainerWorkload trainer = trainerWithSummary(2026, 6, 60);
     TrainerWorkloadRequest request = request(ActionType.DELETE, 15, true);
     when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
-    when(trainerMonthlySummaryRepository.findByTrainerUsernameAndTrainingYearAndTrainingMonth(
-            USERNAME, 2026, 6))
-        .thenReturn(Optional.of(summary));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
-    assertThat(summary.getSummaryDuration()).isEqualTo(45);
+    TrainerWorkloadMonthSummary month = trainer.getYears().getFirst().getMonths().getFirst();
+    assertThat(month.getTrainingsSummaryDuration()).isEqualTo(45);
     verify(trainerWorkloadRepository).save(trainer);
-    verify(trainerMonthlySummaryRepository).save(summary);
     verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
   }
 
@@ -120,42 +144,31 @@ class TrainerWorkloadServiceImplTest {
     trainerWorkloadService.updateTrainerWorkload(request);
 
     verify(trainerWorkloadRepository, never()).findById(any());
-    verify(trainerMonthlySummaryRepository, never())
-        .findByTrainerUsernameAndTrainingYearAndTrainingMonth(any(), any(Integer.class), any(Integer.class));
     verify(trainerWorkloadRepository, never()).save(any());
-    verify(trainerMonthlySummaryRepository, never()).save(any());
     verify(processedEventRepository, never()).save(any());
   }
 
   @Test
   void updateTrainerWorkloadShouldRejectNegativeMonthlySummaryDuration() {
-    TrainerWorkload trainer = trainer();
-    TrainerMonthlySummary summary = monthlySummary(trainer, 10);
+    TrainerWorkload trainer = trainerWithSummary(2026, 6, 10);
     TrainerWorkloadRequest request = request(ActionType.DELETE, 15, true);
     when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
-    when(trainerMonthlySummaryRepository.findByTrainerUsernameAndTrainingYearAndTrainingMonth(
-            USERNAME, 2026, 6))
-        .thenReturn(Optional.of(summary));
 
     assertThatThrownBy(() -> trainerWorkloadService.updateTrainerWorkload(request))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Training summary duration cannot be negative");
 
     verify(trainerWorkloadRepository, never()).save(any());
-    verify(trainerMonthlySummaryRepository, never()).save(any());
     verify(processedEventRepository, never()).save(any());
   }
 
   @Test
   void getTrainerWorkloadShouldReturnSummaryGroupedByYearsAndMonths() {
     TrainerWorkload trainer = trainer();
-    TrainerMonthlySummary maySummary = monthlySummary(trainer, 2025, 5, 30);
-    TrainerMonthlySummary juneSummary = monthlySummary(trainer, 2026, 6, 60);
-    TrainerMonthlySummary julySummary = monthlySummary(trainer, 2026, 7, 45);
+    trainer.setYears(new ArrayList<>(List.of(
+        yearSummary(2026, monthSummary(7, 45), monthSummary(6, 60)),
+        yearSummary(2025, monthSummary(5, 30)))));
     when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
-    when(trainerMonthlySummaryRepository.findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(
-            USERNAME))
-        .thenReturn(List.of(maySummary, juneSummary, julySummary));
 
     TrainerWorkloadResponse response = trainerWorkloadService.getTrainerWorkload(USERNAME);
 
@@ -190,9 +203,6 @@ class TrainerWorkloadServiceImplTest {
     assertThatThrownBy(() -> trainerWorkloadService.getTrainerWorkload(USERNAME))
         .isInstanceOf(TrainerWorkloadNotFoundException.class)
         .hasMessage("Trainer workload not found: John.Doe");
-
-    verify(trainerMonthlySummaryRepository, never())
-        .findByTrainerUsernameOrderByTrainingYearAscTrainingMonthAsc(any());
   }
 
   private static TrainerWorkloadRequest request(
@@ -220,24 +230,35 @@ class TrainerWorkloadServiceImplTest {
         .build();
   }
 
-  private static TrainerMonthlySummary monthlySummary(
-      TrainerWorkload trainer,
-      int summaryDuration
-  ) {
-    return monthlySummary(trainer, 2026, 6, summaryDuration);
-  }
-
-  private static TrainerMonthlySummary monthlySummary(
-      TrainerWorkload trainer,
+  private static TrainerWorkload trainerWithSummary(
       int trainingYear,
       int trainingMonth,
       int summaryDuration
   ) {
-    return TrainerMonthlySummary.builder()
-        .trainer(trainer)
-        .trainingYear(trainingYear)
-        .trainingMonth(trainingMonth)
-        .summaryDuration(summaryDuration)
+    TrainerWorkload trainer = trainer();
+    trainer.setYears(new ArrayList<>(List.of(yearSummary(
+        trainingYear,
+        monthSummary(trainingMonth, summaryDuration)))));
+    return trainer;
+  }
+
+  private static TrainerWorkloadYearSummary yearSummary(
+      int trainingYear,
+      TrainerWorkloadMonthSummary... months
+  ) {
+    return TrainerWorkloadYearSummary.builder()
+        .year(trainingYear)
+        .months(new ArrayList<>(List.of(months)))
+        .build();
+  }
+
+  private static TrainerWorkloadMonthSummary monthSummary(
+      int trainingMonth,
+      int summaryDuration
+  ) {
+    return TrainerWorkloadMonthSummary.builder()
+        .month(trainingMonth)
+        .trainingsSummaryDuration(summaryDuration)
         .build();
   }
 }

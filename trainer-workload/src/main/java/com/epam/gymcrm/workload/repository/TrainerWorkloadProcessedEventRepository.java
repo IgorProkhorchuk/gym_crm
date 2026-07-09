@@ -2,19 +2,19 @@ package com.epam.gymcrm.workload.repository;
 
 import com.epam.gymcrm.workload.dto.ActionType;
 import com.epam.gymcrm.workload.model.TrainerWorkloadProcessedEvent;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 /**
- * Repository for trainer workload idempotency records.
+ * Repository for processed trainer workload events.
  */
 public interface TrainerWorkloadProcessedEventRepository
-    extends JpaRepository<TrainerWorkloadProcessedEvent, Long> {
+    extends MongoRepository<TrainerWorkloadProcessedEvent, String> {
 
   /**
-   * Checks whether a workload event was already applied.
+   * Checks whether a workload event has already been processed.
    *
-   * @param trainingId source training id
-   * @param actionType workload update action
+   * @param trainingId training identifier
+   * @param actionType workload action type
    * @return true when the event was already processed
    */
   boolean existsByTrainingIdAndActionType(Long trainingId, ActionType actionType);

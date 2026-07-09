@@ -203,7 +203,7 @@ services:
       - trainer_workload_logs:/app/logs
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
-      SPRING_DATA_MONGODB_URI: ${TRAINER_WORKLOAD_MONGODB_URI:-mongodb://gym-mongo:27017/trainer_workload}
+      SPRING_MONGODB_URI: ${TRAINER_WORKLOAD_MONGODB_URI:-mongodb://gym-mongo:27017/trainer_workload}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
       ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}

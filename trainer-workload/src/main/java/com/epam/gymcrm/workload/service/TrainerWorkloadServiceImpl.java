@@ -12,12 +12,15 @@ import com.epam.gymcrm.workload.model.TrainerWorkloadProcessedEvent;
 import com.epam.gymcrm.workload.model.TrainerWorkloadYearSummary;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadProcessedEventRepository;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -26,6 +29,8 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
 
   private final TrainerWorkloadRepository trainerWorkloadRepository;
   private final TrainerWorkloadProcessedEventRepository processedEventRepository;
+  private final TransactionTemplate transactionTemplate;
+  private final MeterRegistry meterRegistry;
 
   @Override
   public void updateTrainerWorkload(TrainerWorkloadRequest request) {
@@ -37,14 +42,25 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
         request.trainingDate(),
         request.trainingDuration());
 
-    if (processedEventRepository.existsByTrainingIdAndActionType(
-        request.trainingId(), request.actionType())) {
+    try {
+      transactionTemplate.executeWithoutResult(status -> processTrainerWorkloadEvent(request));
+    } catch (DuplicateKeyException exception) {
+      meterRegistry.counter(
+          "trainer.workload.duplicate.events",
+          "actionType",
+          request.actionType().name()).increment();
       log.info(
           "Duplicate trainer workload event ignored, trainingId={}, actionType={}",
           request.trainingId(),
           request.actionType());
-      return;
     }
+  }
+
+  private void processTrainerWorkloadEvent(TrainerWorkloadRequest request) {
+    processedEventRepository.insert(TrainerWorkloadProcessedEvent.fromRequest(
+        request.trainingId(),
+        request.actionType(),
+        Instant.now()));
 
     TrainerWorkload trainer = trainerWorkloadRepository.findById(request.trainerUsername())
         .orElseGet(() -> TrainerWorkload.builder()
@@ -65,10 +81,6 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
     monthSummary.setTrainingsSummaryDuration(calculateSummaryDuration(monthSummary, request));
 
     trainerWorkloadRepository.save(trainer);
-    processedEventRepository.save(TrainerWorkloadProcessedEvent.fromRequest(
-        request.trainingId(),
-        request.actionType(),
-        Instant.now()));
 
     log.info(
         "Trainer workload updated, trainingId={}, trainingYear={}, trainingMonth={}, "

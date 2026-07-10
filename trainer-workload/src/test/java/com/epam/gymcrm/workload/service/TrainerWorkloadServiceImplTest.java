@@ -18,27 +18,45 @@ import com.epam.gymcrm.workload.model.TrainerWorkloadProcessedEvent;
 import com.epam.gymcrm.workload.model.TrainerWorkloadYearSummary;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadProcessedEventRepository;
 import com.epam.gymcrm.workload.repository.TrainerWorkloadRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerWorkloadServiceImplTest {
 
   private static final String USERNAME = "John.Doe";
 
-  @InjectMocks private TrainerWorkloadServiceImpl trainerWorkloadService;
+  private TrainerWorkloadServiceImpl trainerWorkloadService;
+  private SimpleMeterRegistry meterRegistry;
 
   @Mock private TrainerWorkloadRepository trainerWorkloadRepository;
 
   @Mock private TrainerWorkloadProcessedEventRepository processedEventRepository;
+
+  @BeforeEach
+  void setUp() {
+    meterRegistry = new SimpleMeterRegistry();
+    trainerWorkloadService = new TrainerWorkloadServiceImpl(
+        trainerWorkloadRepository,
+        processedEventRepository,
+        new TransactionTemplate(noOpTransactionManager()),
+        meterRegistry);
+  }
 
   @Test
   void updateTrainerWorkloadShouldCreateTrainerAndMonthlySummaryForAddAction() {
@@ -50,7 +68,7 @@ class TrainerWorkloadServiceImplTest {
     ArgumentCaptor<TrainerWorkload> trainerCaptor =
         ArgumentCaptor.forClass(TrainerWorkload.class);
     verify(trainerWorkloadRepository).save(trainerCaptor.capture());
-    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
 
     TrainerWorkload trainer = trainerCaptor.getValue();
     TrainerWorkloadYearSummary year = trainer.getYears().getFirst();
@@ -80,7 +98,7 @@ class TrainerWorkloadServiceImplTest {
         () -> assertThat(trainer.getLastName()).isEqualTo("Doe"),
         () -> assertThat(trainer.isActive()).isFalse());
     verify(trainerWorkloadRepository).save(trainer);
-    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
@@ -100,7 +118,7 @@ class TrainerWorkloadServiceImplTest {
         () -> assertThat(trainer.getYears().get(1).getMonths().getFirst()
             .getTrainingsSummaryDuration()).isEqualTo(20));
     verify(trainerWorkloadRepository).save(trainer);
-    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
@@ -118,7 +136,7 @@ class TrainerWorkloadServiceImplTest {
         () -> assertThat(year.getMonths().get(1).getMonth()).isEqualTo(6),
         () -> assertThat(year.getMonths().get(1).getTrainingsSummaryDuration()).isEqualTo(20));
     verify(trainerWorkloadRepository).save(trainer);
-    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
@@ -132,20 +150,24 @@ class TrainerWorkloadServiceImplTest {
     TrainerWorkloadMonthSummary month = trainer.getYears().getFirst().getMonths().getFirst();
     assertThat(month.getTrainingsSummaryDuration()).isEqualTo(45);
     verify(trainerWorkloadRepository).save(trainer);
-    verify(processedEventRepository).save(any(TrainerWorkloadProcessedEvent.class));
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
   void updateTrainerWorkloadShouldIgnoreAlreadyProcessedEvent() {
     TrainerWorkloadRequest request = request(ActionType.ADD, 20, true);
-    when(processedEventRepository.existsByTrainingIdAndActionType(1L, ActionType.ADD))
-        .thenReturn(true);
+    when(processedEventRepository.insert(any(TrainerWorkloadProcessedEvent.class)))
+        .thenThrow(new DuplicateKeyException("duplicate event"));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
     verify(trainerWorkloadRepository, never()).findById(any());
     verify(trainerWorkloadRepository, never()).save(any());
-    verify(processedEventRepository, never()).save(any());
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
+    assertThat(meterRegistry.get("trainer.workload.duplicate.events")
+        .tag("actionType", "ADD")
+        .counter()
+        .count()).isEqualTo(1);
   }
 
   @Test
@@ -159,7 +181,7 @@ class TrainerWorkloadServiceImplTest {
         .hasMessage("Training summary duration cannot be negative");
 
     verify(trainerWorkloadRepository, never()).save(any());
-    verify(processedEventRepository, never()).save(any());
+    verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
   }
 
   @Test
@@ -260,5 +282,20 @@ class TrainerWorkloadServiceImplTest {
         .month(trainingMonth)
         .trainingsSummaryDuration(summaryDuration)
         .build();
+  }
+
+  private static PlatformTransactionManager noOpTransactionManager() {
+    return new PlatformTransactionManager() {
+      @Override
+      public TransactionStatus getTransaction(TransactionDefinition definition) {
+        return new SimpleTransactionStatus();
+      }
+
+      @Override
+      public void commit(TransactionStatus status) {}
+
+      @Override
+      public void rollback(TransactionStatus status) {}
+    };
   }
 }

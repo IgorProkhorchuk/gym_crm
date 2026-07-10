@@ -112,6 +112,7 @@ services:
   gym-mongo:
     image: docker.io/library/mongo:7
     container_name: gym-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     networks:
@@ -119,7 +120,7 @@ services:
     volumes:
       - trainer_workload_mongo_data:/data/db
     healthcheck:
-      test: [ "CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep 1" ]
+      test: [ "CMD-SHELL", "mongosh --quiet --eval \"try { rs.status().ok; db.hello().isWritablePrimary ? 1 : 0 } catch (e) { rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'gym-mongo:27017' }] }); 0 }\" | grep 1" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -223,7 +224,7 @@ services:
       - trainer_workload_logs:/app/logs
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
-      SPRING_MONGODB_URI: ${TRAINER_WORKLOAD_MONGODB_URI:-mongodb://gym-mongo:27017/trainer_workload}
+      SPRING_MONGODB_URI: ${TRAINER_WORKLOAD_MONGODB_URI:-mongodb://gym-mongo:27017/trainer_workload?replicaSet=rs0}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
       ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}

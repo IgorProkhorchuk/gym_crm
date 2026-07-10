@@ -107,6 +107,26 @@
       "key": "traineeToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "prometheusBaseUrl",
+      "value": "http://localhost:9090",
+      "type": "string"
+    },
+    {
+      "key": "duplicateTrainingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "duplicateDuration",
+      "value": "17",
+      "type": "string"
+    },
+    {
+      "key": "duplicateMetricBefore",
+      "value": "0",
+      "type": "string"
     }
   ],
   "item": [
@@ -633,7 +653,374 @@
       ]
     },
     {
-      "name": "04 Publish DELETE Batch",
+      "name": "04 Duplicate Idempotency",
+      "description": "Publishes the same trainer workload message twice through the ActiveMQ REST API. The first message updates MongoDB, the second has the same trainingId/actionType and must be discarded by trainer-workload. Prometheus metric trainer_workload_duplicate_events_total should increase.",
+      "item": [
+        {
+          "name": "Read Duplicate Metric Before",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duplicate metric before query succeeds', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "const result = (((response || {}).data || {}).result || []);",
+                  "const value = result.length ? Number(result[0].value[1]) : 0;",
+                  "pm.collectionVariables.set('duplicateMetricBefore', String(value));",
+                  "console.log('Duplicate metric before:', value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{prometheusBaseUrl}}/api/v1/query?query=sum(trainer_workload_duplicate_events_total) or vector(0)",
+              "host": [
+                "{{prometheusBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "query"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "sum(trainer_workload_duplicate_events_total) or vector(0)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Duplicate Workload Event First Time",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = pm.collectionVariables.get('runId') || String(Date.now());",
+                  "let duplicateTrainingId = pm.collectionVariables.get('duplicateTrainingId');",
+                  "if (!duplicateTrainingId) {",
+                  "  duplicateTrainingId = String(900000000 + Math.floor(Date.now() % 10000000));",
+                  "  pm.collectionVariables.set('duplicateTrainingId', duplicateTrainingId);",
+                  "}",
+                  "const duplicateDuration = Number(pm.collectionVariables.get('duplicateDuration') || '17');",
+                  "const message = {",
+                  "  trainingId: Number(duplicateTrainingId),",
+                  "  trainerUsername: pm.collectionVariables.get('trainerUsername'),",
+                  "  trainerFirstName: 'BrokerLoadTrainer' + runId,",
+                  "  trainerLastName: 'Coach',",
+                  "  trainerStatus: true,",
+                  "  trainingDate: '2026-07-02',",
+                  "  trainingDuration: duplicateDuration,",
+                  "  actionType: 'ADD'",
+                  "};",
+                  "pm.request.body.raw = JSON.stringify(message, null, 2);",
+                  "console.log('Publishing duplicate workload event candidate:', message);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Publish Duplicate Workload Event First Time accepted by ActiveMQ REST API', function () {",
+                  "  pm.expect([200, 204]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              },
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/message/{{queueName}}?type=queue",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "message",
+                "{{queueName}}"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "queue"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Duplicate Workload Event Second Time",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = pm.collectionVariables.get('runId') || String(Date.now());",
+                  "let duplicateTrainingId = pm.collectionVariables.get('duplicateTrainingId');",
+                  "if (!duplicateTrainingId) {",
+                  "  duplicateTrainingId = String(900000000 + Math.floor(Date.now() % 10000000));",
+                  "  pm.collectionVariables.set('duplicateTrainingId', duplicateTrainingId);",
+                  "}",
+                  "const duplicateDuration = Number(pm.collectionVariables.get('duplicateDuration') || '17');",
+                  "const message = {",
+                  "  trainingId: Number(duplicateTrainingId),",
+                  "  trainerUsername: pm.collectionVariables.get('trainerUsername'),",
+                  "  trainerFirstName: 'BrokerLoadTrainer' + runId,",
+                  "  trainerLastName: 'Coach',",
+                  "  trainerStatus: true,",
+                  "  trainingDate: '2026-07-02',",
+                  "  trainingDuration: duplicateDuration,",
+                  "  actionType: 'ADD'",
+                  "};",
+                  "pm.request.body.raw = JSON.stringify(message, null, 2);",
+                  "console.log('Publishing duplicate workload event candidate:', message);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Publish Duplicate Workload Event Second Time accepted by ActiveMQ REST API', function () {",
+                  "  pm.expect([200, 204]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{activeMqUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{activeMqPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8161"
+              },
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{activeMqBaseUrl}}/api/message/{{queueName}}?type=queue",
+              "host": [
+                "{{activeMqBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "message",
+                "{{queueName}}"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "queue"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Wait For Duplicate Drain",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const waitUntil = Date.now() + 30000;",
+                  "while (Date.now() < waitUntil) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Gym API is available after duplicate drain wait', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/training-types",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Duplicate Workload Was Applied Once",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Trainer workload is available after duplicate events', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const duplicateDuration = Number(pm.collectionVariables.get('duplicateDuration'));",
+                  "const year = (body.years || []).find(function (item) { return item.year === 2026; });",
+                  "const month = year && (year.months || []).find(function (item) { return item.month === 7; });",
+                  "pm.test('Duplicate event updates July workload only once', function () {",
+                  "  pm.expect(body.trainerUsername).to.eql(pm.collectionVariables.get('trainerUsername'));",
+                  "  pm.expect(month, 'July 2026 workload month').to.exist;",
+                  "  pm.expect(month.trainingSummaryDuration).to.eql(duplicateDuration);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gymBaseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
+              "host": [
+                "{{gymBaseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainer-workloads",
+                "{{trainerUsername}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Read Duplicate Metric After",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duplicate metric after query succeeds', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "const result = (((response || {}).data || {}).result || []);",
+                  "const value = result.length ? Number(result[0].value[1]) : 0;",
+                  "const before = Number(pm.collectionVariables.get('duplicateMetricBefore') || '0');",
+                  "pm.test('Duplicate metric increased after repeated event', function () {",
+                  "  pm.expect(value).to.be.at.least(before + 1);",
+                  "});",
+                  "console.log('Duplicate metric after:', value, 'before:', before);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{prometheusBaseUrl}}/api/v1/query?query=sum(trainer_workload_duplicate_events_total) or vector(0)",
+              "host": [
+                "{{prometheusBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "query"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "sum(trainer_workload_duplicate_events_total) or vector(0)"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Publish DELETE Batch",
       "item": [
         {
           "name": "Delete Trainee Profile To Publish DELETE Events",

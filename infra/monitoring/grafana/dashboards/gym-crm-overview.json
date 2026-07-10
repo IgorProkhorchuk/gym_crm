@@ -623,6 +623,72 @@
       ],
       "title": "MongoDB Up",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 24
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "round(sum(increase(trainer_workload_duplicate_events_total[15m])) or vector(0))",
+          "legendFormat": "duplicates",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Duplicate Workload Events 15m",
+      "type": "stat"
     }
   ],
   "refresh": "10s",
@@ -632,7 +698,8 @@
     "prometheus",
     "mongodb",
     "nosql",
-    "gym-crm"
+    "gym-crm",
+    "duplicate-events"
   ],
   "templating": {
     "list": []

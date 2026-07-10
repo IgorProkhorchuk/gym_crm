@@ -17,9 +17,9 @@ import org.springframework.web.client.RestClient;
         "spring.data.mongodb.repositories.enabled=false",
         "spring.data.mongodb.auto-index-creation=false",
         "spring.autoconfigure.exclude="
-            + "org.springframework.boot.data.mongodb.autoconfigure.MongoAutoConfiguration,"
-            + "org.springframework.boot.data.mongodb.autoconfigure.MongoDataAutoConfiguration,"
-            + "org.springframework.boot.data.mongodb.autoconfigure.MongoRepositoriesAutoConfiguration"
+            + "org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration,"
+            + "org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration,"
+            + "org.springframework.boot.data.mongodb.autoconfigure.DataMongoRepositoriesAutoConfiguration"
     })
 class OpenApiDocumentationTest {
 

@@ -473,6 +473,43 @@
       ],
       "title": "Broker Warnings, Retries, DLQ",
       "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 9,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{service=\"trainer-workload\"} |~ \"$transactionId\" |~ \"(?i)(Trainer workload updated|Duplicate trainer workload event ignored|summaryDuration|trainingYear|trainingMonth)\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "MongoDB Workload Updates",
+      "type": "logs"
     }
   ],
   "refresh": "5s",
@@ -482,6 +519,8 @@
     "prometheus",
     "loki",
     "activemq",
+    "mongodb",
+    "nosql",
     "gym-crm"
   ],
   "templating": {
@@ -507,8 +546,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Gym CRM Broker Demo",
+  "title": "Gym CRM Broker + NoSQL Demo",
   "uid": "gym-crm-broker-demo",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

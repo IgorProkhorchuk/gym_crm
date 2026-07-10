@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "41b1af82-1a2d-45e4-9a0d-gymcrmactivemq001",
     "name": "Gym CRM ActiveMQ Broker Load",
-    "description": "Manual collection for putting load on the trainer workload ActiveMQ queue. Run it against the full stack. Open ActiveMQ console at http://localhost:8161/admin/ with admin/admin and watch Queues, gym-app logs, and gym-trainer-workload logs while the collection runs.",
+    "description": "Manual collection for putting load on the trainer workload ActiveMQ queue. Run it against the full stack. Open ActiveMQ console at http://localhost:8161/admin/ with admin/admin and watch Queues, gym-app logs, gym-trainer-workload logs, and MongoDB workload documents while the collection runs. Optional MongoDB check: podman exec gym-mongo mongosh trainer_workload --quiet --eval \"db.trainer_workloads.find().pretty(); db.trainer_workload_processed_events.find().pretty()\".",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -483,7 +483,7 @@
         },
         {
           "name": "Wait For ADD Drain",
-          "description": "Waits for the outbox dispatcher and trainer-workload listener. Watch ActiveMQ QueueSize and DequeueCount in the console while this runs.",
+          "description": "Waits for the outbox dispatcher and trainer-workload listener. Watch ActiveMQ QueueSize and DequeueCount in the console while this runs; the listener persists workload changes in MongoDB.",
           "event": [
             {
               "listen": "prerequest",
@@ -735,7 +735,7 @@
         },
         {
           "name": "Wait For DELETE Drain",
-          "description": "Waits for DELETE outbox events to be published and consumed.",
+          "description": "Waits for DELETE outbox events to be published, consumed, and reflected in MongoDB workload summaries.",
           "event": [
             {
               "listen": "prerequest",

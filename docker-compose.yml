@@ -124,6 +124,26 @@ services:
       timeout: 5s
       retries: 10
 
+  gym-mongodb-exporter:
+    image: docker.io/percona/mongodb_exporter:${MONGODB_EXPORTER_VERSION:-0.51.0}
+    container_name: gym-mongodb-exporter
+    ports:
+      - "9216:9216"
+    networks:
+      - gym-crm-net
+    command:
+      - "--mongodb.uri=${MONGODB_EXPORTER_URI:-mongodb://gym-mongo:27017}"
+      - "--collector.diagnosticdata"
+      - "--collector.dbstats"
+      - "--collector.collstats"
+      - "--mongodb.collstats-colls=trainer_workload.trainer_workloads,trainer_workload.trainer_workload_processed_events"
+      - "--collector.indexstats"
+      - "--mongodb.indexstats-colls=trainer_workload.trainer_workloads,trainer_workload.trainer_workload_processed_events"
+      - "--compatible-mode"
+    depends_on:
+      gym-mongo:
+        condition: service_healthy
+
 #==================APP=================
 
   eureka:

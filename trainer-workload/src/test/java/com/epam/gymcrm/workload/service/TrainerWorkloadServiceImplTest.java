@@ -61,7 +61,7 @@ class TrainerWorkloadServiceImplTest {
   @Test
   void updateTrainerWorkloadShouldCreateTrainerAndMonthlySummaryForAddAction() {
     TrainerWorkloadRequest request = request(ActionType.ADD, 60, true);
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.empty());
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
@@ -87,7 +87,7 @@ class TrainerWorkloadServiceImplTest {
   void updateTrainerWorkloadShouldIncreaseExistingMonthlySummaryForAddAction() {
     TrainerWorkload trainer = trainerWithSummary(2026, 6, 40);
     TrainerWorkloadRequest request = request(ActionType.ADD, 20, false);
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
@@ -105,7 +105,7 @@ class TrainerWorkloadServiceImplTest {
   void updateTrainerWorkloadShouldCreateMissingYearAndMonthForExistingTrainer() {
     TrainerWorkload trainer = trainerWithSummary(2025, 5, 30);
     TrainerWorkloadRequest request = request(ActionType.ADD, 20, true);
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
@@ -125,7 +125,7 @@ class TrainerWorkloadServiceImplTest {
   void updateTrainerWorkloadShouldCreateMissingMonthForExistingYear() {
     TrainerWorkload trainer = trainerWithSummary(2026, 5, 30);
     TrainerWorkloadRequest request = request(ActionType.ADD, 20, true);
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
@@ -143,7 +143,7 @@ class TrainerWorkloadServiceImplTest {
   void updateTrainerWorkloadShouldDecreaseExistingMonthlySummaryForDeleteAction() {
     TrainerWorkload trainer = trainerWithSummary(2026, 6, 60);
     TrainerWorkloadRequest request = request(ActionType.DELETE, 15, true);
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
@@ -161,7 +161,7 @@ class TrainerWorkloadServiceImplTest {
 
     trainerWorkloadService.updateTrainerWorkload(request);
 
-    verify(trainerWorkloadRepository, never()).findById(any());
+    verify(trainerWorkloadRepository, never()).findByUsername(any());
     verify(trainerWorkloadRepository, never()).save(any());
     verify(processedEventRepository).insert(any(TrainerWorkloadProcessedEvent.class));
     assertThat(meterRegistry.get("trainer.workload.duplicate.events")
@@ -174,7 +174,7 @@ class TrainerWorkloadServiceImplTest {
   void updateTrainerWorkloadShouldRejectNegativeMonthlySummaryDuration() {
     TrainerWorkload trainer = trainerWithSummary(2026, 6, 10);
     TrainerWorkloadRequest request = request(ActionType.DELETE, 15, true);
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
 
     assertThatThrownBy(() -> trainerWorkloadService.updateTrainerWorkload(request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -190,7 +190,7 @@ class TrainerWorkloadServiceImplTest {
     trainer.setYears(new ArrayList<>(List.of(
         yearSummary(2026, monthSummary(7, 45), monthSummary(6, 60)),
         yearSummary(2025, monthSummary(5, 30)))));
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.of(trainer));
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.of(trainer));
 
     TrainerWorkloadResponse response = trainerWorkloadService.getTrainerWorkload(USERNAME);
 
@@ -220,7 +220,7 @@ class TrainerWorkloadServiceImplTest {
 
   @Test
   void getTrainerWorkloadShouldThrowTrainerWorkloadNotFoundExceptionWhenTrainerDoesNotExist() {
-    when(trainerWorkloadRepository.findById(USERNAME)).thenReturn(Optional.empty());
+    when(trainerWorkloadRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> trainerWorkloadService.getTrainerWorkload(USERNAME))
         .isInstanceOf(TrainerWorkloadNotFoundException.class)

@@ -129,7 +129,7 @@ class TrainerWorkloadMongoIntegrationTest {
     trainerWorkloadService.updateTrainerWorkload(request);
     trainerWorkloadService.updateTrainerWorkload(request);
 
-    TrainerWorkload trainer = trainerWorkloadRepository.findById("Integration.Trainer")
+    TrainerWorkload trainer = trainerWorkloadRepository.findByUsername("Integration.Trainer")
         .orElseThrow();
     assertThat(trainer.getYears()).hasSize(1);
     assertThat(trainer.getYears().getFirst().getMonths()).hasSize(1);
@@ -148,7 +148,7 @@ class TrainerWorkloadMongoIntegrationTest {
         .hasMessage("Training summary duration cannot be negative");
 
     assertThat(processedEventsCount(9003L, ActionType.DELETE)).isZero();
-    assertThat(trainerWorkloadRepository.findById("Integration.Trainer")).isEmpty();
+    assertThat(trainerWorkloadRepository.findByUsername("Integration.Trainer")).isEmpty();
   }
 
   private Set<String> indexNames(Class<?> documentClass) {

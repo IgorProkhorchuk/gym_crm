@@ -62,7 +62,7 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
         request.actionType(),
         Instant.now()));
 
-    TrainerWorkload trainer = trainerWorkloadRepository.findById(request.trainerUsername())
+    TrainerWorkload trainer = trainerWorkloadRepository.findByUsername(request.trainerUsername())
         .orElseGet(() -> TrainerWorkload.builder()
             .username(request.trainerUsername())
             .build());
@@ -94,7 +94,7 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
   @Override
   public TrainerWorkloadResponse getTrainerWorkload(String username) {
     log.info("Getting trainer workload");
-    TrainerWorkload trainer = trainerWorkloadRepository.findById(username)
+    TrainerWorkload trainer = trainerWorkloadRepository.findByUsername(username)
         .orElseThrow(() -> new TrainerWorkloadNotFoundException(username));
 
     log.info("Trainer workload found, yearSummaryCount={}", trainer.getYears().size());

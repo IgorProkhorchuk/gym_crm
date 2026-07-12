@@ -107,6 +107,44 @@ services:
       timeout: 5s
       retries: 12
 
+#================MONGO_DB==============
+
+  gym-mongo:
+    image: docker.io/library/mongo:7
+    container_name: gym-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    networks:
+      - gym-crm-net
+    volumes:
+      - trainer_workload_mongo_data:/data/db
+    healthcheck:
+      test: [ "CMD-SHELL", "mongosh --quiet --eval \"try { rs.status().ok; db.hello().isWritablePrimary ? 1 : 0 } catch (e) { rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'gym-mongo:27017' }] }); 0 }\" | grep 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gym-mongodb-exporter:
+    image: docker.io/percona/mongodb_exporter:${MONGODB_EXPORTER_VERSION:-0.51.0}
+    container_name: gym-mongodb-exporter
+    ports:
+      - "9216:9216"
+    networks:
+      - gym-crm-net
+    command:
+      - "--mongodb.uri=${MONGODB_EXPORTER_URI:-mongodb://gym-mongo:27017}"
+      - "--collector.diagnosticdata"
+      - "--collector.dbstats"
+      - "--collector.collstats"
+      - "--mongodb.collstats-colls=trainer_workload.trainer_workloads,trainer_workload.trainer_workload_processed_events"
+      - "--collector.indexstats"
+      - "--mongodb.indexstats-colls=trainer_workload.trainer_workloads,trainer_workload.trainer_workload_processed_events"
+      - "--compatible-mode"
+    depends_on:
+      gym-mongo:
+        condition: service_healthy
+
 #==================APP=================
 
   eureka:
@@ -180,18 +218,15 @@ services:
     container_name: gym-trainer-workload
     ports:
       - "8081:8081"
-      - "127.0.0.1:9092:9092"
     networks:
       - gym-crm-net
     volumes:
       - trainer_workload_logs:/app/logs
-      - trainer_workload_data:/app/data
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
-      SPRING_DATASOURCE_URL: ${TRAINER_WORKLOAD_DATASOURCE_URL}
+      SPRING_MONGODB_URI: ${TRAINER_WORKLOAD_MONGODB_URI:-mongodb://gym-mongo:27017/trainer_workload?replicaSet=rs0}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
-      TRAINER_WORKLOAD_H2_TCP_ENABLED: ${TRAINER_WORKLOAD_H2_TCP_ENABLED:-false}
       ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}
       ACTIVE_MQ_USER: ${ACTIVE_MQ_USER:-admin}
       ACTIVE_MQ_PASSWORD: ${ACTIVE_MQ_PASSWORD:-admin}
@@ -206,6 +241,8 @@ services:
       eureka:
         condition: service_healthy
       gym-activemq:
+        condition: service_healthy
+      gym-mongo:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/8081'"]
@@ -295,7 +332,7 @@ volumes:
   eureka_logs:
   gym_crm_system_logs:
   trainer_workload_logs:
-  trainer_workload_data:
+  trainer_workload_mongo_data:
   loki_data:
   alloy_data:
   prometheus_data:

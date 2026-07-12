@@ -1,11 +1,8 @@
 # Gym CRM Microservices
 
-Gym CRM is a Spring Boot microservices training project for managing gym
+Gym CRM is a Spring Boot microservices project for managing gym
 trainees, trainers, trainings, authentication, trainer workload summaries,
 monitoring, and resilience scenarios.
-
-This is a monorepo. GitLab renders this root `README.md` as the project
-documentation.
 
 ## Modules
 
@@ -13,7 +10,7 @@ documentation.
   authentication, PostgreSQL persistence, Redis-backed security state, metrics,
   and integration with trainer workload.
 * `trainer-workload` - workload service. Stores trainer monthly workload
-  summaries in H2, consumes workload update messages from ActiveMQ, and
+  summaries in MongoDB, consumes workload update messages from ActiveMQ, and
   exposes a REST query endpoint for summaries.
 * `eureka` - Spring Cloud Netflix Eureka discovery server.
 * `infra` - PostgreSQL initialization scripts and Prometheus/Grafana
@@ -40,7 +37,7 @@ flowchart LR
     mq --> listener["JMS Listener"]
     listener --> workload
     listener --> dlq["ActiveMQ DLQ: trainer.workload.events.dlq"]
-    workload --> h2["H2 Workload DB"]
+    workload --> mongo["MongoDB Workload DB"]
     prometheus["Prometheus"] --> gym
     prometheus --> workload
     alloy["Grafana Alloy"] --> loki["Loki"]
@@ -60,7 +57,7 @@ flowchart LR
 * Stateless JWT bearer authentication.
 * Redis-backed failed login attempt tracking and JWT revocation.
 * Spring Data JPA persistence for the main service.
-* H2 persistence for `trainer-workload`.
+* Spring Data MongoDB persistence for `trainer-workload`.
 * Eureka service discovery.
 * Service-to-service JWT for internal workload summary queries.
 * ActiveMQ-based trainer workload update delivery.
@@ -168,6 +165,8 @@ Eureka:                    http://localhost:8761
 Gym CRM Swagger UI:        http://localhost:8080/api/swagger-ui.html
 Trainer Workload Swagger:  http://localhost:8081/api/swagger-ui/index.html
 ActiveMQ Console:          http://localhost:8161/admin/  admin/admin
+MongoDB:                   http://localhost:27017 database trainer_workload replica set rs0
+MongoDB Exporter metrics:  http://localhost:9216/metrics
 Gym CRM health:            http://localhost:8080/api/actuator/health
 Trainer Workload health:   http://localhost:8081/api/actuator/health
 Prometheus:                http://localhost:9090
@@ -266,6 +265,49 @@ http://localhost:8081/api/v3/api-docs
 The main service calls the workload summary query endpoint with a service JWT.
 Workload updates are not sent through REST; they are consumed from ActiveMQ.
 
+## Trainer Workload MongoDB
+
+`trainer-workload` stores read-optimized trainer workload documents in MongoDB.
+Each trainer is stored as one document in `trainer_workloads`, keyed by trainer
+username. Year and month summaries are embedded inside that document.
+
+The service also stores processed event records in
+`trainer_workload_processed_events`. A unique MongoDB compound index on
+`trainingId` and `actionType` protects the listener from applying the same
+training event twice. The processed event insert and workload document update
+run in one MongoDB transaction, so a failed workload update also rolls back the
+processed event marker and lets ActiveMQ retry the message.
+
+Local connection settings:
+
+```text
+Container hostname: gym-mongo
+Host port:          localhost:27017
+Database:           trainer_workload
+Application env:    TRAINER_WORKLOAD_MONGODB_URI
+Spring property:    spring.mongodb.uri
+Replica set:        rs0
+Exporter:           gym-mongodb-exporter:9216
+```
+
+Inspect stored workload documents from the host:
+
+```powershell
+podman exec gym-mongo mongosh trainer_workload --quiet --eval "db.trainer_workloads.find().pretty()"
+```
+
+Inspect processed event idempotency records:
+
+```powershell
+podman exec gym-mongo mongosh trainer_workload --quiet --eval "db.trainer_workload_processed_events.find().pretty()"
+```
+
+Inspect Mongo indexes:
+
+```powershell
+podman exec gym-mongo mongosh trainer_workload --quiet --eval "db.trainer_workloads.getIndexes(); db.trainer_workload_processed_events.getIndexes();"
+```
+
 ## Messaging And Outbox Flow
 
 When a training is created or deleted, `gym-crm-system` sends a workload update
@@ -279,7 +321,7 @@ training operation
 -> scheduled dispatcher with ShedLock
 -> ActiveMQ queue trainer.workload.events
 -> trainer-workload JMS listener
--> workload summary updated
+-> MongoDB workload summary updated
 -> outbox status SENT
 ```
 
@@ -289,7 +331,7 @@ Query/read flow:
 GET workload summary
 -> gym-crm-system REST client
 -> trainer-workload GET /v1/trainer-workloads/{username}
--> response DTO
+-> MongoDB-backed response DTO
 ```
 
 If ActiveMQ is unavailable, training operations still succeed and outbox
@@ -300,7 +342,8 @@ redeliveries, the listener moves the payload to
 
 The retry dispatcher is protected by ShedLock, so only one `gym-crm-system`
 replica dispatches outbox records at a time. The workload service stores
-processed `(training_id, action_type)` events, making retries idempotent.
+processed `(trainingId, actionType)` events in MongoDB, making retries
+idempotent.
 
 ## Logs And Tracing
 
@@ -435,11 +478,16 @@ PowerShell:
 newman run .\gym-crm-system\postman\gym-crm-outbox.postman_collection.json
 ```
 
-Generate ActiveMQ workload messages and inspect queue metrics:
+Generate ActiveMQ workload messages, duplicate workload events, and inspect
+queue metrics:
 
 ```powershell
 newman run .\gym-crm-system\postman\gym-crm-activemq-load.postman_collection.json
 ```
+
+The ActiveMQ load collection includes `04 Duplicate Idempotency`. It publishes
+the same workload event twice, verifies that MongoDB workload duration is applied
+once, and checks the Prometheus counter for rejected duplicate events.
 
 Generate log activity for Loki/Grafana checks:
 
@@ -465,6 +513,21 @@ http://localhost:8080/api/actuator/metrics
 http://localhost:8080/api/actuator/prometheus
 http://localhost:8081/api/actuator/health
 http://localhost:8081/api/actuator/prometheus
+```
+
+Prometheus scrapes `gym-crm-system` and `trainer-workload` actuator metrics,
+plus MongoDB metrics through `gym-mongodb-exporter`.
+
+Duplicate workload message rejections are exposed by `trainer-workload` as:
+
+```text
+trainer_workload_duplicate_events_total
+```
+
+MongoDB exporter metrics:
+
+```text
+http://localhost:9216/metrics
 ```
 
 Prometheus:

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "4ef8b9a2-7b2d-4b22-9b31-gymcrmlogdemo01",
     "name": "Gym CRM Log Volume Demo",
-    "description": "Creates multiple trainers, trainees, trainings, read requests, expected failures, partial cleanup, and auto-generated transaction-id checks to generate centralized logs for Loki/Grafana. Run the collection from top to bottom with Postman Collection Runner. Most requests send a UUID-like X-Transaction-Id; the auto-generated checks intentionally omit the header and capture the generated X-Transaction-Id from response headers.",
+    "description": "Creates multiple trainers, trainees, trainings, workload read requests, expected failures, partial cleanup, and auto-generated transaction-id checks to generate centralized logs for Loki/Grafana. Workload requests exercise the MongoDB-backed trainer-workload service through gym-crm-system. Run the collection from top to bottom with Postman Collection Runner. Most requests send a UUID-like X-Transaction-Id; the auto-generated checks intentionally omit the header and capture the generated X-Transaction-Id from response headers.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [

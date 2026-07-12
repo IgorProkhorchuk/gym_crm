@@ -1,11 +1,8 @@
 # Gym CRM Microservices
 
-Gym CRM is a Spring Boot microservices training project for managing gym
+Gym CRM is a Spring Boot microservices project for managing gym
 trainees, trainers, trainings, authentication, trainer workload summaries,
 monitoring, and resilience scenarios.
-
-This is a monorepo. GitLab renders this root `README.md` as the project
-documentation.
 
 ## Modules
 

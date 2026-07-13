@@ -91,6 +91,60 @@ services:
       timeout: 5s
       retries: 5
 
+#================ActiveMQ===============
+
+  gym-activemq:
+    image: docker.io/apache/activemq-classic:latest
+    container_name: gym-activemq
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    networks:
+      - gym-crm-net
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/61616'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+#================MONGO_DB==============
+
+  gym-mongo:
+    image: docker.io/library/mongo:7
+    container_name: gym-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    networks:
+      - gym-crm-net
+    volumes:
+      - trainer_workload_mongo_data:/data/db
+    healthcheck:
+      test: [ "CMD-SHELL", "mongosh --quiet --eval \"try { rs.status().ok; db.hello().isWritablePrimary ? 1 : 0 } catch (e) { rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'gym-mongo:27017' }] }); 0 }\" | grep 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gym-mongodb-exporter:
+    image: docker.io/percona/mongodb_exporter:${MONGODB_EXPORTER_VERSION:-0.51.0}
+    container_name: gym-mongodb-exporter
+    ports:
+      - "9216:9216"
+    networks:
+      - gym-crm-net
+    command:
+      - "--mongodb.uri=${MONGODB_EXPORTER_URI:-mongodb://gym-mongo:27017}"
+      - "--collector.diagnosticdata"
+      - "--collector.dbstats"
+      - "--collector.collstats"
+      - "--mongodb.collstats-colls=trainer_workload.trainer_workloads,trainer_workload.trainer_workload_processed_events"
+      - "--collector.indexstats"
+      - "--mongodb.indexstats-colls=trainer_workload.trainer_workloads,trainer_workload.trainer_workload_processed_events"
+      - "--compatible-mode"
+    depends_on:
+      gym-mongo:
+        condition: service_healthy
+
 #==================APP=================
 
   eureka:
@@ -143,12 +197,18 @@ services:
       TRAINER_WORKLOAD_READ_TIMEOUT: ${TRAINER_WORKLOAD_READ_TIMEOUT}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE}
       SPRING_FLYWAY_BASELINE_VERSION: ${SPRING_FLYWAY_BASELINE_VERSION}
+      ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}
+      ACTIVE_MQ_USER: ${ACTIVE_MQ_USER:-admin}
+      ACTIVE_MQ_PASSWORD: ${ACTIVE_MQ_PASSWORD:-admin}
+      TRAINER_WORKLOAD_EVENTS_QUEUE: ${TRAINER_WORKLOAD_EVENTS_QUEUE:-trainer.workload.events}
     depends_on:
       gym-pgpool:
         condition: service_healthy
       gym-redis:
         condition: service_healthy
       eureka:
+        condition: service_healthy
+      gym-activemq:
         condition: service_healthy
 
   trainer-workload:
@@ -162,14 +222,27 @@ services:
       - gym-crm-net
     volumes:
       - trainer_workload_logs:/app/logs
-      - trainer_workload_data:/app/data
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
-      SPRING_DATASOURCE_URL: ${TRAINER_WORKLOAD_DATASOURCE_URL}
+      SPRING_MONGODB_URI: ${TRAINER_WORKLOAD_MONGODB_URI:-mongodb://gym-mongo:27017/trainer_workload?replicaSet=rs0}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
+      ACTIVE_MQ_BROKER_URL: ${ACTIVE_MQ_BROKER_URL:-tcp://gym-activemq:61616}
+      ACTIVE_MQ_USER: ${ACTIVE_MQ_USER:-admin}
+      ACTIVE_MQ_PASSWORD: ${ACTIVE_MQ_PASSWORD:-admin}
+      TRAINER_WORKLOAD_EVENTS_QUEUE: ${TRAINER_WORKLOAD_EVENTS_QUEUE:-trainer.workload.events}
+      TRAINER_WORKLOAD_EVENTS_DLQ: ${TRAINER_WORKLOAD_EVENTS_DLQ:-trainer.workload.events.dlq}
+      TRAINER_WORKLOAD_LISTENER_CONCURRENCY: ${TRAINER_WORKLOAD_LISTENER_CONCURRENCY:-2-5}
+      TRAINER_WORKLOAD_REDELIVERY_MAX_ATTEMPTS: ${TRAINER_WORKLOAD_REDELIVERY_MAX_ATTEMPTS:-3}
+      TRAINER_WORKLOAD_REDELIVERY_INITIAL_DELAY: ${TRAINER_WORKLOAD_REDELIVERY_INITIAL_DELAY:-1000}
+      TRAINER_WORKLOAD_REDELIVERY_USE_EXPONENTIAL_BACKOFF: ${TRAINER_WORKLOAD_REDELIVERY_USE_EXPONENTIAL_BACKOFF:-true}
+      TRAINER_WORKLOAD_REDELIVERY_BACKOFF_MULTIPLIER: ${TRAINER_WORKLOAD_REDELIVERY_BACKOFF_MULTIPLIER:-2.0}
     depends_on:
       eureka:
+        condition: service_healthy
+      gym-activemq:
+        condition: service_healthy
+      gym-mongo:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -ec ': > /dev/tcp/127.0.0.1/8081'"]
@@ -178,6 +251,40 @@ services:
       retries: 12
 
 #==================MONITORING=================
+
+  loki:
+    image: docker.io/grafana/loki:latest
+    container_name: gym-loki
+    ports:
+      - "3100:3100"
+    networks:
+      - gym-crm-net
+    volumes:
+      - ./infra/monitoring/loki/loki.yml:/etc/loki/local-config.yml:ro
+      - loki_data:/loki
+    command:
+      - "-config.file=/etc/loki/local-config.yml"
+
+  alloy:
+    image: docker.io/grafana/alloy:latest
+    container_name: gym-alloy
+    ports:
+      - "12345:12345"
+    networks:
+      - gym-crm-net
+    volumes:
+      - ./infra/monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      - eureka_logs:/var/log/gym/eureka:ro
+      - gym_crm_system_logs:/var/log/gym/gym-crm-system:ro
+      - trainer_workload_logs:/var/log/gym/trainer-workload:ro
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "/etc/alloy/config.alloy"
+    depends_on:
+      - loki
 
   prometheus:
     image: docker.io/prom/prometheus:latest
@@ -213,6 +320,7 @@ services:
       - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - loki
 
 networks:
   gym-crm-net:
@@ -224,6 +332,8 @@ volumes:
   eureka_logs:
   gym_crm_system_logs:
   trainer_workload_logs:
-  trainer_workload_data:
+  trainer_workload_mongo_data:
+  loki_data:
+  alloy_data:
   prometheus_data:
   grafana_data:

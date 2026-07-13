@@ -52,12 +52,12 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/api/actuator/health",
                         "/api/actuator/info",
+                        "/api/actuator/prometheus",
                         "/actuator/health",
-                        "/actuator/info")
+                        "/actuator/info",
+                        "/actuator/prometheus")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/v1/trainer-workloads/**")
-                    .hasRole("SERVICE")
-                    .requestMatchers(HttpMethod.POST, "/v1/trainer-workloads")
                     .hasRole("SERVICE")
                     .anyRequest()
                     .authenticated())

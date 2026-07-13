@@ -72,7 +72,6 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
           "datasource": {
@@ -80,13 +79,203 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "max(up{job=~\"gym-crm.*\"})",
-          "legendFormat": "up",
+          "expr": "max(up{job=\"gym-crm-system\"})",
+          "legendFormat": "gym-crm-system",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Application Up",
+      "title": "gym-crm-system Up",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max(up{job=\"gym-crm-trainer-workload\"})",
+          "legendFormat": "trainer-workload",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "trainer-workload Up",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "round(sum(increase(gym_training_creation_succeeded_total[15m])))",
+          "legendFormat": "created",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Training ADD Events 15m",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "round(sum(increase(http_server_requests_seconds_count{job=~\"gym-crm-system|gym-crm-trainer-workload\", uri=~\"/v1/trainer-workloads.*\"}[15m])))",
+          "legendFormat": "workload reads",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Workload GET Requests 15m",
       "type": "stat"
     },
     {
@@ -115,206 +304,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 9,
-        "x": 6,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum by (uri, status) (max without (instance, job) (rate(http_server_requests_seconds_count{job=~\"gym-crm.*\", uri!=\"/actuator/prometheus\"}[1m])))",
-          "legendFormat": "{{uri}} {{status}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "HTTP Requests",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 15,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "round(max without (instance, job) (increase(gym_auth_login_failed_total{reason=\"invalid_credentials\"}[15m])))",
-          "legendFormat": "invalid credentials",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Failed Logins 15m",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 0
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "round(max without (instance, job) (increase(gym_training_creation_succeeded_total[15m])))",
-          "legendFormat": "created",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Trainings Created 15m",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false
-          },
-          "mappings": [],
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 4
       },
       "id": 5,
       "options": {
@@ -338,24 +330,13 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (area) (max without (instance, job) (jvm_memory_used_bytes{job=~\"gym-crm.*\"}))",
-          "legendFormat": "{{area}} used",
+          "expr": "sum by (job, method, uri, status) (rate(http_server_requests_seconds_count{job=~\"gym-crm-system|gym-crm-trainer-workload\", uri=~\"/v1/trainings.*|/v1/trainer-workloads.*\"}[1m]))",
+          "legendFormat": "{{job}} {{method}} {{uri}} {{status}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum by (area) (max without (instance, job) (jvm_memory_max_bytes{job=~\"gym-crm.*\"}))",
-          "legendFormat": "{{area}} max",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "JVM Memory",
+      "title": "Broker Demo HTTP Flow",
       "type": "timeseries"
     },
     {
@@ -370,14 +351,15 @@
           },
           "custom": {
             "drawStyle": "line",
-            "fillOpacity": 20,
+            "fillOpacity": 15,
             "lineInterpolation": "linear",
             "lineWidth": 2,
             "pointSize": 5,
             "showPoints": "never",
             "spanNulls": false
           },
-          "mappings": []
+          "mappings": [],
+          "unit": "s"
         },
         "overrides": []
       },
@@ -385,7 +367,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 4
       },
       "id": 6,
       "options": {
@@ -409,220 +391,125 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "max without (instance, job) (hikaricp_connections_active{job=~\"gym-crm.*\"})",
-          "legendFormat": "active",
+          "expr": "histogram_quantile(0.95, sum by (le, job, uri) (rate(http_server_requests_seconds_bucket{job=~\"gym-crm-system|gym-crm-trainer-workload\", uri=~\"/v1/trainings.*|/v1/trainer-workloads.*\"}[5m])))",
+          "legendFormat": "p95 {{job}} {{uri}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "max without (instance, job) (hikaricp_connections_idle{job=~\"gym-crm.*\"})",
-          "legendFormat": "idle",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "Hikari Connections",
+      "title": "Broker Demo HTTP p95 Latency",
       "type": "timeseries"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false
-          },
-          "mappings": []
-        },
-        "overrides": []
+        "type": "loki",
+        "uid": "loki"
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 10,
+        "w": 24,
         "x": 0,
-        "y": 16
+        "y": 12
       },
       "id": 7,
       "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "loki",
+            "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "round(max without (instance, job) (increase(gym_training_creation_failed_total[15m])))",
-          "legendFormat": "{{reason}}",
-          "range": true,
+          "expr": "{service=~\"gym-crm-system|trainer-workload\"} |~ \"$transactionId\" |~ \"(?i)(training|trainer workload|outbox|message|jms|activemq|queue)\"",
+          "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Training Creation Failures",
-      "type": "timeseries"
+      "title": "Broker Flow Logs",
+      "type": "logs"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false
-          },
-          "mappings": []
-        },
-        "overrides": []
+        "type": "loki",
+        "uid": "loki"
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "w": 24,
+        "x": 0,
+        "y": 22
       },
       "id": 8,
       "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "loki",
+            "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "max without (instance, job) (process_cpu_usage{job=~\"gym-crm.*\"})",
-          "legendFormat": "process",
-          "range": true,
+          "expr": "{service=~\"gym-crm-system|trainer-workload\"} |~ \"$transactionId\" |~ \"(?i)(ERROR|WARN|failed|DLQ|dead-letter|retry|Duplicate)\"",
+          "queryType": "range",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "max without (instance, job) (system_cpu_usage{job=~\"gym-crm.*\"})",
-          "legendFormat": "system",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "CPU Usage",
-      "type": "timeseries"
+      "title": "Broker Warnings, Retries, DLQ",
+      "type": "logs"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
+        "type": "loki",
+        "uid": "loki"
       },
       "gridPos": {
-        "h": 4,
-        "w": 6,
+        "h": 8,
+        "w": 24,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "id": 9,
       "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "loki",
+            "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "max(mongodb_up{job=\"gym-mongo\"})",
+          "expr": "{service=\"trainer-workload\"} |~ \"$transactionId\" |~ \"(?i)(Trainer workload updated|Duplicate trainer workload event ignored|summaryDuration|trainingYear|trainingMonth)\"",
+          "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "MongoDB Up",
-      "type": "stat"
+      "title": "MongoDB Workload Updates",
+      "type": "logs"
     },
     {
       "datasource": {
@@ -654,8 +541,8 @@
       "gridPos": {
         "h": 4,
         "w": 6,
-        "x": 6,
-        "y": 24
+        "x": 0,
+        "y": 38
       },
       "id": 10,
       "options": {
@@ -687,22 +574,99 @@
           "refId": "A"
         }
       ],
-      "title": "Duplicate Workload Events 15m",
+      "title": "Duplicate Events Rejected 15m",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 18,
+        "x": 6,
+        "y": 38
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (actionType) (increase(trainer_workload_duplicate_events_total[15m]))",
+          "legendFormat": "{{actionType}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Duplicate Events Rejected by Action",
+      "type": "timeseries"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 41,
   "tags": [
     "spring-boot",
     "prometheus",
+    "loki",
+    "activemq",
     "mongodb",
     "nosql",
     "gym-crm",
     "duplicate-events"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0,
+        "label": "Transaction / run id regex",
+        "name": "transactionId",
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
   },
   "time": {
     "from": "now-30m",
@@ -710,8 +674,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Gym CRM Overview",
-  "uid": "gym-crm-overview",
+  "title": "Gym CRM Broker + NoSQL Demo",
+  "uid": "gym-crm-broker-demo",
   "version": 2,
   "weekStart": ""
 }

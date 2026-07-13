@@ -42,6 +42,9 @@ public class TrainerWorkloadOutboxEvent {
   @Column(name = "training_id", nullable = false)
   private Long trainingId;
 
+  @Column(name = "transaction_id", nullable = false, length = 100)
+  private String transactionId;
+
   @Column(name = "trainer_username", nullable = false, length = 100)
   private String trainerUsername;
 
@@ -92,9 +95,10 @@ public class TrainerWorkloadOutboxEvent {
    * @return pending outbox event
    */
   public static TrainerWorkloadOutboxEvent pending(
-      Long trainingId, TrainerWorkloadRequest request, Instant now) {
+      Long trainingId, String transactionId, TrainerWorkloadRequest request, Instant now) {
     return TrainerWorkloadOutboxEvent.builder()
         .trainingId(trainingId)
+        .transactionId(transactionId)
         .trainerUsername(request.trainerUsername())
         .trainerFirstName(request.trainerFirstName())
         .trainerLastName(request.trainerLastName())

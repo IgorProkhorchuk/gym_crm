@@ -1,8 +1,11 @@
 package com.epam.gymcrm.workload.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.HandlerMapping;
 
 class RestExceptionHandlerTest {
 
@@ -99,6 +103,13 @@ class RestExceptionHandlerTest {
   }
 
   @Test
+  void handleBadRequestShouldReturnExceptionMessage() {
+    ErrorResponse response = handler.handleBadRequest(new IllegalArgumentException("Bad payload"));
+
+    assertThat(response.message()).isEqualTo("Bad payload");
+  }
+
+  @Test
   void handleHttpMessageNotReadableExceptionShouldReturnInvalidJsonMessage() {
     HttpMessageNotReadableException exception =
         new HttpMessageNotReadableException("Invalid JSON", inputMessage());
@@ -137,6 +148,18 @@ class RestExceptionHandlerTest {
     assertThat(response.message())
         .isEqualTo(
             "Malformed request body: request body has invalid value. Expected String");
+  }
+
+  @Test
+  void handleUnexpectedExceptionShouldReturnGenericMessage() {
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE))
+        .thenReturn("/api/workload");
+
+    ErrorResponse response = handler.handleUnexpectedException(new RuntimeException("Boom"), request);
+
+    assertThat(response.message()).isEqualTo("Unexpected server error");
   }
 
   private static HttpInputMessage inputMessage() {

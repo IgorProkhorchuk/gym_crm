@@ -84,7 +84,8 @@ public class SecurityConfig {
                         "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/actuator/health",
-                        "/actuator/info")
+                        "/actuator/info",
+                        "/actuator/prometheus")
                     .permitAll()
                     .requestMatchers("/v1/trainees/**")
                     .hasRole("TRAINEE")

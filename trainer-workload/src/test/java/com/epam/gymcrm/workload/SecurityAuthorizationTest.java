@@ -3,14 +3,27 @@ package com.epam.gymcrm.workload;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
+import com.epam.gymcrm.workload.service.TrainerWorkloadService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+        "spring.data.mongodb.repositories.enabled=false",
+        "spring.data.mongodb.auto-index-creation=false",
+        "spring.autoconfigure.exclude="
+            + "org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration,"
+            + "org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration,"
+            + "org.springframework.boot.data.mongodb.autoconfigure.DataMongoRepositoriesAutoConfiguration"
+    })
 class SecurityAuthorizationTest {
+
+  @MockitoBean private TrainerWorkloadService trainerWorkloadService;
 
   private final RestClient restClient;
 

@@ -1,11 +1,5 @@
 package com.epam.gymcrm.workload.model;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -15,6 +9,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @Setter
@@ -23,26 +20,24 @@ import lombok.ToString;
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
-@Entity
-@Table(name = "trainer_workloads")
+@Document(collection = "trainer_workloads")
+@CompoundIndex(
+    name = "idx_trainer_workloads_first_name_last_name",
+    def = "{'firstName': 1, 'lastName': 1}"
+)
 public class TrainerWorkload {
 
   @Id
   @EqualsAndHashCode.Include
   @ToString.Include
-  @Column(name = "username", nullable = false, length = 100)
   private String username;
 
-  @Column(name = "first_name", nullable = false, length = 100)
   private String firstName;
 
-  @Column(name = "last_name", nullable = false, length = 100)
   private String lastName;
 
-  @Column(name = "active", nullable = false)
   private boolean active;
 
   @Builder.Default
-  @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<TrainerMonthlySummary> monthlySummaries = new ArrayList<>();
+  private List<TrainerWorkloadYearSummary> years = new ArrayList<>();
 }

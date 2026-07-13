@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "2c820dc7-4eaf-4e73-bbe6-gymcrmoutbox001",
     "name": "Gym CRM Outbox Retry",
-    "description": "Manual collection for checking gym-crm-system -> trainer-workload integration and outbox retry. Run requests from top to bottom. Workload summaries are read through gym-crm-system because trainer-workload is an internal service. For the retry section, pause after the manual step, stop trainer-workload with `docker-compose stop trainer-workload`, run the failed-delivery request, then start it again with `docker-compose start trainer-workload`. Optional DB check: `docker exec -e PGPASSWORD=password gym-master psql -U gym_user -d gym_crm -c \"select id, training_id, trainer_username, action_type, status, retry_count, next_retry_at, error_message from trainer_workload_outbox order by id;\"`.",
+    "description": "Manual collection for checking gym-crm-system -> ActiveMQ -> trainer-workload -> MongoDB integration and outbox retry. Run requests from top to bottom. Workload summaries are read through gym-crm-system because trainer-workload is an internal service. For the retry section, pause after the manual step, stop ActiveMQ with `podman compose stop gym-activemq`, run the failed-publish request, then start it again with `podman compose start gym-activemq`. Optional PostgreSQL outbox check: `podman exec -e PGPASSWORD=password gym-master psql -U gym_user -d gym_crm -c \"select id, training_id, trainer_username, action_type, status, retry_count, next_retry_at, error_message from trainer_workload_outbox order by id;\"`. Optional MongoDB check: `podman exec gym-mongo mongosh trainer_workload --quiet --eval \"db.trainer_workloads.find().pretty(); db.trainer_workload_processed_events.find().pretty()\"`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -248,7 +248,7 @@
         },
         {
           "name": "Wait For Dispatcher",
-          "description": "The outbox dispatcher runs on a fixed delay. This request intentionally waits before checking trainer-workload.",
+          "description": "The outbox dispatcher runs on a fixed delay. This request intentionally waits before checking the MongoDB-backed trainer-workload summary.",
           "event": [
             {
               "listen": "prerequest",
@@ -265,9 +265,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Gym CRM is healthy', function () {",
+                  "pm.test('Gym CRM API is available', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json().status).to.eql('UP');",
                   "});"
                 ]
               }
@@ -275,15 +274,20 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{gymBaseUrl}}/actuator/health",
+              "raw": "{{gymBaseUrl}}/v1/training-types",
               "host": [
                 "{{gymBaseUrl}}"
               ],
               "path": [
-                "actuator",
-                "health"
+                "v1",
+                "training-types"
               ]
             }
           }
@@ -337,11 +341,11 @@
     },
     {
       "name": "03 Outbox Retry Manual Scenario",
-      "description": "Run this folder one request at a time. Before `Add Training While Trainer Workload Is DOWN`, stop trainer-workload. After that request succeeds, start trainer-workload again and continue.",
+      "description": "Run this folder one request at a time. Before `Add Training While ActiveMQ Is DOWN`, stop gym-activemq. After that request succeeds, start gym-activemq again and continue.",
       "item": [
         {
-          "name": "Manual Step - Stop Trainer Workload",
-          "description": "Pause here and run: `docker-compose stop trainer-workload`. Then run the next request.",
+          "name": "Manual Step - Stop ActiveMQ",
+          "description": "Pause here and run: `podman compose stop gym-activemq`. Then run the next request.",
           "event": [
             {
               "listen": "test",
@@ -351,36 +355,41 @@
                   "pm.test('Manual stop step acknowledged', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "console.warn('Stop trainer-workload now, then run the next request.');"
+                  "console.warn('Stop gym-activemq now, then run the next request.');"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{gymBaseUrl}}/actuator/health",
+              "raw": "{{gymBaseUrl}}/v1/training-types",
               "host": [
                 "{{gymBaseUrl}}"
               ],
               "path": [
-                "actuator",
-                "health"
+                "v1",
+                "training-types"
               ]
             }
           }
         },
         {
-          "name": "Add Training While Trainer Workload Is DOWN",
-          "description": "This request should still return 200 from gym-crm-system. The outbox event should remain PENDING until trainer-workload is back.",
+          "name": "Add Training While ActiveMQ Is DOWN",
+          "description": "This request should still return 200 from gym-crm-system. The outbox event should remain PENDING until ActiveMQ is back.",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Training creation succeeds even while trainer-workload is down', function () {",
+                  "pm.test('Training creation succeeds even while ActiveMQ is down', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const expectedDuration = Number(pm.collectionVariables.get('expectedDuration') || 0) + 45;",
@@ -418,8 +427,8 @@
           }
         },
         {
-          "name": "Manual Step - Start Trainer Workload",
-          "description": "Pause here and run: `docker-compose start trainer-workload`. Wait until `http://localhost:8081/api/actuator/health` returns UP, then continue.",
+          "name": "Manual Step - Start ActiveMQ",
+          "description": "Pause here and run: `podman compose start gym-activemq`. Wait until ActiveMQ console is available, then continue.",
           "event": [
             {
               "listen": "test",
@@ -429,22 +438,27 @@
                   "pm.test('Manual start step acknowledged', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "console.warn('Start trainer-workload now, wait for health UP, then run the next request.');"
+                  "console.warn('Start gym-activemq now, wait for the broker to become available, then run the next request.');"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{gymBaseUrl}}/actuator/health",
+              "raw": "{{gymBaseUrl}}/v1/training-types",
               "host": [
                 "{{gymBaseUrl}}"
               ],
               "path": [
-                "actuator",
-                "health"
+                "v1",
+                "training-types"
               ]
             }
           }
@@ -468,9 +482,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Gym CRM is healthy after waiting for retry', function () {",
+                  "pm.test('Gym CRM API is available after waiting for retry', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json().status).to.eql('UP');",
                   "});"
                 ]
               }
@@ -478,15 +491,20 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{gymBaseUrl}}/actuator/health",
+              "raw": "{{gymBaseUrl}}/v1/training-types",
               "host": [
                 "{{gymBaseUrl}}"
               ],
               "path": [
-                "actuator",
-                "health"
+                "v1",
+                "training-types"
               ]
             }
           }

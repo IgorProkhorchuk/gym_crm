@@ -1,0 +1,35 @@
+loki.source.file "gym_crm_logs" {
+  targets = [
+    {
+      __path__ = "/var/log/gym/gym-crm-system/*.log",
+      job      = "gym-crm",
+      service  = "gym-crm-system",
+      env      = "local",
+    },
+    {
+      __path__ = "/var/log/gym/trainer-workload/*.log",
+      job      = "gym-crm",
+      service  = "trainer-workload",
+      env      = "local",
+    },
+    {
+      __path__ = "/var/log/gym/eureka/*.log",
+      job      = "gym-crm",
+      service  = "eureka",
+      env      = "local",
+    },
+  ]
+
+  forward_to = [loki.write.loki.receiver]
+
+  file_match {
+    enabled     = true
+    sync_period = "10s"
+  }
+}
+
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

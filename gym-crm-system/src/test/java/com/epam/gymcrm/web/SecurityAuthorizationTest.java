@@ -90,8 +90,7 @@ class SecurityAuthorizationTest extends PostgresContainerTest {
   void protectedReferenceEndpointShouldRejectMissingToken() {
     HttpClientErrorException.Unauthorized exception =
         catchThrowableOfType(
-            () ->
-                restClient.get().uri("/api/v1/training-types").retrieve().toBodilessEntity(),
+            () -> restClient.get().uri("/api/v1/training-types").retrieve().toBodilessEntity(),
             HttpClientErrorException.Unauthorized.class);
 
     assertThat(exception.getResponseBodyAsString())

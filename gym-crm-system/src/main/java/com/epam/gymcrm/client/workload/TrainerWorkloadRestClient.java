@@ -17,11 +17,6 @@ public class TrainerWorkloadRestClient implements TrainerWorkloadClient {
   private final RestTemplate restTemplate;
 
   @Override
-  public void updateTrainerWorkload(TrainerWorkloadRequest request) {
-    restTemplate.postForEntity(TRAINER_WORKLOAD_URL, request, Void.class);
-  }
-
-  @Override
   public TrainerWorkloadResponse getTrainerWorkload(String username) {
     try {
       return restTemplate.getForObject(TRAINER_WORKLOAD_URL + "/{username}",

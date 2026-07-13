@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7b1f34db-8a76-4d1f-91ad-gymcrmrest001",
     "name": "Gym CRM REST API",
-    "description": "Collection runner checks for Gym CRM REST endpoints. Run from top to bottom against a running app. The collection creates test trainee/trainer profiles, logs in, stores Bearer JWT tokens, and verifies positive and negative security scenarios.",
+    "description": "Collection runner checks for Gym CRM REST endpoints. Run from top to bottom against a running stack. The collection creates test trainee/trainer profiles, logs in, stores Bearer JWT tokens, verifies positive and negative security scenarios, and checks that trainer workload summary is updated asynchronously through the outbox, ActiveMQ, and the MongoDB-backed trainer-workload service. Optional NoSQL check after the workload request: podman exec gym-mongo mongosh trainer_workload --quiet --eval \"db.trainer_workloads.find().pretty(); db.trainer_workload_processed_events.find().pretty()\".",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -537,6 +537,97 @@
               "path": [
                 "v1",
                 "trainings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Wait For Workload Message Delivery",
+          "description": "Workload updates are asynchronous: training creation stores an outbox event and the scheduled dispatcher publishes it to ActiveMQ. trainer-workload consumes the message and persists the monthly summary in MongoDB. This request waits before checking the workload summary.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const waitUntil = Date.now() + 25000;",
+                  "while (Date.now() < waitUntil) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Training types endpoint is available after wait', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/training-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "training-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trainer Workload Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "const year = (body.years || []).find(function (item) { return item.year === 2026; });",
+                  "const month = year && (year.months || []).find(function (item) { return item.month === 6; });",
+                  "pm.test('Trainer workload summary contains the ActiveMQ-delivered training', function () {",
+                  "  pm.expect(body.trainerUsername).to.eql(pm.collectionVariables.get('trainerUsername'));",
+                  "  pm.expect(month, 'June 2026 workload month').to.exist;",
+                  "  pm.expect(month.trainingSummaryDuration).to.be.at.least(60);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traineeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/trainer-workloads/{{trainerUsername}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "trainer-workloads",
+                "{{trainerUsername}}"
               ]
             }
           }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.epam.gymcrm.dto.UsernamePasswordResponse;
 import com.epam.gymcrm.dto.auth.ProfileType;
 import com.epam.gymcrm.web.auth.JwtTokenService;
+import com.epam.gymcrm.web.exception.ErrorResponse;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -21,6 +22,7 @@ public class GymCrmSecuritySteps {
   private final JwtTokenService jwtTokenService;
   private int responseStatus;
   private UsernamePasswordResponse credentialsResponse;
+  private ErrorResponse errorResponse;
 
   public GymCrmSecuritySteps(@LocalServerPort int port, JwtTokenService jwtTokenService) {
     this.restClient = RestClient.create("http://localhost:" + port);
@@ -50,21 +52,7 @@ public class GymCrmSecuritySteps {
         """
             .formatted(firstName, lastName, dateOfBirth, address);
 
-    try {
-      ResponseEntity<UsernamePasswordResponse> response =
-          restClient
-              .post()
-              .uri("/api/v1/trainees")
-              .contentType(MediaType.APPLICATION_JSON)
-              .body(requestBody)
-              .retrieve()
-              .toEntity(UsernamePasswordResponse.class);
-      responseStatus = response.getStatusCode().value();
-      credentialsResponse = response.getBody();
-    } catch (RestClientResponseException exception) {
-      responseStatus = exception.getStatusCode().value();
-      credentialsResponse = null;
-    }
+    postTraineeRegistration(requestBody);
   }
 
   @Then("the response status should be {int}")
@@ -82,6 +70,32 @@ public class GymCrmSecuritySteps {
   public void responseShouldContainGeneratedPassword() {
     assertThat(credentialsResponse).isNotNull();
     assertThat(credentialsResponse.password()).isNotBlank();
+  }
+
+  @Then("the error message should contain {string}")
+  public void errorMessageShouldContain(String expectedMessage) {
+    assertThat(errorResponse).isNotNull();
+    assertThat(errorResponse.message()).contains(expectedMessage);
+  }
+
+  private void postTraineeRegistration(String requestBody) {
+    try {
+      ResponseEntity<UsernamePasswordResponse> response =
+          restClient
+              .post()
+              .uri("/api/v1/trainees")
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(requestBody)
+              .retrieve()
+              .toEntity(UsernamePasswordResponse.class);
+      responseStatus = response.getStatusCode().value();
+      credentialsResponse = response.getBody();
+      errorResponse = null;
+    } catch (RestClientResponseException exception) {
+      responseStatus = exception.getStatusCode().value();
+      credentialsResponse = null;
+      errorResponse = exception.getResponseBodyAs(ErrorResponse.class);
+    }
   }
 
   private void requestTraineeProfile(String username, String token) {

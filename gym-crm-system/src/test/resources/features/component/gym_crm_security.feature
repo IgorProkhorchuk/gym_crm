@@ -17,3 +17,9 @@ Feature: Gym CRM endpoint security
     Then the response status should be 201
     And the response should contain username "Bdd.Trainee"
     And the response should contain a generated password
+
+  @negative
+  Scenario: Reject trainee registration with blank first name
+    When the client creates trainee "" "Invalid" born on "1995-01-10" with address "Main Street, 123"
+    Then the response status should be 400
+    And the error message should contain "field 'firstName' must not be blank"

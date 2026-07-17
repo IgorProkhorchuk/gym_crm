@@ -1,8 +1,11 @@
 package com.epam.gymcrm.workload.bdd;
 
+import com.epam.gymcrm.workload.config.JwtProperties;
 import com.epam.gymcrm.workload.service.TrainerWorkloadService;
 import io.cucumber.spring.CucumberContextConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @CucumberContextConfiguration
@@ -19,4 +22,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 public class CucumberSpringConfiguration {
 
   @MockitoBean private TrainerWorkloadService trainerWorkloadService;
+
+  @TestConfiguration
+  static class BddTestConfiguration {
+
+    @Bean
+    TestJwtFactory testJwtFactory(JwtProperties jwtProperties) {
+      return new TestJwtFactory(jwtProperties);
+    }
+  }
 }

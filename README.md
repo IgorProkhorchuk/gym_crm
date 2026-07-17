@@ -268,7 +268,16 @@ mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@negative" test
 Pop-Location
 ```
 
-The `gym-crm-system` BDD tests start PostgreSQL and Redis with Testcontainers, so they require a running Docker-compatible engine and take longer than the mocked `trainer-workload` component tests.
+Gym CRM integration examples:
+
+```powershell
+Push-Location gym-crm-system
+mvn -Dtest=CucumberIntegrationTest test
+mvn -Dtest=CucumberIntegrationTest "-Dcucumber.filter.tags=@integration" test
+Pop-Location
+```
+
+The `gym-crm-system` BDD tests start PostgreSQL and Redis with Testcontainers. The `trainer-workload` integration BDD tests start MongoDB with Testcontainers. They require a running Docker-compatible engine and take longer than mocked component tests.
 
 ## Main API
 

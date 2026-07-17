@@ -1,6 +1,11 @@
-@integration @workload @positive
+@integration @workload @messaging @positive
 Feature: Trainer workload integration
 
-  Scenario: Start trainer workload integration BDD context
-    Given the trainer workload integration context is ready
-    Then the trainer workload REST API should be available in the test context
+  Scenario Outline: Update trainer workload after receiving workload message
+    When the workload listener receives an "<actionType>" integration event with training id <trainingId> for trainer "<trainerUsername>" on "<trainingDate>" with duration <duration>
+    Then the trainer workload for "<trainerUsername>" should contain <duration> minutes for year <year> and month <month>
+    And the processed workload event with training id <trainingId> and action "<actionType>" should be recorded
+
+    Examples:
+      | actionType | trainingId | trainerUsername     | trainingDate | duration | year | month |
+      | ADD        | 9201       | Integration.Trainer | 2026-05-03   | 60       | 2026 | 5     |

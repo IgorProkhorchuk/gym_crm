@@ -227,6 +227,7 @@ Available tags:
 
 ```text
 @component  all component-level BDD scenarios
+@integration integration-level BDD scenarios
 @gym-crm    gym-crm-system scenarios
 @workload   trainer-workload scenarios
 @security   security and authorization scenarios
@@ -244,6 +245,15 @@ mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@security" test
 mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@messaging" test
 mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@positive" test
 mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@negative" test
+Pop-Location
+```
+
+Trainer Workload integration examples:
+
+```powershell
+Push-Location trainer-workload
+mvn -Dtest=CucumberIntegrationTest test
+mvn -Dtest=CucumberIntegrationTest "-Dcucumber.filter.tags=@integration" test
 Pop-Location
 ```
 

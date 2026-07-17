@@ -219,6 +219,47 @@ mvn clean verify
 Pop-Location
 ```
 
+### BDD Cucumber Tests
+
+Component BDD tests can be run per service. Use Cucumber tags to select a smaller set of scenarios.
+
+Available tags:
+
+```text
+@component  all component-level BDD scenarios
+@gym-crm    gym-crm-system scenarios
+@workload   trainer-workload scenarios
+@security   security and authorization scenarios
+@messaging  message listener scenarios
+@positive   successful business flow scenarios
+@negative   rejection and validation scenarios
+```
+
+Trainer Workload examples:
+
+```powershell
+Push-Location trainer-workload
+mvn -Dtest=CucumberComponentTest test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@security" test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@messaging" test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@positive" test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@negative" test
+Pop-Location
+```
+
+Gym CRM examples:
+
+```powershell
+Push-Location gym-crm-system
+mvn -Dtest=CucumberComponentTest test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@security" test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@positive" test
+mvn -Dtest=CucumberComponentTest "-Dcucumber.filter.tags=@negative" test
+Pop-Location
+```
+
+The `gym-crm-system` BDD tests start PostgreSQL and Redis with Testcontainers, so they require a running Docker-compatible engine and take longer than the mocked `trainer-workload` component tests.
+
 ## Main API
 
 Public endpoints:

@@ -1,5 +1,8 @@
 verify:trainer-workload:
   stage: verify
+  services:
+    - name: docker:24.0.9-dind
+      command: ["--tls=false"]
   script:
     - mvn $MAVEN_CLI_OPTS -f trainer-workload/pom.xml verify
   artifacts:

@@ -2,12 +2,14 @@ package com.epam.gymcrm.workload.integrationbdd;
 
 import io.cucumber.spring.CucumberContextConfiguration;
 import java.io.IOException;
+import java.time.Duration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Container.ExecResult;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 @CucumberContextConfiguration
@@ -16,11 +18,14 @@ import org.testcontainers.utility.DockerImageName;
 public class CucumberIntegrationSpringConfiguration {
 
   private static final int MONGO_PORT = 27017;
+  private static final int PRIMARY_ELECTION_ATTEMPTS = 90;
   private static final DockerImageName MONGO_IMAGE = DockerImageName.parse("mongo:7");
   private static final GenericContainer<?> MONGO =
       new GenericContainer<>(MONGO_IMAGE)
           .withExposedPorts(MONGO_PORT)
-          .withCommand("mongod", "--replSet", "rs0", "--bind_ip_all");
+          .withCommand("mongod", "--replSet", "rs0", "--bind_ip_all")
+          .waitingFor(Wait.forListeningPort())
+          .withStartupTimeout(Duration.ofMinutes(2));
 
   static {
     MONGO.start();
@@ -57,7 +62,7 @@ public class CucumberIntegrationSpringConfiguration {
   }
 
   private static void waitForWritablePrimary() throws IOException, InterruptedException {
-    for (int attempt = 0; attempt < 30; attempt++) {
+    for (int attempt = 0; attempt < PRIMARY_ELECTION_ATTEMPTS; attempt++) {
       ExecResult result =
           MONGO.execInContainer(
               "mongosh",

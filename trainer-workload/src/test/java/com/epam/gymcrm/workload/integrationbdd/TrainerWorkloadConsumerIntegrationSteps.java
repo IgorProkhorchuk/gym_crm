@@ -20,6 +20,7 @@ public class TrainerWorkloadConsumerIntegrationSteps {
   private final TrainerWorkloadMessageListener listener;
   private final TrainerWorkloadRepository trainerWorkloadRepository;
   private final TrainerWorkloadProcessedEventRepository processedEventRepository;
+  private RuntimeException listenerException;
 
   public TrainerWorkloadConsumerIntegrationSteps(
       TrainerWorkloadMessageListener listener,
@@ -35,6 +36,7 @@ public class TrainerWorkloadConsumerIntegrationSteps {
   public void cleanCollections() {
     trainerWorkloadRepository.deleteAll();
     processedEventRepository.deleteAll();
+    listenerException = null;
   }
 
   @When(
@@ -51,6 +53,26 @@ public class TrainerWorkloadConsumerIntegrationSteps {
         payload(actionType, trainingId, trainerUsername, trainingDate, duration),
         "bdd-integration-transaction-id",
         1);
+  }
+
+  @When(
+      "the workload listener receives an invalid {string} integration event with training id {long} "
+          + "for trainer {string} on {string} with duration {int}")
+  public void workloadListenerReceivesInvalidIntegrationEvent(
+      String actionType,
+      long trainingId,
+      String trainerUsername,
+      String trainingDate,
+      int duration
+  ) {
+    try {
+      listener.handleMessage(
+          payload(actionType, trainingId, trainerUsername, trainingDate, duration),
+          "bdd-integration-transaction-id",
+          1);
+    } catch (RuntimeException exception) {
+      listenerException = exception;
+    }
   }
 
   @Then("the trainer workload for {string} should contain {int} minutes for year {int} and month {int}")
@@ -84,6 +106,24 @@ public class TrainerWorkloadConsumerIntegrationSteps {
     assertThat(processedEventRepository.findAll())
         .filteredOn(event -> eventMatches(event, trainingId, actionType))
         .hasSize(1);
+  }
+
+  @Then("the integration message should be rejected with error {string}")
+  public void integrationMessageShouldBeRejectedWithError(String expectedErrorType) {
+    assertThat(listenerException).isNotNull();
+    assertThat(listenerException.getClass().getSimpleName()).isEqualTo(expectedErrorType);
+  }
+
+  @Then("no trainer workload should exist for {string}")
+  public void noTrainerWorkloadShouldExistFor(String trainerUsername) {
+    assertThat(trainerWorkloadRepository.findByUsername(trainerUsername)).isEmpty();
+  }
+
+  @Then("the processed workload event with training id {long} and action {string} should not be recorded")
+  public void processedWorkloadEventShouldNotBeRecorded(long trainingId, String actionType) {
+    assertThat(processedEventRepository.findAll())
+        .filteredOn(event -> eventMatches(event, trainingId, actionType))
+        .isEmpty();
   }
 
   private static boolean eventMatches(

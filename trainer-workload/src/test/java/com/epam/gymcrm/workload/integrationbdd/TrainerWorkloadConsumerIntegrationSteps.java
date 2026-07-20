@@ -1,6 +1,7 @@
 package com.epam.gymcrm.workload.integrationbdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.epam.gymcrm.workload.dto.ActionType;
 import com.epam.gymcrm.workload.messaging.TrainerWorkloadMessageListener;
@@ -95,10 +96,11 @@ public class TrainerWorkloadConsumerIntegrationSteps {
             .findFirst()
             .orElseThrow();
 
-    assertThat(workload.getFirstName()).isEqualTo("Integration");
-    assertThat(workload.getLastName()).isEqualTo("Trainer");
-    assertThat(workload.isActive()).isTrue();
-    assertThat(monthSummary.getTrainingsSummaryDuration()).isEqualTo(expectedDuration);
+    assertAll(
+        () -> assertThat(workload.getFirstName()).isEqualTo("Integration"),
+        () -> assertThat(workload.getLastName()).isEqualTo("Trainer"),
+        () -> assertThat(workload.isActive()).isTrue(),
+        () -> assertThat(monthSummary.getTrainingsSummaryDuration()).isEqualTo(expectedDuration));
   }
 
   @Then("the processed workload event with training id {long} and action {string} should be recorded")

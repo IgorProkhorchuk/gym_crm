@@ -1,6 +1,7 @@
 package com.epam.gymcrm.workload.bdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -69,17 +70,23 @@ public class TrainerWorkloadMessagingSteps {
   }
 
   @Then("the workload service should receive an {string} request for trainer {string}")
-  public void workloadServiceShouldReceiveRequest(String expectedActionType, String expectedUsername) {
+  public void workloadServiceShouldReceiveRequest(
+      String expectedActionType,
+      String expectedUsername
+  ) {
     assertThat(handledRequest).isNotNull();
-    assertThat(handledRequest.actionType()).isEqualTo(ActionType.valueOf(expectedActionType));
-    assertThat(handledRequest.trainerUsername()).isEqualTo(expectedUsername);
+    assertAll(
+        () -> assertThat(handledRequest.actionType())
+            .isEqualTo(ActionType.valueOf(expectedActionType)),
+        () -> assertThat(handledRequest.trainerUsername()).isEqualTo(expectedUsername));
   }
 
   @Then("the workload request should contain duration {int} minutes for date {string}")
   public void workloadRequestShouldContainDuration(int expectedDuration, String expectedDate) {
     assertThat(handledRequest).isNotNull();
-    assertThat(handledRequest.trainingDuration()).isEqualTo(expectedDuration);
-    assertThat(handledRequest.trainingDate()).isEqualTo(LocalDate.parse(expectedDate));
+    assertAll(
+        () -> assertThat(handledRequest.trainingDuration()).isEqualTo(expectedDuration),
+        () -> assertThat(handledRequest.trainingDate()).isEqualTo(LocalDate.parse(expectedDate)));
   }
 
   @Then("the workload message should be rejected with error {string}")

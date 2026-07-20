@@ -3,6 +3,7 @@ package com.epam.gymcrm.bdd;
 import static com.epam.gymcrm.TestFixtures.trainee;
 import static com.epam.gymcrm.TestFixtures.trainer;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.epam.gymcrm.client.workload.TrainerWorkloadActionType;
 import com.epam.gymcrm.dto.auth.ProfileType;
@@ -138,9 +139,11 @@ public class GymCrmTrainerWorkloadIntegrationSteps {
         .max(Comparator.comparing(TrainerWorkloadOutboxEvent::getId))
         .orElse(null);
 
-    assertThat(outboxEvent).isNotNull();
-    assertThat(outboxEvent.getStatus()).isEqualTo(TrainerWorkloadOutboxStatus.PENDING);
-    assertThat(matchingEvents).hasSizeGreaterThan((int) matchingOutboxEventsBeforeRequest);
+    assertAll(
+        () -> assertThat(outboxEvent).isNotNull(),
+        () -> assertThat(outboxEvent.getStatus()).isEqualTo(TrainerWorkloadOutboxStatus.PENDING),
+        () -> assertThat(matchingEvents).hasSizeGreaterThan(
+            (int) matchingOutboxEventsBeforeRequest));
   }
 
   @Then(
@@ -152,14 +155,16 @@ public class GymCrmTrainerWorkloadIntegrationSteps {
       int trainingDuration,
       String actionType
   ) {
-    assertThat(outboxEvent).isNotNull();
-    assertThat(outboxEvent.getTrainerUsername()).isEqualTo(trainerUsername);
-    assertThat(outboxEvent.getTrainerFirstName()).isEqualTo("Integration");
-    assertThat(outboxEvent.getTrainerLastName()).isEqualTo("Trainer");
-    assertThat(outboxEvent.getTrainerStatus()).isTrue();
-    assertThat(outboxEvent.getTrainingDate()).isEqualTo(LocalDate.parse(trainingDate));
-    assertThat(outboxEvent.getTrainingDuration()).isEqualTo(trainingDuration);
-    assertThat(outboxEvent.getActionType()).isEqualTo(TrainerWorkloadActionType.valueOf(actionType));
+    assertAll(
+        () -> assertThat(outboxEvent).isNotNull(),
+        () -> assertThat(outboxEvent.getTrainerUsername()).isEqualTo(trainerUsername),
+        () -> assertThat(outboxEvent.getTrainerFirstName()).isEqualTo("Integration"),
+        () -> assertThat(outboxEvent.getTrainerLastName()).isEqualTo("Trainer"),
+        () -> assertThat(outboxEvent.getTrainerStatus()).isTrue(),
+        () -> assertThat(outboxEvent.getTrainingDate()).isEqualTo(LocalDate.parse(trainingDate)),
+        () -> assertThat(outboxEvent.getTrainingDuration()).isEqualTo(trainingDuration),
+        () -> assertThat(outboxEvent.getActionType())
+            .isEqualTo(TrainerWorkloadActionType.valueOf(actionType)));
   }
 
   private List<TrainerWorkloadOutboxEvent> matchingOutboxEvents() {

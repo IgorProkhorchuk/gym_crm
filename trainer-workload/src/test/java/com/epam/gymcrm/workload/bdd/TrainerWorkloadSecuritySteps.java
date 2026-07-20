@@ -1,6 +1,7 @@
 package com.epam.gymcrm.workload.bdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.when;
 
 import com.epam.gymcrm.workload.dto.TrainerWorkloadMonthResponse;
@@ -87,15 +88,14 @@ public class TrainerWorkloadSecuritySteps {
     assertThat(responseBody).isNotNull();
     assertThat(responseBody.years())
         .anySatisfy(
-            year -> {
-              assertThat(year.year()).isEqualTo(expectedYear);
-              assertThat(year.months())
-                  .anySatisfy(
-                      month -> {
-                        assertThat(month.month()).isEqualTo(expectedMonth);
-                        assertThat(month.trainingSummaryDuration()).isEqualTo(expectedDuration);
-                      });
-            });
+            year -> assertAll(
+                () -> assertThat(year.year()).isEqualTo(expectedYear),
+                () -> assertThat(year.months())
+                    .anySatisfy(
+                        month -> assertAll(
+                            () -> assertThat(month.month()).isEqualTo(expectedMonth),
+                            () -> assertThat(month.trainingSummaryDuration())
+                                .isEqualTo(expectedDuration)))));
   }
 
   private void requestTrainerWorkload(String username, String token) {
